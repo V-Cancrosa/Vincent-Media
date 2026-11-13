@@ -11,7 +11,11 @@
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
-  .tabs { position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 6px 0; background: var(--bg); }
+  /* podgląd i zakładki przyklejone u góry – przewijasz tylko ustawienia */
+  .sticky-top { position: sticky; top: 0; z-index: 6; background: var(--bg); display: flex; flex-direction: column; gap: 6px; margin: -10px -10px 0; padding: 10px 10px 4px; box-shadow: 0 8px 12px -10px rgba(0,0,0,.8); }
+  .sticky-top.mini .preview-sec { display: none; }
+  .tabs { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 4px; padding: 2px 0 0; background: var(--bg); }
+  .pv-toggle { padding: 8px 10px; font-size: 12px; }
   .tabs button { padding: 8px 4px; font-size: 12px; }
   .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
   .tab { display: flex; flex-direction: column; gap: 10px; }
@@ -88,6 +92,7 @@
 </head>
 <body>
 <main>
+  <div class="sticky-top" id="stickyTop">
   <section class="preview-sec">
     <div class="preview" id="preview"><iframe id="frame" title="podgląd"></iframe><iframe id="frameAlerts" title="podgląd alertów"></iframe>
       <button class="fastchip" id="fastChip" title="Szybkie powiadomienia: od razu, bez kolejki – do sprawdzania">⚡ szybkie: wył.</button>
@@ -98,7 +103,9 @@
     <button role="tab" data-tab="look">Wygląd</button>
     <button role="tab" data-tab="conn">Połączenia</button>
     <button role="tab" data-tab="set">Ustawienia</button>
+    <button class="pv-toggle" id="pvToggle" title="Zwiń / rozwiń podgląd" aria-pressed="true">▴</button>
   </nav>
+  </div>
   <div class="tab" data-tab="live">
   <section>
     <h2>Gra <span id="visPill" class="pill on">WIDOCZNA</span></h2>
@@ -863,14 +870,20 @@
     try { const r = await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/twitch/logout', { cache: 'no-store' }); twState = await r.json(); twRender(); } catch {}
   };
 
+  // --- podgląd: zwijany (pamiętane) ---
+  const PV_KEY = 'obsGameOverlay.panelPreview';
+  const setPv = open => { $('stickyTop').classList.toggle('mini', !open); $('pvToggle').textContent = open ? '▴' : '▾'; $('pvToggle').setAttribute('aria-pressed', open); try { localStorage.setItem(PV_KEY, open ? '1' : '0'); } catch {} };
+  $('pvToggle').onclick = () => setPv($('stickyTop').classList.contains('mini'));
+  setPv((() => { try { return localStorage.getItem(PV_KEY) !== '0'; } catch { return true; } })());
+
   // --- zakładki ---
   const TAB_KEY = 'obsGameOverlay.panelTab';
   function showTab(name) {
-    for (const b of document.querySelectorAll('.tabs button')) b.setAttribute('aria-selected', b.dataset.tab === name);
+    for (const b of document.querySelectorAll('.tabs button[data-tab]')) b.setAttribute('aria-selected', b.dataset.tab === name);
     for (const t of document.querySelectorAll('.tab')) t.hidden = t.dataset.tab !== name;
     try { localStorage.setItem(TAB_KEY, name); } catch {}
   }
-  for (const b of document.querySelectorAll('.tabs button')) b.onclick = () => showTab(b.dataset.tab);
+  for (const b of document.querySelectorAll('.tabs button[data-tab]')) b.onclick = () => showTab(b.dataset.tab);
   showTab((() => { try { return localStorage.getItem(TAB_KEY) || 'live'; } catch { return 'live'; } })());
 
   // --- podzakładki (zakładki w zakładkach) ---

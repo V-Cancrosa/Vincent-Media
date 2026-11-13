@@ -1,5 +1,5 @@
 {
-  "version": "1.13.0",
+  "version": "1.13.1",
   "date": "2026-11-13",
-  "notes": "Zakładki w zakładkach, szybkie powiadomienia (wł. albo wył.), poziomy reakcji 1–5 zależne od wielkości zdarzenia"
+  "notes": "Panel: podgląd i zakładki przyklejone u góry, podgląd można zwinąć"
 }
