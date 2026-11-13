@@ -58,6 +58,7 @@
   details summary { cursor: pointer; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
   details[open] summary { margin-bottom: 8px; }
 </style>
+<script src="themes/games.js"></script>
 </head>
 <body>
 <main>
@@ -138,6 +139,7 @@
           <option value="minimal">Minimal</option>
           <option value="retro">Retro pixel</option>
           <option value="esport">E-sport</option>
+          <optgroup label="Motywy gier" id="gameThemeOpts"></optgroup>
         </select>
       </label>
       <label>Pozycja
@@ -173,6 +175,10 @@
       <label class="check"><input id="icon" type="checkbox"> ikona</label>
       <label class="check"><input id="showLabel" type="checkbox"> napis</label>
     </div>
+    <div class="checks">
+      <label class="check"><input id="gameThemes" type="checkbox"> gra ma własny motyw → włącz go sam</label>
+      <label class="check"><input id="reducedMotion" type="checkbox"> ogranicz animacje</label>
+    </div>
   </section>
 
   <section>
@@ -200,7 +206,8 @@
     label: 'Teraz gram', theme: 'neon', position: 'bl',
     accent: '', accent2: '', mode: 'auto', discordId: '', ignore: '',
     timer: true, icon: true, showLabel: true, visible: true, scale: 1, margin: 40,
-    local: true, localUrl: 'http://localhost:7777'
+    local: true, localUrl: 'http://localhost:7777',
+    gameThemes: true, motion: 'full'
   };
   const $ = id => document.getElementById(id);
   const load = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
@@ -260,7 +267,14 @@
   const textFields = ['label', 'discordId', 'ignore', 'localUrl'];
   textFields.forEach(id => $(id).addEventListener('change', () => { s[id] = $(id).value.trim(); save(); }));
   ['mode', 'theme', 'position'].forEach(id => $(id).addEventListener('change', () => { s[id] = $(id).value; save(); }));
-  ['timer', 'icon', 'showLabel', 'local'].forEach(id => $(id).addEventListener('change', () => { s[id] = $(id).checked; save(); }));
+  // lista motywów gier z themes/games.js
+  try {
+    const list = (window.OverlayGameThemes && window.OverlayGameThemes.list) || [];
+    for (const t of list) { const o = document.createElement('option'); o.value = 'g-' + t.id; o.textContent = t.name; $('gameThemeOpts').appendChild(o); }
+    if (!list.length) $('gameThemeOpts').remove();
+  } catch {}
+  $('reducedMotion').addEventListener('change', () => { s.motion = $('reducedMotion').checked ? 'reduced' : 'full'; save(); });
+  ['timer', 'icon', 'showLabel', 'local', 'gameThemes'].forEach(id => $(id).addEventListener('change', () => { s[id] = $(id).checked; save(); }));
   $('scale').addEventListener('input', () => { s.scale = +$('scale').value; save(); });
   $('margin').addEventListener('input', () => { s.margin = +$('margin').value; save(); });
   $('accent').addEventListener('input', () => { s.accent = $('accent').value; $('autoColor').checked = false; save(); });
@@ -271,6 +285,8 @@
     for (const id of ['label', 'discordId', 'ignore', 'localUrl']) if (document.activeElement !== $(id)) $(id).value = s[id];
     $('mode').value = s.mode; $('theme').value = s.theme; $('position').value = s.position;
     $('local').checked = s.local;
+    $('gameThemes').checked = s.gameThemes;
+    $('reducedMotion').checked = s.motion === 'reduced';
     $('timer').checked = s.timer; $('icon').checked = s.icon; $('showLabel').checked = s.showLabel;
     $('scale').value = s.scale; $('scaleVal').textContent = Math.round(s.scale * 100) + '%';
     $('margin').value = s.margin; $('marginVal').textContent = s.margin + ' px';
@@ -400,6 +416,8 @@
     if (!s.icon) q.set('icon', '0');
     if (!s.showLabel) q.set('showLabel', '0');
     if (!s.local) q.set('local', '0');
+    if (!s.gameThemes) q.set('gameThemes', '0');
+    if (s.motion === 'reduced') q.set('motion', 'reduced');
     if (s.localUrl !== DEFAULTS.localUrl) q.set('localUrl', s.localUrl);
     $('staticUrl').value = u.href;
   }

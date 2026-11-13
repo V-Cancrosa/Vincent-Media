@@ -12,6 +12,12 @@ Do wpisywania gry ręcznie wystarczą dwa pliki HTML.
 
 `neon` · `glass` · `minimal` · `retro` (pixel art) · `esport` (pasek)
 
+**Motywy gier** (włączają się same, gdy gra ma swój motyw; można to wyłączyć w panelu):
+Elden Ring · Minecraft · Fortnite · League of Legends · VALORANT · Counter-Strike 2 · GTA V · Cyberpunk 2077.
+Mają animowane ozdobniki wystające nad panel i cząsteczki wokół niego. Cała grafika jest narysowana od zera (SVG i canvas), bez logotypów i grafik z gier – licencja CC0. Definicje są w `themes/games.js` i `themes/games.css`.
+
+**Animacje** są zawsze włączone, niezależnie od ustawień systemu. Wyłącza je tylko opcja *ogranicz animacje* w panelu (albo `motion=reduced` w adresie).
+
 Kolor akcentu jest liczony z nazwy gry, więc każda gra ma swój stały kolor. Możesz też ustawić własny kolor w panelu.
 Gry ze Steama dostają okładkę ze sklepu Steam, pozostałe wykryte gry – ikonę z Discorda. Jeśli nie ma żadnego obrazka, nakładka pokazuje monogram, np. **ER** dla Elden Ring.
 
@@ -116,13 +122,15 @@ file:///C:/OBS/obs-game-overlay/overlay.html?panel=0&game=Elden%20Ring&theme=esp
 | `ignore` | lista nazw gier po przecinku | – |
 | `local` | `0` wyłącza lokalny wykrywacz | `1` |
 | `localUrl` | adres wykrywacza | `http://localhost:7777` |
-| `theme` | `neon`, `glass`, `minimal`, `retro`, `esport` | `neon` |
+| `theme` | `neon`, `glass`, `minimal`, `retro`, `esport` albo motyw gry: `g-elden`, `g-mc`, `g-fn`, `g-lol`, `g-val`, `g-cs`, `g-gta`, `g-cp` | `neon` |
 | `pos` | `tl`, `tc`, `tr`, `bl`, `bc`, `br` | `bl` |
 | `label` | napis nad nazwą | `Teraz gram` |
 | `accent`, `accent2` | kolor hex bez `#`, np. `ff3366` | auto |
 | `scale` | np. `1.5` | `1` |
 | `margin` | odstęp od krawędzi w px | `40` |
 | `timer`, `icon`, `showLabel` | `0` wyłącza | `1` |
+| `gameThemes` | `0` = nie zmieniaj motywu na motyw gry | `1` |
+| `motion` | `reduced` = ogranicz animacje | `full` |
 | `panel` | `0` = ignoruj ustawienia z panelu | – |
 
 Z `panel=0` możesz zrobić kilka źródeł z różnymi stałymi ustawieniami. Bez `panel=0` ustawienia z panelu nadpisują te z adresu.

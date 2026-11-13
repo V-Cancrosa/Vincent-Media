@@ -5,7 +5,9 @@
 <title>Game Overlay</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Rajdhani:wght@500;700&family=Inter:wght@400;600;800&family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Rajdhani:wght@500;700&family=Inter:wght@400;600;800&family=Press+Start+2P&family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@1,500&family=Silkscreen:wght@400;700&family=Luckiest+Guy&family=Marcellus+SC&family=Teko:wght@500;600&family=Chakra+Petch:wght@600;700&family=Anton&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="themes/games.css">
+<script src="themes/games.js"></script>
 <style>
   :root {
     --accent: #7c5cff;
@@ -36,21 +38,32 @@
   .pos-bc #stage { align-items: flex-end;   justify-content: center; }
   .pos-br #stage { align-items: flex-end;   justify-content: flex-end; }
 
-  #card {
+  #wrap {
     --dir: -1;
     position: relative;
-    display: flex;
-    align-items: center;
-    gap: 18px;
     transform-origin: left center;
     opacity: 0;
     transform: translateX(calc(var(--dir) * 60px)) scale(calc(var(--scale) * .96));
     transition: opacity .45s ease, transform .55s cubic-bezier(.2,.9,.25,1.2);
     max-width: min(760px, calc(100vw - 2 * var(--margin)));
   }
-  .pos-tr #card, .pos-br #card { --dir: 1; transform-origin: right center; }
-  .pos-tc #card, .pos-bc #card { --dir: 0; transform-origin: center; }
-  #card.show { opacity: 1; transform: translateX(0) scale(var(--scale)); }
+  .pos-tr #wrap, .pos-br #wrap { --dir: 1; transform-origin: right center; }
+  .pos-tc #wrap, .pos-bc #wrap { --dir: 0; transform-origin: center; }
+  #wrap.show { opacity: 1; transform: translateX(0) scale(var(--scale)); }
+  /* zostaw miejsce na emblemat wystający nad kartę */
+  .game-theme.pos-tl #stage, .game-theme.pos-tc #stage, .game-theme.pos-tr #stage { padding-top: 50px; }
+  .game-theme.pos-tl #stage, .game-theme.pos-bl #stage { padding-left: 40px; }
+  .game-theme.pos-tr #stage, .game-theme.pos-br #stage { padding-right: 40px; }
+  #card {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  /* mniej ruchu: tylko płynne pojawienie się */
+  .reduced-motion #wrap, .reduced-motion #wrap.show { transform: scale(var(--scale)); transition: opacity .35s ease; }
+  .reduced-motion #card, .reduced-motion #card *, .reduced-motion #card::before, .reduced-motion #card::after { animation: none !important; }
 
   #icon {
     flex: none;
@@ -191,13 +204,17 @@
 </head>
 <body class="theme-neon pos-bl">
 <div id="stage">
-  <div id="card">
-    <div id="icon"><span id="mono"></span></div>
-    <div id="text">
-      <div id="label"><span class="dot"></span><span id="labelText">Teraz gram</span></div>
-      <div id="name"></div>
-      <div id="meta"><span id="sub"></span><span id="timer"></span></div>
+  <div id="wrap">
+    <canvas id="fx"></canvas>
+    <div id="card">
+      <div id="icon"><span id="mono"></span></div>
+      <div id="text">
+        <div id="label"><span class="dot"></span><span id="labelText">Teraz gram</span></div>
+        <div id="name"></div>
+        <div id="meta"><span id="sub"></span><span id="timer"></span></div>
+      </div>
     </div>
+    <div id="emblem" aria-hidden="true"></div>
   </div>
 </div>
 
@@ -212,7 +229,9 @@
     label: 'Teraz gram', theme: 'neon', position: 'bl',
     accent: '', accent2: '', mode: 'auto', discordId: '', ignore: '',
     timer: true, icon: true, showLabel: true, visible: true, scale: 1, margin: 40,
-    local: true, localUrl: 'http://localhost:7777'
+    local: true, localUrl: 'http://localhost:7777',
+    gameThemes: true,   // motyw gry włącza się sam, gdy gra ma własny motyw
+    motion: 'full'      // 'full' | 'reduced' – celowo NIE czytamy prefers-reduced-motion
   };
 
   // ---- ustawienia z URL (działa bez panelu) ----
@@ -221,9 +240,10 @@
   const fromUrl = {};
   const map = {
     game: 'game', sub: 'subtitle', cover: 'cover', label: 'label', theme: 'theme', pos: 'position',
-    accent: 'accent', accent2: 'accent2', mode: 'mode', discord: 'discordId', ignore: 'ignore', localUrl: 'localUrl'
+    accent: 'accent', accent2: 'accent2', mode: 'mode', discord: 'discordId', ignore: 'ignore', localUrl: 'localUrl', motion: 'motion'
   };
   for (const [k, v] of Object.entries(map)) if (p.has(k)) fromUrl[v] = p.get(k);
+  if (p.has('gameThemes')) fromUrl.gameThemes = bool(p.get('gameThemes'));
   if (p.has('local')) fromUrl.local = bool(p.get('local'));
   if (p.has('timer')) fromUrl.timer = bool(p.get('timer'));
   if (p.has('icon')) fromUrl.icon = bool(p.get('icon'));
@@ -400,12 +420,31 @@
   }
 
   // ---- render ----
-  let shownKey = null, swapTimer = null;
+  let shownKey = null, swapTimer = null, emblemFor = null;
+  const wrap = $('wrap'), emblemEl = $('emblem');
+  const GT = window.OverlayGameThemes || { find: () => null, byId: () => null, FX: { attach() {}, set() {} }, texture: () => '' };
+  GT.FX.attach($('fx'));
+
+  function resolveTheme(g) {
+    // 1) gra ma własny motyw i auto jest włączone  2) wybrany motyw (bazowy albo gry)  3) neon
+    const auto = g && settings.gameThemes ? GT.find(g.name) : null;
+    if (auto) return { cls: 'g-' + auto.id, game: auto };
+    const t = String(settings.theme || 'neon');
+    if (t.startsWith('g-')) { const def = GT.byId(t.slice(2)); return def ? { cls: t, game: def } : { cls: 'neon', game: null }; }
+    return { cls: t, game: null };
+  }
 
   function applyStyle(g) {
-    document.body.className = `theme-${settings.theme} pos-${settings.position}` +
+    const th = resolveTheme(g);
+    const reduced = settings.motion === 'reduced';
+    document.body.className = `theme-${th.cls} pos-${settings.position}` +
+      (th.game ? ' game-theme' : '') + (reduced ? ' reduced-motion' : '') +
       (settings.icon ? '' : ' no-icon') + (settings.showLabel ? '' : ' no-label');
-    const [a1, a2] = autoAccents(g ? g.name : 'game');
+    if (emblemFor !== th.cls) { emblemFor = th.cls; emblemEl.innerHTML = th.game ? th.game.emblem : ''; }
+    GT.FX.set(th.game && !reduced ? th.game.fx : null);
+    document.documentElement.style.setProperty('--tex', th.game ? GT.texture(th.game) : '');
+    let [a1, a2] = autoAccents(g ? g.name : 'game');
+    if (th.game) [a1, a2] = th.game.accent;
     const root = document.documentElement.style;
     root.setProperty('--accent', settings.accent || a1);
     root.setProperty('--accent2', settings.accent2 || a2);
@@ -416,6 +455,7 @@
 
   function fill(g) {
     nameEl.textContent = g.name;
+    nameEl.dataset.text = g.name;
     subEl.textContent = g.sub || '';
     card.classList.toggle('long', g.name.length > 22);
     card.classList.toggle('xlong', g.name.length > 34);
@@ -448,19 +488,20 @@
     tick();
   }
 
+  // styl zmieniamy razem z treścią – stara gra znika w swoim motywie, nowa wjeżdża w swoim
+  const show = g => { applyStyle(g); fill(g); };
   function render() {
     const g = settings.visible ? current() : null;
-    applyStyle(g);
     const key = g ? `${g.name}|${(g.images || [])[0] || ''}` : null;
     clearTimeout(swapTimer);
-    if (!g) { card.classList.remove('show'); shownKey = null; return; }
-    if (key === shownKey) { fill(g); card.classList.add('show'); return; }
-    if (shownKey && card.classList.contains('show')) {
-      card.classList.remove('show');
-      swapTimer = setTimeout(() => { fill(g); shownKey = key; requestAnimationFrame(() => card.classList.add('show')); }, 480);
+    if (!g) { wrap.classList.remove('show'); shownKey = null; return; }
+    if (key === shownKey) { show(g); wrap.classList.add('show'); return; }
+    if (shownKey && wrap.classList.contains('show')) {
+      wrap.classList.remove('show');
+      swapTimer = setTimeout(() => { show(g); shownKey = key; requestAnimationFrame(() => wrap.classList.add('show')); }, 480);
     } else {
-      fill(g); shownKey = key;
-      requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('show')));
+      show(g); shownKey = key;
+      requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('show')));
     }
   }
 

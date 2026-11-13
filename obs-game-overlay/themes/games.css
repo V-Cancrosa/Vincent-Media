@@ -1,0 +1,258 @@
+/* Motywy gier – wspólne elementy. Grafika własna, CC0. */
+/* #wrap = karta + #fx (cząsteczki za kartą) + #emblem (wystaje nad kartę) */
+#fx { position: absolute; left: -90px; top: -70px; width: calc(100% + 180px); height: calc(100% + 140px); pointer-events: none; z-index: 0; display: none; }
+#emblem { position: absolute; pointer-events: none; z-index: 2; display: none; filter: drop-shadow(0 4px 10px rgba(0,0,0,.45)); }
+#emblem svg { display: block; overflow: visible; }
+.game-theme #fx, .game-theme #emblem { display: block; }
+
+/* animacje emblematów (wspólne) */
+.em-spin { transform-origin: 50% 50%; transform-box: fill-box; animation: em-spin 24s linear infinite; }
+.em-spin-fast { transform-origin: 50px 50px; animation: em-spin 3.2s linear infinite; }
+.em-pulse { transform-origin: 50% 50%; transform-box: fill-box; animation: em-pulse 3.6s ease-in-out infinite; }
+.em-float { animation: em-float 4s ease-in-out infinite; }
+.em-wobble { transform-origin: 50% 50%; transform-box: fill-box; animation: em-wobble 2.8s ease-in-out infinite; }
+.em-blip { animation: em-blip 1.6s ease-in-out infinite; }
+@keyframes em-spin { to { transform: rotate(360deg); } }
+@keyframes em-pulse { 50% { transform: scale(1.12); opacity: .7; } }
+@keyframes em-float { 50% { transform: translateY(-4px); } }
+@keyframes em-wobble { 0%, 100% { transform: rotate(-6deg) scale(1); } 50% { transform: rotate(6deg) scale(1.06); } }
+@keyframes em-blip { 50% { opacity: .25; } }
+@keyframes g-shimmer { from { background-position: -150% 0; } to { background-position: 250% 0; } }
+
+/* ============================================================ ELDEN RING */
+.theme-g-elden #card {
+  font-family: 'Cinzel', Georgia, serif; color: #f2e6c4;
+  padding: 18px 40px 18px 18px; gap: 20px;
+  background: radial-gradient(120% 140% at 0% 50%, rgba(46,36,18,.94), rgba(10,8,5,.94) 70%);
+  border: 1px solid rgba(214,178,94,.75);
+  box-shadow: 0 0 0 4px rgba(10,8,5,.9), 0 0 0 5px rgba(214,178,94,.35), 0 0 40px rgba(214,178,94,.25), 0 14px 40px rgba(0,0,0,.6);
+}
+.theme-g-elden #card::before, .theme-g-elden #card::after {
+  content: ""; position: absolute; top: 50%; width: 10px; height: 10px; background: #d6b25e; transform: translateY(-50%) rotate(45deg);
+  box-shadow: 0 0 10px #d6b25e;
+}
+.theme-g-elden #card::before { left: -6px; }
+.theme-g-elden #card::after { right: -6px; }
+.theme-g-elden #icon { border: 1px solid rgba(214,178,94,.8); background: #1a140a; box-shadow: inset 0 0 18px rgba(0,0,0,.8), 0 0 14px rgba(214,178,94,.25); }
+.theme-g-elden #mono { font-family: 'Cinzel', serif; color: #f1cf7a; }
+.theme-g-elden #name {
+  font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding-right: .1em;
+  background: linear-gradient(100deg, #b8913f 0%, #f7e3a3 40%, #fffbe9 50%, #f7e3a3 60%, #b8913f 100%);
+  background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: g-shimmer 5s linear infinite; filter: drop-shadow(0 0 8px rgba(214,178,94,.35));
+}
+.theme-g-elden #label { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: .3em; color: #c9ad6c; }
+.theme-g-elden #label .dot { background: #f1cf7a; box-shadow: 0 0 10px #f1cf7a; border-radius: 0; transform: rotate(45deg); width: 6px; height: 6px; }
+.theme-g-elden #meta { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-size: 18px; color: #d9c79a; }
+.theme-g-elden #emblem { width: 92px; height: 92px; left: -46px; top: -46px; }
+
+/* ============================================================ MINECRAFT */
+.theme-g-mc #card {
+  font-family: 'Silkscreen', 'Press Start 2P', monospace; color: #fff;
+  padding: 18px 30px 16px 16px; gap: 18px;
+  background: var(--tex, #79553a); background-size: 64px 64px; image-rendering: pixelated;
+  border: 4px solid #1d1d1d; border-top: 12px solid #5d9b3a;
+  box-shadow: inset 0 4px 0 #7cc24a, inset 0 -4px 0 rgba(0,0,0,.35), 6px 6px 0 rgba(0,0,0,.45);
+}
+.theme-g-mc #card::before { /* poszarpana krawędź trawy */
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 8px;
+  background: linear-gradient(90deg, #5d9b3a 0 12px, transparent 12px 20px, #4f8a31 20px 28px, transparent 28px 36px) repeat-x;
+  background-size: 36px 8px; opacity: .9;
+}
+.theme-g-mc #icon {
+  width: 80px; height: 80px; background: #8b8b8b;
+  border: 4px solid; border-color: #373737 #ffffff #ffffff #373737; image-rendering: pixelated;
+}
+.theme-g-mc #mono { font-family: 'Silkscreen', monospace; color: #3f3f3f; text-shadow: 2px 2px 0 #c6c6c6; font-size: 26px; }
+.theme-g-mc #name { font-size: 32px; font-weight: 400; text-shadow: 4px 4px 0 #3f3f3f; letter-spacing: .02em; }
+.theme-g-mc #card.long #name { font-size: 25px; }
+.theme-g-mc #card.xlong #name { font-size: 19px; }
+/* napis jak żółty „splash” w menu – wystaje nad panel */
+.theme-g-mc #label {
+  position: absolute; right: -24px; top: -26px; z-index: 4; color: #ffff55; font-size: 15px; letter-spacing: 0;
+  text-shadow: 3px 3px 0 #3f3f15; text-transform: none; transform: rotate(-10deg); animation: g-splash .9s ease-in-out infinite alternate;
+}
+.theme-g-mc #label .dot { display: none; }
+@keyframes g-splash { to { transform: rotate(-10deg) scale(1.1); } }
+.theme-g-mc #meta { font-size: 13px; color: #e0e0e0; text-shadow: 2px 2px 0 #3f3f3f; }
+.theme-g-mc #emblem { width: 70px; height: 70px; left: -36px; top: -44px; animation: g-bob 1.6s steps(4) infinite alternate; }
+@keyframes g-bob { to { transform: translateY(-6px); } }
+
+/* ============================================================ FORTNITE */
+.theme-g-fn #card {
+  font-family: 'Luckiest Guy', 'Bangers', Impact, sans-serif; color: #fff;
+  padding: 16px 48px 14px 22px; gap: 18px; overflow: hidden;
+  background: linear-gradient(110deg, #1b4dff 0%, #5a2cf0 55%, #a228e8 100%);
+  clip-path: polygon(3% 0, 100% 0, 97% 100%, 0 100%);
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,.25);
+}
+.theme-g-fn #card::before { /* obracające się promienie */
+  content: ""; position: absolute; left: 50%; top: 50%; width: 1400px; height: 1400px; margin: -700px 0 0 -700px; z-index: -1;
+  background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.14) 0 6deg, transparent 6deg 18deg);
+  animation: em-spin 30s linear infinite;
+}
+.theme-g-fn #card::after { /* połysk */
+  content: ""; position: absolute; inset: 0 0 55% 0; z-index: -1; background: linear-gradient(rgba(255,255,255,.22), transparent);
+}
+.theme-g-fn #icon { border-radius: 6px; transform: skewX(-6deg); background: linear-gradient(160deg, #c35dff, #4b1fa8); border: 3px solid #fff; box-shadow: 0 0 18px rgba(195,93,255,.8); }
+.theme-g-fn #mono { font-family: 'Luckiest Guy', sans-serif; color: #fff; font-size: 34px; font-weight: 400; }
+.theme-g-fn #name {
+  font-size: 44px; line-height: 1; padding-top: 4px; transform: skewX(-6deg); letter-spacing: .02em;
+  -webkit-text-stroke: 2px #101646; paint-order: stroke fill; text-shadow: 0 4px 0 #101646;
+}
+.theme-g-fn #card.long #name { font-size: 34px; }
+.theme-g-fn #card.xlong #name { font-size: 26px; }
+.theme-g-fn #label { font-family: 'Luckiest Guy', sans-serif; color: #ffe14d; font-size: 16px; letter-spacing: .08em; text-shadow: 0 2px 0 #101646; }
+.theme-g-fn #label .dot { background: #ffe14d; box-shadow: 0 0 10px #ffe14d; }
+.theme-g-fn #meta { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 15px; }
+.theme-g-fn #timer { background: #101646; padding: 1px 10px; border-radius: 4px; transform: skewX(-6deg); }
+.theme-g-fn #emblem { width: 84px; height: 84px; right: -34px; top: -40px; }
+
+/* ============================================================ LEAGUE OF LEGENDS */
+.theme-g-lol #card {
+  font-family: 'Marcellus SC', 'Cinzel', Georgia, serif; color: #f0e6d2;
+  padding: 16px 40px 16px 16px; gap: 18px;
+  background: linear-gradient(180deg, rgba(1,10,19,.95), rgba(9,20,40,.95));
+  border: 2px solid transparent;
+  border-image: linear-gradient(180deg, #f0e6d2, #c8aa6e 40%, #785a28) 1;
+  box-shadow: 0 0 30px rgba(10,200,185,.18), 0 12px 40px rgba(0,0,0,.6);
+}
+.theme-g-lol #card::before { content: ""; position: absolute; inset: 5px; border: 1px solid rgba(200,170,110,.25); pointer-events: none; }
+.theme-g-lol #card::after { /* zdobienie u dołu */
+  content: ""; position: absolute; left: 50%; bottom: -9px; width: 16px; height: 16px; margin-left: -8px; transform: rotate(45deg);
+  background: #0a1428; border: 2px solid #c8aa6e; box-shadow: 0 0 10px rgba(10,200,185,.6);
+}
+.theme-g-lol #icon {
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: linear-gradient(180deg, #c8aa6e, #785a28); padding: 3px;
+}
+.theme-g-lol #icon img { clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.theme-g-lol #icon.wide { clip-path: polygon(8% 0, 92% 0, 100% 50%, 92% 100%, 8% 100%, 0 50%); }
+.theme-g-lol #icon.wide img { clip-path: none; }
+.theme-g-lol #mono { font-family: 'Marcellus SC', serif; color: #0ac8b9; text-shadow: 0 0 10px #0ac8b9; }
+.theme-g-lol #name {
+  font-size: 36px; letter-spacing: .04em;
+  background: linear-gradient(180deg, #f0e6d2 30%, #c8aa6e); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.theme-g-lol #label { color: #0ac8b9; font-size: 12px; letter-spacing: .3em; text-shadow: 0 0 8px rgba(10,200,185,.6); }
+.theme-g-lol #label .dot { background: #0ac8b9; box-shadow: 0 0 10px #0ac8b9; }
+.theme-g-lol #meta { color: #a09b8c; font-family: 'Inter', sans-serif; font-size: 14px; }
+.theme-g-lol #timer { color: #c8aa6e; }
+.theme-g-lol #emblem { width: 56px; height: 70px; left: -26px; top: -48px; }
+
+/* ============================================================ VALORANT */
+.theme-g-val #card {
+  font-family: 'Teko', 'Oswald', Impact, sans-serif; color: #ece8e1;
+  padding: 10px 46px 8px 0; gap: 18px; overflow: hidden;
+  background: rgba(15,25,35,.95);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%);
+}
+.theme-g-val #card::before { /* czerwone cięcie przy wejściu */
+  content: ""; position: absolute; inset: 0; z-index: 5; background: #ff4655; transform-origin: left;
+  transform: scaleX(0); pointer-events: none;
+}
+.theme-g-val #wrap.show #card::before { animation: g-wipe .7s cubic-bezier(.7,0,.2,1) .15s both; }
+@keyframes g-wipe { 0% { transform: scaleX(0); transform-origin: left; } 49% { transform: scaleX(1); transform-origin: left; } 51% { transform: scaleX(1); transform-origin: right; } 100% { transform: scaleX(0); transform-origin: right; } }
+.theme-g-val #card::after { /* linia skanu */
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: linear-gradient(90deg, transparent, #ff4655, transparent);
+  animation: g-scan 4.5s ease-in-out infinite;
+}
+@keyframes g-scan { 0%, 60% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+.theme-g-val #icon { width: 96px; height: 96px; background: #ff4655; }
+.theme-g-val #mono { font-family: 'Teko', sans-serif; font-weight: 600; color: #0f1923; font-size: 48px; }
+.theme-g-val #text { padding-left: 2px; }
+.theme-g-val #name { font-size: 52px; line-height: .9; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; padding-top: 4px; }
+.theme-g-val #card.long #name { font-size: 40px; }
+.theme-g-val #card.xlong #name { font-size: 32px; }
+.theme-g-val #label { font-size: 17px; letter-spacing: .2em; color: #ff4655; font-weight: 500; }
+.theme-g-val #label .dot { border-radius: 0; background: #ff4655; box-shadow: none; width: 10px; height: 3px; }
+.theme-g-val #meta { font-size: 19px; color: #8b978f; letter-spacing: .06em; }
+.theme-g-val #timer { color: #ece8e1; }
+.theme-g-val #emblem { width: 66px; height: 52px; right: -20px; top: -38px; }
+
+/* ============================================================ COUNTER-STRIKE 2 */
+.theme-g-cs #card {
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif; color: #e6e9ec;
+  padding: 16px 36px 16px 16px; gap: 18px;
+  background: linear-gradient(90deg, rgba(17,22,28,.94), rgba(27,33,41,.86));
+  border-left: 4px solid #f5a623;
+}
+.theme-g-cs #card::before, .theme-g-cs #card::after { /* narożniki HUD */
+  content: ""; position: absolute; width: 18px; height: 18px; border: 2px solid #f5a623; pointer-events: none;
+}
+.theme-g-cs #card::before { right: -6px; top: -6px; border-left: 0; border-bottom: 0; }
+.theme-g-cs #card::after { right: -6px; bottom: -6px; border-left: 0; border-top: 0; }
+.theme-g-cs #icon { border: 1px solid rgba(245,166,35,.6); background: #0d1116; }
+.theme-g-cs #mono { font-family: 'Chakra Petch', sans-serif; color: #f5a623; }
+.theme-g-cs #name { font-size: 38px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.theme-g-cs #label { color: #f5a623; font-size: 12px; letter-spacing: .25em; font-weight: 600; }
+.theme-g-cs #label .dot { background: #ff5148; box-shadow: 0 0 8px #ff5148; }
+.theme-g-cs #meta { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; color: #9aa5b1; }
+.theme-g-cs #timer { color: #f5a623; }
+.theme-g-cs #emblem { width: 72px; height: 72px; left: -34px; top: -40px; }
+
+/* ============================================================ GTA V */
+.theme-g-gta #card {
+  font-family: 'Anton', Impact, sans-serif; color: #fff;
+  padding: 16px 40px 14px 16px; gap: 18px; overflow: hidden;
+  background: linear-gradient(180deg, #2b1a4a 0%, #a2386a 45%, #ff8a4c 78%, #ffc56b 100%);
+  border-radius: 4px; box-shadow: 0 12px 40px rgba(0,0,0,.55);
+}
+.theme-g-gta #card::before { /* słońce */
+  content: ""; position: absolute; right: 60px; bottom: -40px; width: 120px; height: 120px; border-radius: 50%; z-index: -1;
+  background: radial-gradient(circle, #fff3b0 0 40%, rgba(255,200,110,0) 70%);
+  animation: em-pulse 6s ease-in-out infinite;
+}
+.theme-g-gta #card::after { /* palmy i miasto – własny rysunek */
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 60%; z-index: -1; opacity: .9;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 80' preserveAspectRatio='none'%3E%3Cpath d='M0 80 V58 H18 V44 H30 V52 H44 V30 H58 V50 H70 V40 H86 V56 H100 V36 H112 V20 H124 V48 H140 V56 H400 V80 Z' fill='%23180c2a'/%3E%3Cg fill='%23180c2a'%3E%3Cpath d='M300 80 Q304 50 312 22 L314 22 Q308 52 306 80 Z'/%3E%3Cpath d='M313 22 q-22 -6 -34 8 q16 -6 34 -6 z M313 22 q20 -10 34 2 q-18 -4 -34 0 z M313 22 q-8 -16 -26 -14 q16 4 26 16 z M313 22 q10 -18 28 -14 q-18 2 -28 16 z'/%3E%3Cpath d='M360 80 Q362 60 368 42 L370 42 Q366 60 365 80 Z'/%3E%3Cpath d='M369 42 q-16 -4 -24 6 q12 -4 24 -4 z M369 42 q14 -8 24 2 q-12 -4 -24 0 z M369 42 q-6 -12 -18 -10 q12 2 18 12 z'/%3E%3C/g%3E%3C/svg%3E") bottom / 100% 100% no-repeat;
+}
+.theme-g-gta #icon { border: 3px solid #fff; border-radius: 4px; background: #111; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
+.theme-g-gta #mono { font-family: 'Anton', sans-serif; color: #fff; font-weight: 400; }
+.theme-g-gta #name { font-size: 42px; font-weight: 400; letter-spacing: .02em; text-shadow: 3px 3px 0 #000, 0 0 2px #000; }
+.theme-g-gta #card.long #name { font-size: 32px; }
+.theme-g-gta #label { font-family: 'Anton', sans-serif; font-size: 14px; letter-spacing: .12em; color: #72d572; text-shadow: 2px 2px 0 #000; }
+.theme-g-gta #label .dot { background: #72d572; box-shadow: none; }
+.theme-g-gta #meta { font-family: 'Inter', sans-serif; font-weight: 800; color: #fff; text-shadow: 1px 1px 0 #000; }
+.theme-g-gta #emblem { width: 150px; height: 30px; right: 10px; top: -22px; }
+.em-star { animation: g-star 3s ease-in-out infinite; opacity: .3; }
+.em-star-0 { animation-delay: 0s; } .em-star-1 { animation-delay: .25s; } .em-star-2 { animation-delay: .5s; }
+.em-star-3 { animation-delay: .75s; } .em-star-4 { animation-delay: 1s; }
+@keyframes g-star { 0%, 100% { opacity: .3; } 30%, 70% { opacity: 1; } }
+
+/* ============================================================ CYBERPUNK 2077 */
+.theme-g-cp #card {
+  font-family: 'Chakra Petch', 'Orbitron', sans-serif; color: #0b0f14;
+  padding: 14px 44px 14px 14px; gap: 18px;
+  background: #fcee0a;
+  clip-path: polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 22px 100%, 0 calc(100% - 22px));
+  box-shadow: inset 0 -5px 0 #00f0ff;
+}
+.theme-g-cp #card::before { /* paski ostrzegawcze */
+  content: ""; position: absolute; right: 30px; bottom: 9px; width: 70px; height: 8px;
+  background: repeating-linear-gradient(-45deg, #0b0f14 0 6px, transparent 6px 12px);
+}
+.theme-g-cp #icon { background: #0b0f14; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%); }
+.theme-g-cp #mono { font-family: 'Chakra Petch', sans-serif; color: #00f0ff; }
+.theme-g-cp #name { font-size: 40px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; position: relative; }
+.theme-g-cp #name::before, .theme-g-cp #name::after {
+  content: attr(data-text); position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+}
+.theme-g-cp #name::before { color: #ff003c; animation: g-glitch-a 4s steps(1) infinite; clip-path: inset(0 0 60% 0); }
+.theme-g-cp #name::after { color: #00b8c4; animation: g-glitch-b 4s steps(1) infinite; clip-path: inset(55% 0 0 0); }
+/* krótkie przesunięcie raz na 4 s, bez błysków jasności */
+@keyframes g-glitch-a { 0%, 88%, 100% { transform: none; opacity: 0; } 89% { transform: translate(-3px, -1px); opacity: .9; } 92% { transform: translate(2px, 0); opacity: .9; } 95% { opacity: 0; } }
+@keyframes g-glitch-b { 0%, 89%, 100% { transform: none; opacity: 0; } 90% { transform: translate(3px, 1px); opacity: .9; } 94% { transform: translate(-2px, 0); opacity: .9; } 96% { opacity: 0; } }
+.theme-g-cp #label { color: #0b0f14; font-weight: 700; font-size: 12px; letter-spacing: .25em; }
+.theme-g-cp #label .dot { background: #ff003c; box-shadow: none; border-radius: 0; }
+.theme-g-cp #meta { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; color: #3a3a12; }
+.theme-g-cp #timer { background: #0b0f14; color: #00f0ff; padding: 0 8px; }
+.theme-g-cp #emblem { width: 70px; height: 70px; left: -34px; top: -40px; }
+
+
+/* ============================================================ mniej ruchu */
+.reduced-motion #card, .reduced-motion #card *, .reduced-motion #card::before, .reduced-motion #card::after,
+.reduced-motion #emblem, .reduced-motion #emblem *,
+.reduced-motion #name::before, .reduced-motion #name::after { animation: none !important; }
+.reduced-motion .em-star { opacity: 1; }
+.reduced-motion .theme-g-cp #name::before, .reduced-motion .theme-g-cp #name::after { display: none; }
