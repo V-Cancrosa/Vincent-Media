@@ -28,7 +28,37 @@ Portrety w `themes/fursona/` należą do autorów ilustracji (patrz `themes/furs
 Kolor akcentu jest liczony z nazwy gry, więc każda gra ma swój stały kolor. Możesz też ustawić własny kolor w panelu.
 Gry ze Steama dostają okładkę ze sklepu Steam, pozostałe wykryte gry – ikonę z Discorda. Jeśli nie ma żadnego obrazka, nakładka pokazuje monogram, np. **ER** dla Elden Ring.
 
-## Instalacja w OBS
+## Instalacja automatyczna (zalecana)
+
+1. Pobierz **[Zainstaluj-Vincent-Media.bat](https://github.com/V-Cancrosa/Vincent-Media/raw/main/Zainstaluj-Vincent-Media.bat)** i kliknij go dwa razy.
+   Jeśli Windows pokaże „System Windows ochronił ten komputer”: *Więcej informacji → Uruchom mimo to*.
+   Zamiast pliku możesz wkleić w PowerShellu: `irm https://raw.githubusercontent.com/V-Cancrosa/Vincent-Media/main/install.ps1 | iex`
+2. Instalator:
+   - pobiera pliki do `%LOCALAPPDATA%\Vincent-Media\obs-game-overlay` (nie potrzebuje uprawnień administratora),
+   - pyta, czy skonfigurować OBS (OBS musi być wtedy zamknięty). Jeśli tak, dodaje:
+     - źródła przeglądarki `VM · Teraz gram`, `VM · Alerty`, `VM · Ekran start/przerwa/koniec`,
+     - scenę **`VM · Nakładki`** (karta z grą + alerty) i – jeśli chcesz – kładzie ją na wierzch Twoich istniejących scen,
+     - sceny `VM · Zaraz zaczynamy`, `VM · Przerwa`, `VM · Koniec`,
+     - dok **Vincent-Media** z panelem,
+     - i wszystko dopasowuje do rozdzielczości Twojego płótna OBS,
+   - przed zmianami robi kopię zapasową plików OBS (`*.vm-backup-data-godzina` obok oryginału),
+   - tworzy skróty w menu Start (*Vincent-Media → Wykrywacz gier / Aktualizuj / Folder*) i opcjonalnie autostart wykrywacza.
+3. Uruchom OBS.
+
+Instalator można uruchomić ponownie, np. po zmianie kolekcji scen. Nie tworzy wtedy duplikatów, tylko aktualizuje adresy.
+
+### Aktualizacje
+
+- Gdy działa wykrywacz, co 6 godzin sprawdza na GitHubie, czy jest nowa wersja. Jeśli jest, podmienia zmienione pliki i uruchamia się od nowa. Nakładki i panel w OBS same się odświeżają.
+- Twoje dane zostają: logowanie Twitcha, baza gier i `my-games.txt`. Ustawienia panelu są w OBS, więc aktualizacja ich nie rusza.
+- W panelu, w sekcji **Wersja**, widać zainstalowaną wersję, jest przycisk *Sprawdź aktualizacje* / *Aktualizuj teraz* i można wyłączyć automatyczne aktualizacje.
+- Ręcznie: *Menu Start → Vincent-Media → Aktualizuj* (albo `update.bat` w folderze nakładek).
+
+### Odinstalowanie
+
+Usuń sceny `VM · …` i dok w OBS, folder `%LOCALAPPDATA%\Vincent-Media`, folder *Vincent-Media* w menu Start i skrót *Vincent-Media wykrywacz* w autostarcie (`Win+R` → `shell:startup`).
+
+## Instalacja ręczna w OBS
 
 1. Pobierz folder `obs-game-overlay` na dysk, np. do `C:\OBS\obs-game-overlay\`.
 2. **Nakładka:** *Źródła → + → Przeglądarka*

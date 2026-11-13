@@ -62,6 +62,7 @@
   details summary { cursor: pointer; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
   details[open] summary { margin-bottom: 8px; }
 </style>
+<script src="version.js"></script>
 <script src="themes/games.js"></script>
 <script src="themes/fursona.js"></script>
 </head>
@@ -256,6 +257,16 @@
   <section>
     <h2>Podgląd (1920×1080)</h2>
     <div class="preview" id="preview"><iframe id="frame" title="podgląd"></iframe><iframe id="frameAlerts" title="podgląd alertów"></iframe></div>
+  </section>
+
+  <section>
+    <h2>Wersja <span id="upPill" class="pill off"></span></h2>
+    <div class="status" id="upStatus"></div>
+    <div class="row">
+      <button class="auto" id="upCheck">Sprawdź aktualizacje</button>
+      <button class="primary auto" id="upRun" hidden>Aktualizuj teraz</button>
+    </div>
+    <label class="check"><input id="upAuto" type="checkbox"> aktualizuj automatycznie (co 6 godzin, gdy działa wykrywacz)</label>
   </section>
 
   <section>
@@ -607,6 +618,36 @@
     try { const r = await fetch((s.localUrl || DEFAULTS.localUrl).replace(/\/+$/, '') + '/twitch/logout', { cache: 'no-store' }); twState = await r.json(); twRender(); } catch {}
   };
 
+  // --- wersja i aktualizacje (przez wykrywacz) ---
+  const hub = path => fetch((s.localUrl || DEFAULTS.localUrl).replace(/\/+$/, '') + path, { cache: 'no-store' }).then(r => r.json());
+  let upState = null;
+  function upRender(msg) {
+    const st = upState;
+    $('upRun').hidden = !(st && st.newer);
+    $('upAuto').disabled = !st;
+    if (st) $('upAuto').checked = !!st.auto;
+    const mine = window.VM_VERSION || '?';
+    if (!st) { pill('upPill', false, '', 'v' + mine); setStatus($('upStatus'), [msg || 'Wersja ' + mine + '. Aktualizacje działają, gdy uruchomiony jest wykrywacz.']); return; }
+    if (st.newer) pill('upPill', false, '', 'NOWA: v' + st.latest); else pill('upPill', true, 'v' + st.installed);
+    const parts = ['Zainstalowana: ', { b: 'v' + st.installed }];
+    if (st.latest) parts.push(st.newer ? ` · dostępna: v${st.latest}` : ' · to najnowsza wersja');
+    if (st.lastCheck) parts.push(` · sprawdzono o ${st.lastCheck}`);
+    if (st.notes && st.newer) parts.push(` · ${st.notes}`);
+    if (st.error) parts.push(` · błąd: ${st.error}`);
+    if (msg) parts.push(' · ' + msg);
+    setStatus($('upStatus'), parts);
+  }
+  async function upPoll() {
+    try { upState = await hub('/update/status'); if (window.vmCheckVersion) window.vmCheckVersion(upState.installed); } catch { upState = null; }
+    upRender(); setTimeout(upPoll, 60000);
+  }
+  $('upCheck').onclick = async () => { upRender('sprawdzam…'); try { upState = await hub('/update/check'); upRender(); } catch { upState = null; upRender('Uruchom wykrywacz, żeby sprawdzić aktualizacje.'); } };
+  $('upRun').onclick = async () => {
+    upRender('pobieram…');
+    try { const j = await hub('/update/run'); upState = j.status; upRender(j.restarting ? 'zainstalowano – wykrywacz się restartuje, panel odświeży się sam' : ''); } catch { upRender('nie udało się połączyć z wykrywaczem'); }
+  };
+  $('upAuto').onchange = async () => { try { upState = await hub('/update/auto?on=' + ($('upAuto').checked ? 1 : 0)); upRender(); } catch {} };
+
   // --- podgląd ---
   const frame = $('frame');
   frame.src = overlayUrl().href;
@@ -622,6 +663,7 @@
   syncAlerts();
   syncScenes();
   twPoll();
+  upPoll();
 })();
 </script>
 </body>

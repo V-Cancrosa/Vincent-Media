@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Rajdhani:wght@500;700&family=Inter:wght@400;600;800&family=Press+Start+2P&family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@1,500&family=Silkscreen:wght@400;700&family=Luckiest+Guy&family=Marcellus+SC&family=Teko:wght@500;600&family=Chakra+Petch:wght@600;700&family=Anton&family=JetBrains+Mono:wght@500&family=Archivo:wdth,wght@125,700;125,800&family=Space+Mono:wght@400;700&family=Baloo+2:wght@800&family=Caveat:wght@600;700&family=Nunito:wght@700;800&family=Fraunces:ital,wght@0,600;1,500&family=Saira+Stencil+One&family=IBM+Plex+Mono:wght@500&family=Space+Grotesk:wght@700&family=Barlow:wght@400;600&display=swap">
 <link rel="stylesheet" href="themes/games.css">
+<script src="version.js"></script>
 <script src="themes/games.js"></script>
 <link rel="stylesheet" href="themes/fursona.css">
 <script src="themes/fursona.js"></script>
@@ -236,6 +237,7 @@
       const r = await fetch(base + '/events' + (last != null ? '?after=' + last : ''), { cache: 'no-store', signal: ctl.signal });
       clearTimeout(t);
       const j = await r.json();
+      if (window.vmCheckVersion) window.vmCheckVersion(j.appVersion);
       if (last != null && j.last < last) last = null;          // wykrywacz uruchomiony od nowa
       for (const ev of j.events || []) push(ev);
       last = j.last;

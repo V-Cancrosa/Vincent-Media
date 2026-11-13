@@ -13,8 +13,11 @@
 param(
     [int]$Port = 7777,
     [double]$Interval = 3,
-    [int]$DbMaxAgeDays = 7
+    [int]$DbMaxAgeDays = 7,
+    [switch]$Hidden,          # uruchomiony bez okna (start-detector-hidden.bat)
+    [int]$WaitStart = 0       # po aktualizacji: poczekaj, aż poprzednia wersja zwolni port
 )
+if ($WaitStart -gt 0) { Start-Sleep -Seconds $WaitStart }
 
 $ErrorActionPreference = 'Stop'
 $Host.UI.RawUI.WindowTitle = 'Vincent-Media: wykrywacz gier'
@@ -649,6 +652,73 @@ function New-TestEvent([string]$type) {
     return $null
 }
 
+# ---------------------------------------------------------------- aktualizacje
+$AppDir = Split-Path $Root
+$UpdateScript = Join-Path $AppDir 'update.ps1'
+$UpdateCfg = Join-Path $DataDir 'update.json'
+$script:CanUpdate = Test-Path $UpdateScript
+if ($script:CanUpdate) { . $UpdateScript -Library }
+function Get-AppVersion {
+    try { return [string]((Get-Content (Join-Path $AppDir 'version.json') -Raw -Encoding UTF8) | ConvertFrom-Json).version } catch { return '0.0.0' }
+}
+$script:AppVersion = Get-AppVersion
+$script:UP = [pscustomobject]@{
+    auto = $true; latest = ''; notes = ''; error = ''; lastCheck = $null; busy = $false
+    nextCheck = (Get-Date).AddSeconds(60); nextLocal = (Get-Date).AddSeconds(30)
+}
+if (Test-Path $UpdateCfg) { try { $script:UP.auto = [bool]((Get-Content $UpdateCfg -Raw) | ConvertFrom-Json).auto } catch {} }
+$script:RestartPending = $false
+
+function Get-UpdateStatus {
+    return [pscustomobject]@{
+        installed = $script:AppVersion; latest = $script:UP.latest; notes = $script:UP.notes; auto = $script:UP.auto
+        error = $script:UP.error; canUpdate = $script:CanUpdate
+        lastCheck = $(if ($script:UP.lastCheck) { $script:UP.lastCheck.ToString('HH:mm') } else { '' })
+        newer = [bool]($script:UP.latest -and (Test-VMNewerSafe $script:UP.latest $script:AppVersion))
+    }
+}
+function Test-VMNewerSafe([string]$a, [string]$b) { try { return ([version]$a) -gt ([version]$b) } catch { return $false } }
+
+function Invoke-UpdateCheck([switch]$Install) {
+    if (-not $script:CanUpdate) { $script:UP.error = 'brak update.ps1 obok wykrywacza'; return }
+    $script:UP.lastCheck = Get-Date; $script:UP.error = ''
+    try {
+        $r = Get-VMRemoteInfo
+        $script:UP.latest = [string]$r.version; $script:UP.notes = [string]$r.notes
+        if ($Install -and (Test-VMNewerSafe $script:UP.latest $script:AppVersion)) {
+            Log "Aktualizacja: pobieram wersję $($script:UP.latest)…" 'Cyan'
+            $n = Install-VMFiles $AppDir
+            Log "Aktualizacja: podmienione pliki: $n" 'Green'
+            $script:RestartPending = $true
+        }
+    } catch {
+        $script:UP.error = $_.Exception.Message
+        Log "Aktualizacja: nie udało się ($($script:UP.error))" 'DarkYellow'
+    }
+}
+
+function Update-Updater {
+    $now = Get-Date
+    # ktoś uruchomił update.bat ręcznie – nowa wersja na dysku, uruchom ją
+    if ($now -ge $script:UP.nextLocal) {
+        $script:UP.nextLocal = $now.AddSeconds(30)
+        if ((Get-AppVersion) -ne $script:AppVersion) { $script:RestartPending = $true }
+    }
+    if ($script:UP.auto -and $now -ge $script:UP.nextCheck) {
+        $script:UP.nextCheck = $now.AddHours(6)
+        Invoke-UpdateCheck -Install
+    }
+}
+
+function Restart-Detector {
+    Log "Uruchamiam wykrywacz w nowej wersji ($(Get-AppVersion))…" 'Cyan'
+    $a = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $PSCommandPath + '"'), '-WaitStart', '2')
+    if ($Hidden) { Start-Process powershell.exe -ArgumentList ($a + '-Hidden') -WindowStyle Hidden }
+    else { Start-Process powershell.exe -ArgumentList $a }
+    try { $listener.Stop(); $listener.Close() } catch {}
+    exit 0
+}
+
 # ---------------------------------------------------------------- HTTP
 function Send-Json($ctx, $obj, [int]$code = 200) {
     $res = $ctx.Response
@@ -690,7 +760,20 @@ function Invoke-Request($ctx) {
         $q = Get-Query $req
         switch ($req.Url.AbsolutePath.TrimEnd('/')) {
             '/game' {
-                Send-Json $ctx ([pscustomobject]@{ online = $true; version = 2; game = $script:State.game; recent = @($script:State.recent); twitch = (Get-TwitchStatus) })
+                Send-Json $ctx ([pscustomobject]@{ online = $true; version = 2; appVersion = $script:AppVersion; game = $script:State.game; recent = @($script:State.recent); twitch = (Get-TwitchStatus) })
+            }
+            '/update/status' { Send-Json $ctx (Get-UpdateStatus) }
+            '/update/check' { Invoke-UpdateCheck; Send-Json $ctx (Get-UpdateStatus) }
+            '/update/run' {
+                Invoke-UpdateCheck -Install
+                $st = Get-UpdateStatus
+                Send-Json $ctx ([pscustomobject]@{ ok = -not $st.error; restarting = $script:RestartPending; status = $st })
+            }
+            '/update/auto' {
+                $script:UP.auto = ([string]$q['on']) -ne '0'
+                [IO.File]::WriteAllText($UpdateCfg, (@{ auto = $script:UP.auto } | ConvertTo-Json), $Utf8NoBom)
+                Log ("Automatyczne aktualizacje: " + $(if ($script:UP.auto) { 'włączone' } else { 'wyłączone' }))
+                Send-Json $ctx (Get-UpdateStatus)
             }
             '/events' {
                 # bez „after” zwracamy tylko numer ostatniego zdarzenia – nowa nakładka nie odtwarza starych alertów
@@ -698,7 +781,7 @@ function Invoke-Request($ctx) {
                 if ($q.ContainsKey('after')) { [void][int]::TryParse([string]$q['after'], [ref]$after) }
                 $list = @()
                 if ($after -ge 0) { $list = @($script:Events | Where-Object { $_.id -gt $after }) }
-                Send-Json $ctx ([pscustomobject]@{ last = $script:EventSeq; events = $list })
+                Send-Json $ctx ([pscustomobject]@{ last = $script:EventSeq; events = $list; appVersion = $script:AppVersion })
             }
             '/test' {
                 $ev = New-TestEvent ([string]$q['type'])
@@ -747,7 +830,7 @@ function Invoke-Request($ctx) {
 
 # ---------------------------------------------------------------- start
 Write-Host ''
-Write-Host '  Vincent-Media – wykrywacz gier' -ForegroundColor Magenta
+Write-Host "  Vincent-Media – wykrywacz gier  v$($script:AppVersion)" -ForegroundColor Magenta
 Write-Host "  Nakładka czyta: http://localhost:$Port/game   (Ctrl+C = koniec)" -ForegroundColor DarkGray
 Write-Host ''
 
@@ -775,9 +858,12 @@ try {
             try { Update-State } catch { Log "Błąd skanu: $($_.Exception.Message)" 'Red' }
             $next = [DateTime]::Now.AddSeconds($Interval)
         }
+        try { Update-Updater } catch { Log "Aktualizacja: $($_.Exception.Message)" 'DarkYellow' }
+        if ($script:RestartPending) { Restart-Detector }
         try { Update-Twitch } catch { Log "Twitch: $($_.Exception.Message)" 'Red'; Stop-TwitchSocket; $script:TW.reconnectAt = (Get-Date).AddSeconds(20) }
         if ($task.Wait(200)) {
             Invoke-Request $task.Result
+            if ($script:RestartPending) { Restart-Detector }
             $task = $listener.GetContextAsync()
         }
     }
