@@ -171,7 +171,8 @@
     spawn(initial) {
       const c = this.cfg, w = this.w, h = this.h;
       const p = {
-        x: this.rnd(0, w), y: initial ? this.rnd(0, h) : (c.dir === 'up' ? h + 10 : c.dir === 'down' ? -10 : this.rnd(0, h)),
+        x: c.dir === 'left' && !initial ? w + 10 : this.rnd(0, w),
+        y: initial ? this.rnd(0, h) : (c.dir === 'up' ? h + 10 : c.dir === 'down' ? -10 : this.rnd(0, h)),
         s: this.rnd(c.size[0], c.size[1]), v: this.rnd(c.speed[0], c.speed[1]),
         col: c.colors[(Math.random() * c.colors.length) | 0],
         ph: Math.random() * Math.PI * 2, drift: this.rnd(-1, 1), age: 0, life: this.rnd(3, 7), rot: Math.random() * Math.PI
@@ -190,13 +191,15 @@
         p.age += dt; p.ph += dt * 2;
         if (c.dir === 'up') { p.y -= p.v * dt; p.x += Math.sin(p.ph) * 8 * dt + p.drift * 4 * dt; }
         else if (c.dir === 'down') { p.y += p.v * dt; p.x += Math.sin(p.ph) * 6 * dt; }
+        else if (c.dir === 'left') { p.x -= p.v * dt; p.y += (Math.sin(p.ph) * 10 + 6) * dt; } // śnieg niesiony bokiem
         else { p.x += Math.cos(p.ph * .5) * p.v * dt * p.drift; p.y += Math.sin(p.ph * .7) * p.v * dt * .6; }
         // zanikanie przy krawędziach i z wiekiem (dla „float”)
         let a = 1;
         if (c.dir === 'float') a = Math.min(1, p.age / 1, Math.max(0, (p.life - p.age) / 1));
+        else if (c.dir === 'left') a = Math.min(1, Math.max(0, p.x / 60), Math.max(0, (this.w - p.x) / 40 + .2));
         else a = Math.min(1, Math.max(0, p.y / (this.h * .35)), Math.max(0, (this.h - p.y) / 30 + .3));
         if (c.twinkle) a *= .55 + .45 * Math.sin(p.ph * 2.2);
-        const dead = c.dir === 'float' ? p.age > p.life : (p.y < -12 || p.y > this.h + 12);
+        const dead = c.dir === 'float' ? p.age > p.life : c.dir === 'left' ? (p.x < -12 || p.y > this.h + 12) : (p.y < -12 || p.y > this.h + 12);
         if (dead) { this.parts[i] = this.spawn(false); continue; }
         g.globalAlpha = Math.max(0, a);
         g.fillStyle = p.col;
@@ -238,5 +241,6 @@
     return THEMES.find(t => t.match.some(m => (m.length <= 4 ? new RegExp(`(^|[^a-z0-9])${m}([^a-z0-9]|$)`).test(n) : n.includes(m)))) || null;
   }
 
+  THEMES.forEach(t => { t.group = t.group || 'game'; });
   window.OverlayGameThemes = { list: THEMES, find, byId: id => THEMES.find(t => t.id === id) || null, FX, texture };
 })();

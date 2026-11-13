@@ -5,9 +5,11 @@
 <title>Game Overlay</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Rajdhani:wght@500;700&family=Inter:wght@400;600;800&family=Press+Start+2P&family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@1,500&family=Silkscreen:wght@400;700&family=Luckiest+Guy&family=Marcellus+SC&family=Teko:wght@500;600&family=Chakra+Petch:wght@600;700&family=Anton&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Rajdhani:wght@500;700&family=Inter:wght@400;600;800&family=Press+Start+2P&family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@1,500&family=Silkscreen:wght@400;700&family=Luckiest+Guy&family=Marcellus+SC&family=Teko:wght@500;600&family=Chakra+Petch:wght@600;700&family=Anton&family=JetBrains+Mono:wght@500&family=Archivo:wdth,wght@125,700;125,800&family=Space+Mono:wght@400;700&family=Baloo+2:wght@800&family=Caveat:wght@600;700&family=Nunito:wght@700;800&family=Fraunces:ital,wght@0,600;1,500&family=Saira+Stencil+One&family=IBM+Plex+Mono:wght@500&family=Space+Grotesk:wght@700&family=Barlow:wght@400;600&display=swap">
 <link rel="stylesheet" href="themes/games.css">
 <script src="themes/games.js"></script>
+<link rel="stylesheet" href="themes/fursona.css">
+<script src="themes/fursona.js"></script>
 <style>
   :root {
     --accent: #7c5cff;
@@ -206,6 +208,7 @@
 <div id="stage">
   <div id="wrap">
     <canvas id="fx"></canvas>
+    <div id="backdrop" aria-hidden="true"></div>
     <div id="card">
       <div id="icon"><span id="mono"></span></div>
       <div id="text">
@@ -421,7 +424,7 @@
 
   // ---- render ----
   let shownKey = null, swapTimer = null, emblemFor = null;
-  const wrap = $('wrap'), emblemEl = $('emblem');
+  const wrap = $('wrap'), emblemEl = $('emblem'), backEl = $('backdrop');
   const GT = window.OverlayGameThemes || { find: () => null, byId: () => null, FX: { attach() {}, set() {} }, texture: () => '' };
   GT.FX.attach($('fx'));
 
@@ -438,9 +441,13 @@
     const th = resolveTheme(g);
     const reduced = settings.motion === 'reduced';
     document.body.className = `theme-${th.cls} pos-${settings.position}` +
-      (th.game ? ' game-theme' : '') + (reduced ? ' reduced-motion' : '') +
+      (th.game ? ' game-theme' : '') + (th.game && th.game.group === 'fursona' ? ' f-theme' : '') + (reduced ? ' reduced-motion' : '') +
       (settings.icon ? '' : ' no-icon') + (settings.showLabel ? '' : ' no-label');
-    if (emblemFor !== th.cls) { emblemFor = th.cls; emblemEl.innerHTML = th.game ? th.game.emblem : ''; }
+    if (emblemFor !== th.cls) {
+      emblemFor = th.cls;
+      emblemEl.innerHTML = th.game ? th.game.emblem || '' : '';
+      backEl.innerHTML = th.game ? th.game.back || '' : '';
+    }
     GT.FX.set(th.game && !reduced ? th.game.fx : null);
     document.documentElement.style.setProperty('--tex', th.game ? GT.texture(th.game) : '');
     let [a1, a2] = autoAccents(g ? g.name : 'game');
@@ -450,7 +457,8 @@
     root.setProperty('--accent2', settings.accent2 || a2);
     root.setProperty('--scale', settings.scale);
     root.setProperty('--margin', settings.margin + 'px');
-    labelText.textContent = settings.label;
+    // motyw postaci ma własny napis, dopóki w panelu zostaje domyślny „Teraz gram”
+    labelText.textContent = th.game && th.game.label && settings.label === DEFAULTS.label ? th.game.label : settings.label;
   }
 
   function fill(g) {

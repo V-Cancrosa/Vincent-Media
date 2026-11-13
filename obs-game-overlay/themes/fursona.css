@@ -1,0 +1,186 @@
+/* Motywy postaci. Kolory i czcionki ze stron postaci (V-Cancrosa/V-Cancrosa). */
+#backdrop { position: absolute; inset: 0; z-index: 0; pointer-events: none; display: none; }
+.game-theme #backdrop { display: block; }
+/* w motywach postaci #emblem to warstwa na całą kartę, a elementy są w niej rozmieszczone osobno */
+.f-theme #emblem { left: 0; top: 0; width: 100%; height: 100%; filter: none; }
+.f-theme #emblem > * { position: absolute; }
+.f-theme.pos-tl #stage, .f-theme.pos-tc #stage, .f-theme.pos-tr #stage { padding-top: 120px; }
+
+/* ============================================================ VINCE – Shadow & Structure */
+.theme-g-vince #card {
+  font-family: 'Inter', system-ui, sans-serif; color: #d6d1c6;
+  padding: 18px 40px 26px 150px; gap: 18px; min-height: 120px;
+  background-color: rgba(10,10,11,.94);
+  background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+  background-size: 16px 16px; background-position: -1px -1px;
+  border: 1px solid rgba(227,164,63,.22); border-left: 2px solid #e3a43f;
+  box-shadow: 0 16px 40px rgba(0,0,0,.6);
+}
+.theme-g-vince #icon { width: 64px; height: 64px; border: 1px solid rgba(227,164,63,.5); background: #141518; }
+.theme-g-vince #mono { font-family: 'Archivo', sans-serif; font-stretch: 125%; color: #e3a43f; font-size: 22px; }
+.theme-g-vince #name { font-family: 'Archivo', sans-serif; font-stretch: 125%; font-weight: 800; font-size: 32px; letter-spacing: .1em; text-transform: uppercase; color: #ece3cf; }
+.theme-g-vince #card.long #name { font-size: 25px; }
+.theme-g-vince #card.xlong #name { font-size: 19px; }
+.theme-g-vince #label { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .3em; color: #e3a43f; }
+.theme-g-vince #label .dot { border-radius: 0; width: 14px; height: 2px; background: #e3a43f; box-shadow: none; animation: none; }
+.theme-g-vince #meta { font-family: 'Space Mono', monospace; font-size: 13px; color: #8a857c; }
+.theme-g-vince #timer { color: #e3a43f; }
+.fv-frame { left: 14px; top: -34px; width: 118px; height: 118px; background: #0a0a0b; padding: 5px; border: 1px solid #e3a43f; box-shadow: 0 10px 26px rgba(0,0,0,.6); }
+.fv-frame img { width: 100%; height: 100%; object-fit: cover; display: block; filter: saturate(.92); }
+.fv-c { position: absolute; width: 12px; height: 12px; border: 2px solid #e3a43f; }
+.fv-c1 { left: -7px; top: -7px; border-right: 0; border-bottom: 0; }
+.fv-c2 { right: -7px; top: -7px; border-left: 0; border-bottom: 0; }
+.fv-c3 { left: -7px; bottom: -7px; border-right: 0; border-top: 0; }
+.fv-c4 { right: -7px; bottom: -7px; border-left: 0; border-top: 0; }
+.fv-dim { position: absolute; left: 0; right: 0; bottom: -22px; text-align: center; font: 400 10px 'Space Mono', monospace; letter-spacing: .12em; color: #8a857c; white-space: nowrap; }
+/* Dual Path: dwie linie, które się rozchodzą i nigdy nie zamykają */
+.fv-dual { left: 150px; right: 20px; bottom: 2px; height: 22px; width: calc(100% - 170px); overflow: visible; }
+.fv-path { fill: none; stroke: #e3a43f; stroke-width: 2; stroke-dasharray: 520; stroke-dashoffset: 520; animation: fv-draw 2.4s cubic-bezier(.6,0,.2,1) .4s forwards; }
+.fv-path2 { stroke: #c8892b; opacity: .7; animation-delay: .7s; }
+@keyframes fv-draw { to { stroke-dashoffset: 0; } }
+.reduced-motion .fv-path { stroke-dashoffset: 0; }
+
+/* ============================================================ CHIP – Baked in */
+.theme-g-chip #card {
+  font-family: 'Nunito', system-ui, sans-serif; color: #3b2416;
+  padding: 16px 150px 16px 16px; gap: 16px; min-height: 112px;
+  background-color: #fffaf0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='130' height='130'%3E%3Cg fill='%236f4a2a' fill-opacity='.14'%3E%3Cpath d='M10 15q4-6 7 0q-4 3-7 0z'/%3E%3Cpath d='M75 9q3-5 5 0q-3 2-5 0z'/%3E%3Cpath d='M105 45q4-7 8 0q-4 3-8 0z'/%3E%3Cpath d='M35 60q3-5 6 0q-3 2-6 0z'/%3E%3Cpath d='M60 100q5-7 9 0q-5 3-9 0z'/%3E%3Cpath d='M15 110q3-4 5 0q-3 2-5 0z'/%3E%3C/g%3E%3C/svg%3E");
+  border: 3px solid #4a2a17; border-radius: 18px;
+  box-shadow: 5px 5px 0 #4a2a17;
+  transform: rotate(-1deg);
+}
+.theme-g-chip #icon { border-radius: 14px; border: 3px solid #4a2a17; background: #2f6bd8; box-shadow: 2px 2px 0 #4a2a17; }
+.theme-g-chip #mono { font-family: 'Baloo 2', sans-serif; color: #fff; }
+.theme-g-chip #name { font-family: 'Baloo 2', 'Nunito', sans-serif; font-weight: 800; font-size: 38px; line-height: 1; color: #4a2a17; }
+.theme-g-chip #label { font-family: 'Caveat', cursive; font-weight: 700; font-size: 22px; letter-spacing: 0; text-transform: none; color: #2f6bd8; }
+.theme-g-chip #label .dot { display: none; }
+.theme-g-chip #meta { font-weight: 700; color: #8a6a4e; font-size: 15px; }
+.theme-g-chip #timer { background: #2f6bd8; color: #fff; padding: 0 9px; border-radius: 999px; border: 2px solid #4a2a17; }
+.fc-polaroid {
+  right: 16px; top: -40px; width: 122px; padding: 7px 7px 26px; background: #fff; box-shadow: 0 8px 18px rgba(74,42,23,.4);
+  transform: rotate(7deg); animation: fc-sway 5s ease-in-out infinite;
+}
+.fc-polaroid img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+.fc-polaroid span { position: absolute; left: 4px; right: 4px; bottom: 5px; font: 700 11px/1 'Caveat', cursive; color: #6f4a2a; text-align: center; white-space: nowrap; overflow: hidden; }
+.fc-tape { position: absolute; left: 50%; top: -10px; width: 56px; height: 18px; margin-left: -28px; background: rgba(63,162,255,.55); transform: rotate(-4deg); }
+@keyframes fc-sway { 50% { transform: rotate(4deg) translateY(2px); } }
+.fc-bell { left: -18px; bottom: -40px; width: 46px; height: 54px; transform-origin: 50% 0; animation: fc-ring 3.2s ease-in-out infinite; }
+.fc-bell svg { width: 100%; height: 100%; }
+@keyframes fc-ring { 0%, 70%, 100% { transform: rotate(0); } 76% { transform: rotate(14deg); } 82% { transform: rotate(-11deg); } 88% { transform: rotate(7deg); } 94% { transform: rotate(-3deg); } }
+
+/* ============================================================ RAGNAR – Light & Volume */
+.theme-g-ragnar #card {
+  font-family: 'Inter', system-ui, sans-serif; color: #efe6f7;
+  padding: 16px 120px 16px 16px; gap: 16px; min-height: 110px;
+  background: linear-gradient(110deg, #0c0614, #1a0f2b);
+  border: 2px solid #ff2e88; border-radius: 6px;
+  box-shadow: 0 0 22px rgba(255,46,136,.55), inset 0 0 22px rgba(255,46,136,.18);
+  animation: fr-beat .46875s ease-out infinite; /* 128 BPM */
+}
+@keyframes fr-beat { 0% { box-shadow: 0 0 30px rgba(255,46,136,.75), inset 0 0 26px rgba(255,46,136,.25); } 100% { box-shadow: 0 0 16px rgba(255,46,136,.4), inset 0 0 16px rgba(255,46,136,.12); } }
+.theme-g-ragnar #icon { border-radius: 4px; border: 2px solid #26c6e0; background: #160b24; box-shadow: 0 0 12px rgba(38,198,224,.5); }
+.theme-g-ragnar #mono { font-family: 'Anton', sans-serif; font-weight: 400; color: #b4e03c; }
+.theme-g-ragnar #name { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: 44px; line-height: 1.02; text-transform: uppercase; color: #fff; text-shadow: 0 0 18px rgba(255,46,136,.7); }
+.theme-g-ragnar #card.long #name { font-size: 34px; }
+.theme-g-ragnar #label { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .26em; color: #26c6e0; }
+.theme-g-ragnar #label .dot { background: #b4e03c; box-shadow: 0 0 10px #b4e03c; animation: fr-dot .46875s steps(1) infinite; }
+@keyframes fr-dot { 50% { opacity: .35; } }
+.theme-g-ragnar #meta { font-family: 'Space Mono', monospace; font-size: 13px; color: #a397b8; }
+.theme-g-ragnar #timer { color: #b4e03c; }
+.fr-peek { position: absolute; right: 6px; bottom: calc(100% - 26px); height: 150px; width: auto; filter: drop-shadow(0 0 14px rgba(255,46,136,.45)); animation: fr-nod .9375s ease-in-out infinite; }
+@keyframes fr-nod { 50% { transform: translateY(3px); } }
+.fr-eq { right: 26px; bottom: 16px; height: 44px; display: flex; align-items: flex-end; gap: 3px; }
+.fr-eq i { display: block; width: 5px; height: 100%; background: linear-gradient(#ff2e88, #9b5cff 55%, #26c6e0); transform-origin: bottom; animation: fr-eq .9375s ease-in-out infinite; animation-delay: calc(var(--i) * -.137s); border-radius: 1px; }
+@keyframes fr-eq { 0%, 100% { transform: scaleY(.25); } 25% { transform: scaleY(1); } 50% { transform: scaleY(.55); } 75% { transform: scaleY(.85); } }
+.reduced-motion .fr-eq i { transform: scaleY(.6); }
+
+/* ============================================================ TORO – latarnia pod mostem */
+.theme-g-toro #card {
+  font-family: 'Nunito', system-ui, sans-serif; color: #ebe4d6;
+  padding: 18px 60px 26px 16px; gap: 16px; min-height: 116px;
+  background: radial-gradient(70% 140% at 100% 0%, rgba(255,190,90,.22), transparent 60%), linear-gradient(180deg, #0d1220, #141b2e);
+  border: 1px solid rgba(255,200,100,.35); border-radius: 10px;
+  box-shadow: 0 0 30px rgba(255,200,100,.18), 0 14px 40px rgba(0,0,0,.55);
+  overflow: hidden;
+}
+.theme-g-toro #card::after { /* cegły filaru mostu */
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 10px;
+  background:
+    linear-gradient(90deg, #6a3021 2px, transparent 2px) 0 0 / 28px 5px,
+    linear-gradient(90deg, #6a3021 2px, transparent 2px) 14px 5px / 28px 5px,
+    linear-gradient(#6a3021 1px, transparent 1px) 0 0 / 100% 5px,
+    #cf4a30;
+  background-repeat: repeat-x; opacity: .85;
+}
+.theme-g-toro #icon { border-radius: 8px; border: 2px solid #ffc864; background: #1a130d; box-shadow: 0 0 14px rgba(255,200,100,.35); }
+.theme-g-toro #mono { font-family: 'Fraunces', serif; color: #ffc864; }
+.theme-g-toro #name { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 38px; color: #f6ead0; text-shadow: 0 0 16px rgba(255,200,100,.35); }
+.theme-g-toro #label { font-weight: 800; font-size: 12px; letter-spacing: .24em; color: #e6b23a; }
+.theme-g-toro #label .dot { background: #ffc864; box-shadow: 0 0 12px #ffc864; }
+.theme-g-toro #meta { font-family: 'Fraunces', serif; font-style: italic; font-weight: 500; color: #9aa3b5; font-size: 16px; }
+.theme-g-toro #timer { font-style: normal; color: #ffc864; }
+.ft-peek { position: absolute; left: 12px; bottom: calc(100% - 24px); height: 140px; width: auto; filter: drop-shadow(0 0 12px rgba(255,200,100,.35)); animation: ft-breathe 4s ease-in-out infinite; }
+@keyframes ft-breathe { 50% { transform: translateY(-3px); } }
+.ft-lantern { right: -26px; top: -58px; width: 64px; height: 100px; overflow: visible; filter: drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
+.ft-flame { animation: ft-flicker 2.6s ease-in-out infinite; }
+.ft-glow { transform-origin: 35px 44px; animation: ft-halo 2.6s ease-in-out infinite; }
+@keyframes ft-flicker { 0%, 100% { fill: #ffd77a; } 30% { fill: #ffc864; } 55% { fill: #ffe39a; } 80% { fill: #ffcf70; } }
+@keyframes ft-halo { 0%, 100% { opacity: .9; transform: scale(1); } 40% { opacity: .7; transform: scale(.94); } 70% { opacity: 1; transform: scale(1.05); } }
+
+/* ============================================================ MYR-35 – Breach Division */
+.theme-g-myr #card {
+  font-family: 'Barlow', system-ui, sans-serif; color: #d6d1c6;
+  padding: 16px 40px 16px 70px; gap: 16px;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.14) 0 1px, transparent 1px 3px), linear-gradient(180deg, #23262a, #1c1f23);
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+  overflow: hidden;
+}
+.theme-g-myr #card::before { /* ukośny czarny pas z białą obwódką, jak na barkach */
+  content: ""; position: absolute; left: -20px; top: -40px; width: 52px; height: 220px; transform: rotate(28deg);
+  background: #0b0b0c; border-left: 4px solid #ede6d6; border-right: 4px solid #ede6d6;
+}
+.theme-g-myr #card::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: #b5652b; }
+.theme-g-myr #icon { border: 2px solid #6e767d; background: #0b0b0c; }
+.theme-g-myr #mono { font-family: 'Saira Stencil One', sans-serif; font-weight: 400; color: #d9823f; }
+.theme-g-myr #name { font-family: 'Saira Stencil One', 'Barlow Condensed', Impact, sans-serif; font-weight: 400; font-size: 38px; text-transform: uppercase; letter-spacing: .04em; color: #ede6d6; }
+.theme-g-myr #label { font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 11px; letter-spacing: .2em; color: #d9823f; }
+.theme-g-myr #label .dot { border-radius: 0; width: 22px; height: 3px; background: #b5652b; box-shadow: none; animation: none; }
+.theme-g-myr #meta { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8b9198; }
+.theme-g-myr #timer { color: #ede6d6; background: #0b0b0c; padding: 0 8px; }
+.fm-visor { left: -26px; top: -58px; width: 112px; height: 84px; filter: drop-shadow(0 6px 10px rgba(0,0,0,.55)); animation: em-float 5s ease-in-out infinite; }
+.fm-eyes { animation: fm-blink 4.5s infinite; transform-origin: 60px 43px; transform-box: view-box; }
+@keyframes fm-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+.fm-led { animation: em-blip 1.8s ease-in-out infinite; }
+
+/* ============================================================ ZARIN – Kerra-4 */
+.theme-g-zarin #card {
+  font-family: 'Inter', system-ui, sans-serif; color: #dfe5e8;
+  padding: 16px 44px 16px 16px; gap: 16px;
+  background: linear-gradient(180deg, rgba(46,50,54,.96), rgba(27,31,36,.96));
+  border-radius: 6px; border: 1px solid rgba(207,232,242,.14);
+  box-shadow: 0 14px 40px rgba(0,0,0,.55);
+}
+.theme-g-zarin #card::before { /* opalizujący pasek */
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; border-radius: 6px 6px 0 0;
+  background: linear-gradient(90deg, #2fd46b, #1fc7b5, #c9a6e0, #2fd46b); background-size: 300% 100%; animation: fz-iri 6s linear infinite;
+}
+@keyframes fz-iri { to { background-position: 300% 0; } }
+.theme-g-zarin #icon { border-radius: 4px; border: 2px solid #5a6068; background: #14171b; }
+.theme-g-zarin #mono { font-family: 'Space Grotesk', sans-serif; color: #2fd46b; }
+.theme-g-zarin #name {
+  font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 38px; letter-spacing: -.02em;
+  background: linear-gradient(90deg, #f2f6f8 0%, #f2f6f8 40%, #2fd46b 50%, #1fc7b5 55%, #f2f6f8 65%, #f2f6f8 100%);
+  background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: fz-iri 7s linear infinite;
+}
+.theme-g-zarin #label { font-family: 'Caveat', cursive; font-weight: 700; font-size: 21px; letter-spacing: 0; text-transform: none; color: #2fd46b; }
+.theme-g-zarin #label .dot { display: none; }
+.theme-g-zarin #meta { font-family: 'Space Mono', monospace; font-size: 13px; color: #9aa4ad; }
+.theme-g-zarin #timer { color: #1fc7b5; }
+.fz-plate { right: 22px; top: -54px; width: 150px; height: 66px; transform: rotate(3deg); filter: drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
+.fz-plate svg, .fz-fan svg { width: 100%; height: 100%; display: block; }
+.fz-fan { right: -18px; top: -30px; width: 40px; height: 40px; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
+.fz-blades { transform-origin: 25px 25px; animation: em-spin 1.4s linear infinite; }
+
+/* mniej ruchu */
+.reduced-motion #backdrop *, .reduced-motion #emblem * { animation: none !important; }

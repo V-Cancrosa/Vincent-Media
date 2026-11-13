@@ -16,6 +16,11 @@ Do wpisywania gry ręcznie wystarczą dwa pliki HTML.
 Elden Ring · Minecraft · Fortnite · League of Legends · VALORANT · Counter-Strike 2 · GTA V · Cyberpunk 2077.
 Mają animowane ozdobniki wystające nad panel i cząsteczki wokół niego. Cała grafika jest narysowana od zera (SVG i canvas), bez logotypów i grafik z gier – licencja CC0. Definicje są w `themes/games.js` i `themes/games.css`.
 
+**Motywy postaci:** Vince · Chip · Ragnar · Toro · Myr-35 · Zarin (w panelu w grupie *Postacie*, w adresie `theme=g-vince` itd.).
+Kolory, czcionki i motywy pochodzą ze stron postaci. Każda postać ma swój napis nad nazwą gry, dopóki w panelu zostaje domyślny „Teraz gram”.
+Gdy gra ma własny motyw i opcja *gra ma własny motyw → włącz go sam* jest zaznaczona, motyw gry wygrywa z motywem postaci.
+Portrety w `themes/fursona/` należą do autorów ilustracji (patrz `themes/fursona/CREDITS.md`) i nie są na licencji CC0.
+
 **Animacje** są zawsze włączone, niezależnie od ustawień systemu. Wyłącza je tylko opcja *ogranicz animacje* w panelu (albo `motion=reduced` w adresie).
 
 Kolor akcentu jest liczony z nazwy gry, więc każda gra ma swój stały kolor. Możesz też ustawić własny kolor w panelu.
