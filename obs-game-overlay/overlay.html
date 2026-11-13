@@ -103,6 +103,8 @@
   }
 
   // ---- Discord (Lanyard) ----
+  // Discord działa tylko, gdy jest włączony w panelu (Ustawienia → Funkcje) albo podany w adresie (?discord=…)
+  const dcId = () => (settings.features && settings.features.discord === false && !fromUrl.discordId) ? '' : settings.discordId;
   let discordGame = null, discordStatus = '';
   let ws = null, hb = null, wsId = '', retry = null;
 
@@ -206,7 +208,7 @@
       localStorage.setItem(DETECTED_KEY, JSON.stringify({
         at: Date.now(),
         local: { enabled: !!settings.local, online: localOnline, game: localGame, recent: localRecent, url: settings.localUrl },
-        discord: { enabled: !!settings.discordId, status: discordStatus, game: discordGame }
+        discord: { enabled: !!dcId(), status: discordStatus, game: discordGame }
       }));
     } catch {}
   }
@@ -341,11 +343,11 @@
 
   // ---- synchronizacja z panelem ----
   function reload() {
-    const prevId = settings.discordId, prevMode = settings.mode;
+    const prevId = dcId(), prevMode = settings.mode;
     const prevLocal = settings.local + settings.localUrl;
     settings = normalize({ ...DEFAULTS, ...fromUrl, ...(readStore() || {}) });
     if (settings.local + settings.localUrl !== prevLocal || settings.mode !== prevMode) pollLocal();
-    if (settings.discordId !== prevId || (settings.mode === 'manual') !== (prevMode === 'manual')) connect(settings.discordId);
+    if (dcId() !== prevId || (settings.mode === 'manual') !== (prevMode === 'manual')) connect(dcId());
     render();
   }
   window.addEventListener('storage', e => { if (e.key === KEY) reload(); if (e.key === SIM_KEY) pollLocal(); });
@@ -354,7 +356,7 @@
     bc.onmessage = e => (e.data === 'sim' ? pollLocal() : reload());
   } catch {}
 
-  connect(settings.discordId);
+  connect(dcId());
   pollLocal();
   render();
 })();
