@@ -217,6 +217,21 @@ Follow, sub, resub, gifty, bitsy, raid i nagrody za punkty kanału – bez Strea
 `file:///C:/OBS/obs-game-overlay/alerts.html`, 1920×1080. Ustaw źródło **nad** resztą sceny.
 Żeby dźwięk alertów szedł przez mikser OBS, zaznacz w źródle *Kontroluj dźwięk przez OBS*.
 
+**Poziomy reakcji (1–5):** im większe zdarzenie, tym większy, dłuższy i głośniejszy alert. Od poziomu 3 – efekt na cały ekran, gwiazdki i inne teksty postaci (Myr częściej mówi wtedy „ja”), od 4 – drżenie ekranu i bas, 5 – fanfara i „LEGENDARNE”. Avatar w układach i postać na ekranach podskakują tym mocniej, im wyższy poziom.
+
+| Zdarzenie | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|
+| Bitsy | 100+ | 500+ | 1000+ | 5000+ |
+| Gift (liczba subów) | 2+ | 5+ | 10+ | 50+ |
+| Resub (miesiące) | 3+ | 6+ | 12+ | 24+ |
+| Raid (widzowie) | 5+ | 20+ | 50+ | 200+ |
+| Nagroda (koszt w punktach) | 500+ | 2000+ | 10 000+ | 50 000+ |
+
+Sub to poziom 2, Tier 2 i Tier 3 podnoszą poziom o 1 i 2. Progi zmienisz w `themes/tiers.js`.
+
+**Szybkie powiadomienia** (⚡ na podglądzie w panelu albo w sekcji Alerty): alert pojawia się od razu, nowy przerywa bieżący, a całość trwa 2,5 s – do szybkiego sprawdzania wyglądu. Wyłączone = normalna kolejka.
+Przy przyciskach testowych wybierasz **wielkość zdarzenia** (1–5), żeby sprawdzić każdy poziom.
+
 W panelu, w sekcji **Alerty**, są przyciski testowe i ustawienia: które alerty pokazywać, głośność, czas, pozycja i wielkość.
 Przyciski testowe działają także bez połączenia z Twitchem.
 

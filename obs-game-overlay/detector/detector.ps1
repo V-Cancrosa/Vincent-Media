@@ -741,9 +741,21 @@ function Get-TwitchStatus {
 }
 
 # zdarzenia testowe (przyciski w panelu)
-function New-TestEvent([string]$type) {
+function New-TestEvent([string]$type, [int]$tier = 0) {
     $names = @('LunaFox', 'Kuba_Gra', 'PixelWilk', 'Nocny_Smok', 'herbatka99', 'MrówkaPancerna')
     $u = $names[(Get-Random -Maximum $names.Count)]
+    # poziom 1–5: wartości jak w themes/tiers.js (SAMPLE), żeby sprawdzić każdą wielkość reakcji
+    if ($tier -ge 1 -and $tier -le 5) {
+        $i = $tier - 1
+        switch ($type) {
+            'cheer'  { return [pscustomobject]@{ type = 'cheer'; user = $u; amount = @(50, 300, 800, 2500, 10000)[$i]; message = 'Test poziomu'; test = $true } }
+            'gift'   { return [pscustomobject]@{ type = 'gift'; user = $u; tier = 'Tier 1'; count = @(1, 3, 7, 20, 100)[$i]; test = $true } }
+            'resub'  { return [pscustomobject]@{ type = 'resub'; user = $u; tier = 'Tier 1'; months = @(2, 4, 9, 18, 36)[$i]; message = 'Test poziomu'; test = $true } }
+            'raid'   { return [pscustomobject]@{ type = 'raid'; user = $u; viewers = @(3, 12, 35, 120, 500)[$i]; test = $true } }
+            'redeem' { return [pscustomobject]@{ type = 'redeem'; user = $u; reward = 'Nawodnij się'; cost = @(100, 1000, 5000, 20000, 100000)[$i]; message = ''; test = $true } }
+            'sub'    { return [pscustomobject]@{ type = 'sub'; user = $u; tier = $(if ($tier -ge 4) { 'Tier 3' } elseif ($tier -eq 3) { 'Tier 2' } else { 'Tier 1' }); test = $true } }
+        }
+    }
     switch ($type) {
         'chat' {
             $msgs = @('cześć wszystkim!', 'ale akcja', 'GG', 'jak długo już grasz?', '!styl pixel', 'to było mocne', 'pozdro z Krakowa', '!kolor turkus')
@@ -995,7 +1007,8 @@ function Invoke-Request($ctx) {
                 Send-Json $ctx ([pscustomobject]@{ last = $script:EventSeq; events = $list; appVersion = $script:AppVersion })
             }
             '/test' {
-                $ev = New-TestEvent ([string]$q['type'])
+                $tl = 0; [void][int]::TryParse([string]$q['tier'], [ref]$tl)
+                $ev = New-TestEvent ([string]$q['type']) $tl
                 if (-not $ev) { Send-Json $ctx @{ ok = $false; error = 'nieznany typ' } 400; return }
                 Add-Event $ev
                 Send-Json $ctx @{ ok = $true }

@@ -54,6 +54,9 @@
   .talking #hero.full img { animation: hero-talk .3s ease-in-out infinite alternate; filter: drop-shadow(0 0 60px var(--accent)) brightness(1.08); }
   .talking #hero.photo, .talking #hero.sheet, .talking #hero.emblem { filter: drop-shadow(0 0 40px var(--accent)); }
   @keyframes hero-talk { to { transform: translateY(-14px) scale(1.02); } }
+  .hype #hero.full img { animation: hero-hype calc(.25s + var(--hype, 1) * .05s) cubic-bezier(.3,1.6,.5,1) calc(2 + var(--hype, 1)) alternate !important; filter: drop-shadow(0 0 calc(30px + var(--hype, 1) * 14px) var(--accent)) brightness(1.15); }
+  .hype #hero.photo, .hype #hero.sheet, .hype #hero.emblem { filter: drop-shadow(0 0 calc(var(--hype, 1) * 16px) var(--accent)); }
+  @keyframes hero-hype { to { transform: translateY(calc(var(--hype, 1) * -12px)) scale(calc(1 + var(--hype, 1) * .02)); } }
   #hero.photo { right: 7vw; top: 50%; width: 22vw; transform: translateY(-55%) rotate(5deg); animation: hero-sway 7s ease-in-out infinite; }
   #hero.photo img { width: 100%; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
   @keyframes hero-sway { 50% { transform: translateY(-53%) rotate(2deg); } }
@@ -227,7 +230,7 @@
     const reduced = settings.motion === 'reduced';
     const hero = settings.sceneHero && def && kind !== 'end' ? (HERO[def.id] || { cls: 'emblem' }) : null;
     document.body.className = `theme-${cls} pos-mc k-${kind}` + (GT.bodyClasses ? GT.bodyClasses(fusion) : '') +
-      (reduced ? ' reduced-motion' : '') + (hero ? ' has-hero' : '') + (window.__vmTalking ? ' talking' : '');
+      (reduced ? ' reduced-motion' : '') + (hero ? ' has-hero' : '') + (window.__vmTalking ? ' talking' : '') + (window.__vmHype ? ' hype' : '');
     const key = cls + '|' + (game ? game.id : '') + '|' + (hero ? 1 : 0);
     if (themeFor !== key) {
       themeFor = key;
@@ -367,10 +370,11 @@
     const S = session || {};
     const sec = (title, list, fmt) => { if (!list || !list.length) return; add('h3', title); for (const it of list) add('p', it.user, fmt ? fmt(it) : ''); };
     sec('Nowi obserwujący', S.follow);
-    sec('Subskrypcje', S.sub, it => it.n > 1 ? `${it.n}. miesiąc` : '');
-    sec('Prezenty', S.gift, it => `${it.n}× sub`);
-    sec('Bitsy', S.cheer, it => `${it.n}`);
-    sec('Raidy', S.raid, it => `${it.n} osób`.replace(/^1 osób$/, '1 osoba').replace(/^([234]) osób$/, '$1 osoby'));
+    const desc = l => (l || []).slice().sort((a, b) => (b.n || 0) - (a.n || 0));   // największe wsparcie na górze
+    sec('Prezenty', desc(S.gift), it => `${it.n}× sub`);
+    sec('Bitsy', desc(S.cheer), it => `${it.n}`);
+    sec('Subskrypcje', desc(S.sub), it => it.n > 1 ? `${it.n}. miesiąc` : '');
+    sec('Raidy', desc(S.raid), it => `${it.n} osób`.replace(/^1 osób$/, '1 osoba').replace(/^([234]) osób$/, '$1 osoby'));
     sec('Nagrody za punkty', S.redeem);
     sec('Byli z nami na czacie', (S.chatters || []).slice().sort((a, b) => b.n - a.n));
     if (c.children.length < 3) add('p', 'Każdemu, kto dziś zajrzał – dziękuję!');
@@ -425,7 +429,9 @@
   // mówię / nie mówię: mikrofon z OBS albo kanał testowy (strona demo)
   let talking = false;
   const setTalking = on => { talking = !!on; window.__vmTalking = talking; document.body.classList.toggle('talking', talking); };
-  try { const bc2 = new BroadcastChannel('obsGameOverlay'); bc2.addEventListener('message', e => { if (e.data && e.data.type === 'voice') setTalking(e.data.talking); }); } catch {}
+  let hypeTimer = null;
+  const hype = t => { if (!t || t < 2) return; document.documentElement.style.setProperty('--hype', t); window.__vmHype = true; document.body.classList.add('hype'); clearTimeout(hypeTimer); hypeTimer = setTimeout(() => { window.__vmHype = false; document.body.classList.remove('hype'); }, 1200 + t * 500); };
+  try { const bc2 = new BroadcastChannel('obsGameOverlay'); bc2.addEventListener('message', e => { if (e.data && e.data.type === 'voice') setTalking(e.data.talking); if (e.data && e.data.type === 'react') hype(e.data.tier); }); } catch {}
   (async () => {
     if (settings.obsVoice === false || !window.OverlayOBS) return;
     const cfg = await window.OverlayOBS.config(settings);

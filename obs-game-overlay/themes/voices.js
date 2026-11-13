@@ -185,6 +185,68 @@
     }
   };
 
+
+  // ---------------------------------------------------------------- teksty na duże zdarzenia (poziom 3, 4, 5)
+  // Poziom 4 bez własnych tekstów bierze z 3, poziom 5 – z 4. Myr ma jedną pulę „big” z rejestrami.
+  const TIERS = {
+    _: {
+      sub: { 3: [['Sub Tier 2!', '{user}, wielkie dzięki!']], 4: [['SUB TIER 3!', '{user} – to ogromne wsparcie!']] },
+      cheer: { 3: [['Deszcz bitsów!', '{user} sypie bitsami: {n}!']], 4: [['BITSOWA BURZA', 'Bitsy: {n}! {user}, to jest coś!']], 5: [['LEGENDARNE BITSY', 'Bitsy: {n}. {user}… brak słów. DZIĘKUJĘ!']] },
+      gift: { 3: [['Lawina subów!', '{user} rozdaje: {n}× sub!']], 4: [['DESZCZ PREZENTÓW', '{n}× sub od {user} – czat oszalał!']], 5: [['PREZENTOWA APOKALIPSA', '{user}: {n}× sub. To przejdzie do historii kanału.']] },
+      resub: { 3: [['Pół roku i więcej!', 'Miesiąc {n}. – dzięki, że jesteś, {user}!']], 4: [['PONAD ROK RAZEM', 'Miesiąc {n}. – {user}, jesteś częścią tego miejsca.']], 5: [['WETERAN KANAŁU', 'Miesiąc {n}. – {user}, to Twój dom tak samo jak mój.']] },
+      raid: { 3: [['Duży raid!', 'Ekipa {user} wpada w komplecie: {n}!']], 4: [['WIELKI NAJAZD', 'Na pokładzie: {n}! Witajcie, ekipo {user}!']], 5: [['INWAZJA', 'Ekipa {user}: {n}! Serwery drżą!']] },
+      redeem: { 3: [['Spora nagroda', '{user} wydaje punkty na: {reward}!']], 4: [['DROGA NAGRODA', '{reward} – {user} nie żałuje punktów!']], 5: [['NAGRODA LEGENDARNA', '{user} wykupuje: {reward}. Szacunek.']] }
+    },
+    vince: {
+      sub: { 3: [['Mocny fundament', 'Tier wyżej. Zauważone, {user}.']], 4: [['Konstrukcja nośna', 'Tier 3. Na tym można budować latami.']] },
+      cheer: { 3: [['Precyzyjna inwestycja', 'Bitsy: {n}. Każdy krok tworzy grunt pod następny.']], 4: [['Nowe piętro', 'Bitsy: {n}. Plan właśnie się powiększył.']], 5: [['Most nad przepaścią', 'Bitsy: {n}. Mosty mają powód – dziś to Ty, {user}.']] },
+      gift: { 3: [['Warunki dla innych', '{n}× sub. Tak się buduje wspólnotę.']], 4: [['Infrastruktura', '{user} stawia całe osiedle: {n}× sub.']], 5: [['Miasto', '{n}× sub. To już nie dom – to miasto, {user}.']] },
+      resub: { 3: [['Konsekwencja', 'Miesiąc {n}. Rzadko to widzę – i doceniam.']], 4: [['Ponad rok', 'Miesiąc {n}. Wąskie drzwi, a jesteś w środku od dawna.']], 5: [['Fundament', 'Miesiąc {n}. Bez Ciebie ta konstrukcja by nie stała.']] },
+      raid: { 3: [['Szeroki tunel', 'Ekipa {user} – wejście bez kolizji. Witajcie.']], 4: [['Nowa kondygnacja', 'Na pokładzie: {n}. Plan przeliczony, miejsca starczy.']], 5: [['Cały kwartał', 'Ekipa {user}: {n}. Mury mają koniec – dziś je przesunęliście.']] },
+      redeem: { 3: [['Poważne zlecenie', '{reward}. Przyjęte, z priorytetem.']], 4: [['Projekt specjalny', '{user} zamawia: {reward}. Rozrysuję to porządnie.']], 5: [['Projekt życia', '{reward}. Dobrze, {user}. Zrobię to bez skrótów.']] }
+    },
+    chip: {
+      sub: { 3: [['…tier 2?', 'nie musiałeś. serio. …dzięki.']], 4: [['TIER 3?!', '*dzwonek dzwoni. nie przytrzymał.*']] },
+      cheer: { 3: [['dużo okruszków', 'bitsy: {n}. policzyłem trzy razy. dalej tyle.']], 4: [['to nie są okruszki', 'bitsy: {n}. gdzie jest haczyk. GDZIE.']], 5: [['…', 'bitsy: {n}. *dzwonek dzwoni sam z siebie* …dziękuję. tylko nikomu nie mów.']] },
+      gift: { 3: [['ciasteczka dla czatu', '{n}× sub. {user} ma za dobre serce.']], 4: [['całe pudełko ciasteczek', '{n}× sub. ok. ok. to jest dużo.']], 5: [['piekarnia', '{n}× sub. {user}… *nie wie, gdzie podziać łapy*']] },
+      resub: { 3: [['dalej tu jesteś', 'miesiąc {n}. haczyka nadal brak. podejrzane.']], 4: [['ponad rok', 'miesiąc {n}. …jesteś mój. w sensie kanałowy. nie mów nikomu.']], 5: [['zostajesz', 'miesiąc {n}. 23 razy myliłem się co do haczyka. co do ciebie też.']] },
+      raid: { 3: [['dużo ktosiów', 'ekipa {user}. nie dotykać ciasteczek. żadnych.']], 4: [['BARDZO dużo ktosiów', 'na pokładzie: {n}. chowam talerz.']], 5: [['cały świat wpadł', 'ekipa {user}: {n}. *dzwonek dzwoni. tym razem specjalnie*']] },
+      redeem: { 3: [['spora nagroda', '{reward}. no dobra. zrobię.']], 4: [['droga nagroda', '{user} wydał na: {reward}. serio? …dobra. serio.']], 5: [['ta nagroda?!', '{reward}. ok. dla ciebie. raz.']] }
+    },
+    ragnar: {
+      sub: { 3: [['TIER 2 NA PARKIECIE!', '{user}, czuję to w klatce!']], 4: [['TIER 3!!!', '{user}, sala wstaje dla Ciebie!']] },
+      cheer: { 3: [['BASY W GÓRĘ!', 'Bitsy: {n} – podkręcam na maksa!']], 4: [['DROP!!!', 'Bitsy: {n}! {user}, cała sala skacze!']], 5: [['NAJLEPSZA NOC W ŻYCIU', 'Bitsy: {n}! {user} – brakuje mi głośników na tyle emocji!']] },
+      gift: { 3: [['KOLEJKA DLA WSZYSTKICH!', '{n}× sub od {user}!']], 4: [['OTWARTY BAR!', '{n}× sub! {user}, kocham Cię, serio!']], 5: [['CAŁY KLUB NA KOSZT {user}!', '{n}× sub. Płaczę przy deckach.']] },
+      resub: { 3: [['STAŁY BYWALEC!', 'Miesiąc {n}. – pamiętam Twoje wejście!']], 4: [['ROK POD SCENĄ!', 'Miesiąc {n}. – Ty jesteś tym rytmem, {user}!']], 5: [['LEGENDA PARKIETU', 'Miesiąc {n}. – {user}, ta sala jest też Twoja.']] },
+      raid: { 3: [['SALA PĘKA!', 'Ekipa {user} wpada – ręce w górę!']], 4: [['DRUGI PARKIET OTWARTY!', 'Na sali: +{n}! Zmieniam set na festiwalowy!']], 5: [['FESTIWAL!!!', 'Ekipa {user}: {n}! TO JEST NAJWIĘKSZA IMPREZA!']] },
+      redeem: { 3: [['SPECJALNE ZAMÓWIENIE', '{reward} – lecimy na pełnej!']], 4: [['VIP Z SALI!', '{user} chce: {reward}. MASZ TO, wariacie!']], 5: [['ŻYCZENIE NA ŻYWO', '{reward}. {user}, robię to dla Ciebie na scenie!']] }
+    },
+    toro: {
+      sub: { 3: [['Jaśniejsza latarnia', 'Tier wyżej – noc robi się bardzo ciepła.']], 4: [['Latarnia z witrażem', 'Tier 3. „Hojność to duch czynu.” Dziękuję, {user}.']] },
+      cheer: { 3: [['Fajerwerki nad rzeką', 'Iskry: {n}. Panta rei – i oto płyną do nas.']], 4: [['Rzeka światła', 'Iskry: {n}. Seneka by to pochwalił.']], 5: [['Słońce pod mostem', 'Iskry: {n}. Pierwszy raz pod mostem jest jasno jak w dzień.']] },
+      gift: { 3: [['Lampiony dla całej ulicy', '{n}× sub. Dzielić się – piękny zwyczaj.']], 4: [['Festiwal latarni', '{user} zapala {n}× światło dla innych.']], 5: [['Most w świetle', '{n}× sub. Cały most świeci, {user}. Dziękuję.']] },
+      resub: { 3: [['Stały gość pod mostem', 'Miesiąc {n}. Wszystko płynie – a ty zostajesz.']], 4: [['Rok przy latarni', 'Miesiąc {n}. „Prawdziwy przyjaciel to jedna dusza w dwóch ciałach.”']], 5: [['Rodzina z wyboru', 'Miesiąc {n}. Rodzina mnie odcięła – a znalazłem was.']] },
+      raid: { 3: [['Wielu gości z rzeki', 'Ekipa {user}! Herbaty starczy, obiecuję.']], 4: [['Cała flotylla', 'Na brzegu: {n}. Pod mostem zawsze znajdzie się miejsce.']], 5: [['Rzeka gości', 'Ekipa {user}: {n}. Karawana nie jedzie – karawana przyjechała do nas!']] },
+      redeem: { 3: [['Szczególna prośba', '{reward} – z wielką przyjemnością.']], 4: [['Hojna prośba', '{user} prosi o: {reward}. Co ma być, to będzie.']], 5: [['Wielka prośba', '{reward}. Dla takiej prośby warto zapalić wszystkie latarnie.']] }
+    },
+    zarin: {
+      sub: { 3: [['lepsza część!', 'tier 2! wymiennik mruczy głośniej!']], 4: [['część premium!!', 'tier 3?! *ćwierka bardzo głośno*']] },
+      cheer: { 3: [['iskry z całego wymiennika', 'bitsy: {n}. Oskar policzył i usiadł.']], 4: [['zwarcie z radości', 'bitsy: {n}! starczy na nową pompę chłodzącą!']], 5: [['NOWY SILNIK', 'bitsy: {n}. Patch poleci szybciej niż kiedykolwiek. *zachwycone ćwierkanie*']] },
+      gift: { 3: [['skrzynia części', '{n}× sub dla załogi! wszyscy do warsztatu!']], 4: [['cały kontener!', '{n}× sub! Maro nie nadąża podawać narzędzi!']], 5: [['nowy statek?!', '{n}× sub. {user}, to więcej niż Patch był wart. *ćwierk*']] },
+      resub: { 3: [['nadal działa!', 'miesiąc {n}. ta część zostaje na stałe.']], 4: [['ponad rok bez awarii', 'miesiąc {n}. wpisuję markerem. grubym.']], 5: [['część kadłuba', 'miesiąc {n}. jesteś już przykręcony do Patcha, {user}.']] },
+      raid: { 3: [['duży frachtowiec!', 'ekipa {user}! uwaga na śnieg przy włazie!']], 4: [['cały konwój!', '+{n} na pokładzie. będzie bardzo ciepło. Myr, otwieraj!']], 5: [['flota!!', 'ekipa {user}: {n}. Oskar mówi, że to już stacja, nie statek.']] },
+      redeem: { 3: [['większe zlecenie', '{reward}. biorę duży klucz.']], 4: [['zlecenie specjalne', '{user} chce: {reward}. rozkręcę wszystko, żeby to zrobić.']], 5: [['zlecenie życia', '{reward}. ok. opuszczam gogle. wchodzę.']] }
+    },
+    myr: {
+      big: {
+        protocol: [['MELDUNEK: ZDARZENIE O WYSOKIM PRIORYTECIE', 'Ta jednostka odnotowuje wartość {n}. Protokół nie przewiduje takiej wielkości.'], ['ALARM: PRZECIĄŻENIE WDZIĘCZNOŚCI', 'Ta jednostka… ta jednostka potwierdza. {user}.']],
+        human: [['…{user}', 'Ja… nie mam na to regulaminowego zdania. Dziękuję. Naprawdę.'], ['ja', 'Ja to zapamiętam na zawsze, {user}.']],
+        terminal: [['> PRIORITY.MAX', '> value={n} // from={user} // buffer overflow // gratitude++'], ['> EVENT.CRITICAL', '> {user} :: magnitude={n} :: unit.status=moved']],
+        syndrome: [['P-P-PRZECIĄŻ…', 'za… za dużo… Zarin… licz… trzy… dwa… {user}… dzię-dziękuję'], ['W-W-WARTOŚĆ', '{n}… {n}… nanity… włącz… wyłącz… ja… ja…']]
+      }
+    }
+  };
+
   const SCENES_DEFAULT = {
     prep: [['Przygotowania', 'Ustawiam wszystko, zaraz będzie.'], ['Stream w przygotowaniu', 'Rozgość się, za chwilę ruszamy.']],
     soon: [['Stream za', 'Do zobaczenia wkrótce!'], ['Startujemy za', 'Wpadnij, gdy odliczanie się skończy.']],
@@ -212,13 +274,35 @@
   }
 
   // Wybiera nagłówek i zdanie: kind = typ alertu (follow, sub…) albo 'scene:prep' itd.
-  function pick(themeId, kind, ctx) {
+  // poziom 3+ → teksty na duże zdarzenia (najpierw postaci, potem domyślne)
+  function tierPool(themeId, kind, tier) {
+    for (const who of [TIERS[themeId], TIERS._]) {
+      if (!who) continue;
+      if (who.big) return who.big;                                  // Myr: jedna pula z rejestrami
+      const k = who[kind]; if (!k) continue;
+      for (let t = tier; t >= 3; t--) if (k[t]) return k[t];
+    }
+    return null;
+  }
+  // Myr: im większe zdarzenie, tym częściej wymyka się „ja” (a przy największych – syndrom)
+  function myrWeights(base, tier) {
+    if (!tier || tier < 3) return base;
+    const w = { ...base };
+    w.human = (w.human || 0) + 0.12 * (tier - 2);
+    if (tier >= 5) w.syndrome = (w.syndrome || 0) + 0.1;
+    const sum = Object.values(w).reduce((a, b) => a + b, 0);
+    for (const k in w) w[k] /= sum;
+    return w;
+  }
+
+  function pick(themeId, kind, ctx, tier) {
     const scene = kind.startsWith('scene:') ? kind.slice(6) : null;
     const who = V[themeId];
     let pool = null, register = 'normal';
     if (who) pool = scene ? who.scenes && who.scenes[scene] : who[kind];
+    if (!scene && tier >= 3) { const tp = tierPool(themeId, kind, tier); if (tp) pool = tp; }
     if (pool && !Array.isArray(pool)) {          // postać z rejestrami (Myr)
-      register = pickRegister(who.weights || { protocol: 1 });
+      register = pickRegister(myrWeights(who && who.weights || { protocol: 1 }, scene ? 0 : tier));
       pool = pool[register] || pool.protocol;
     }
     if (!pool || !pool.length) pool = scene ? SCENES_DEFAULT[scene] : V._[kind];

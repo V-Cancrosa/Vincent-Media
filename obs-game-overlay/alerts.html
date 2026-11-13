@@ -17,6 +17,7 @@
 <script src="themes/fusion.js"></script>
 <script src="themes/voices.js"></script>
 <script src="themes/effects.js"></script>
+<script src="themes/tiers.js"></script>
 <link rel="stylesheet" href="themes/base.css">
 <style>
   /* Alert = ta sama karta co „Teraz gram”, tylko większa, z ikoną zdarzenia i błyskiem przy wejściu. */
@@ -41,6 +42,24 @@
   .reduced-motion #wrap.show #burst { animation: none; }
 
   /* pasek czasu alertu */
+  /* poziom reakcji: większy błysk, gwiazdki, drżenie ekranu */
+  .tier-3 #burst { border-width: 10px; } .tier-4 #burst { border-width: 14px; box-shadow: 0 0 120px var(--accent), inset 0 0 60px var(--accent); }
+  .tier-5 #burst { border-width: 18px; box-shadow: 0 0 180px var(--accent), 0 0 60px #fff, inset 0 0 80px var(--accent); }
+  .tier-4 #wrap.show #burst, .tier-5 #wrap.show #burst { animation: burst 1.1s cubic-bezier(.2,.7,.3,1) .1s, burst 1.3s cubic-bezier(.2,.7,.3,1) .6s; }
+  #tierStars { position: absolute; left: 50%; top: -46px; transform: translateX(-50%); z-index: 5; display: flex; gap: 6px; pointer-events: none; }
+  #tierStars i { width: 26px; height: 26px; background: var(--accent); clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    filter: drop-shadow(0 0 8px var(--accent)); opacity: 0; }
+  #wrap.show #tierStars i { animation: star-pop .5s cubic-bezier(.2,.9,.3,1.6) both; animation-delay: calc(.35s + var(--i) * .12s); }
+  @keyframes star-pop { from { opacity: 0; transform: scale(0) rotate(-90deg); } to { opacity: 1; transform: none; } }
+  #tierName { position: absolute; left: 50%; bottom: -34px; transform: translateX(-50%); font: 900 18px/1 Inter, sans-serif; letter-spacing: .5em; color: #fff;
+    text-shadow: 0 0 12px var(--accent), 0 0 24px var(--accent); white-space: nowrap; opacity: 0; z-index: 5; }
+  #wrap.show #tierName:not(:empty) { animation: star-pop .6s .5s both; }
+  .shake-1 #stage { animation: shake1 .5s .2s 2; } .shake-2 #stage { animation: shake2 .45s .2s 4; }
+  @keyframes shake1 { 25% { transform: translate(4px, -2px); } 50% { transform: translate(-4px, 2px); } 75% { transform: translate(2px, 3px); } }
+  @keyframes shake2 { 20% { transform: translate(8px, -4px) rotate(.3deg); } 40% { transform: translate(-8px, 4px) rotate(-.3deg); } 60% { transform: translate(5px, 6px); } 80% { transform: translate(-6px, -3px); } }
+  .reduced-motion #tierStars i, .reduced-motion #tierName { animation: none !important; opacity: 1; }
+  .reduced-motion.shake-1 #stage, .reduced-motion.shake-2 #stage { animation: none !important; }
+
   #timebar { position: absolute; left: 0; right: 0; bottom: -10px; height: 3px; z-index: 3; background: color-mix(in srgb, var(--accent) 25%, transparent); overflow: hidden; border-radius: 2px; }
   #timebar i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; }
   #wrap.show #timebar i { animation: timebar var(--dur, 6s) linear forwards; }
@@ -66,6 +85,8 @@
     </div>
     <div id="emblem" aria-hidden="true"></div>
     <div id="timebar"><i></i></div>
+    <div id="tierStars"></div>
+    <div id="tierName"></div>
   </div>
 </div>
 
@@ -124,7 +145,7 @@
       case 'gift': return `${ev.count} ${pl(ev.count, 'sub', 'suby', 'subów')} w prezencie`;
       case 'cheer': return [`${ev.amount} ${pl(ev.amount, 'bits', 'bitsy', 'bitsów')}`, ev.message ? `„${ev.message}”` : ''].filter(Boolean).join(' · ');
       case 'raid': return `${ev.viewers} ${pl(ev.viewers, 'osoba wpada', 'osoby wpadają', 'osób wpada')} na stream`;
-      case 'redeem': return [ev.reward, ev.message ? `„${ev.message}”` : ''].filter(Boolean).join(' · ');
+      case 'redeem': return [ev.reward, ev.cost ? `${ev.cost} pkt` : '', ev.message ? `„${ev.message}”` : ''].filter(Boolean).join(' · ');
       default: return 'Dzięki!';
     }
   }
@@ -181,8 +202,8 @@
     }
   }
   let master = null;
-  function play(type) {
-    const vol = Math.max(0, Math.min(1, +settings.alertVolume || 0));
+  function play(type, tier = 1) {
+    const vol = Math.max(0, Math.min(1, (+settings.alertVolume || 0) * (window.OverlayTiers ? window.OverlayTiers.react(tier).volume : 1)));
     if (!vol) return;
     try {
       ac = ac || new (window.AudioContext || window.webkitAudioContext)();
@@ -191,7 +212,10 @@
     } catch { return; }
     const N = n => 440 * Math.pow(2, (n - 69) / 12);
     // Chip: pęknięty dzwonek (nieharmoniczne alikwoty)
-    if (themeId === 'chip' && type !== 'follow') { tone(N(84), 0, 1.6, 'sine', .35, [[1, 1], [2.32, .5], [4.1, .25], [5.43, .12]]); tone(N(84), .32, 1.2, 'sine', .25, [[1, 1], [2.32, .4], [4.1, .2]]); return; }
+    if (themeId === 'chip' && type !== 'follow') {   // im większe zdarzenie, tym więcej uderzeń dzwonka
+      for (let k = 0; k < Math.max(2, tier); k++) tone(N(84 - (k % 2) * 2), k * .3, 1.6, 'sine', .35 - k * .03, [[1, 1], [2.32, .5], [4.1, .25], [5.43, .12]]);
+      return;
+    }
     const wave = { ragnar: 'square', myr: 'square', mc: 'square', cp: 'sawtooth', val: 'triangle' }[themeId] || 'triangle';
     const seqs = {
       follow: [[76, 0, .25], [83, .12, .4]],
@@ -202,7 +226,12 @@
       raid: [[48, 0, .5], [55, .15, .5], [60, .3, .5], [67, .45, .9]],
       redeem: [[79, 0, .2], [84, .12, .45]]
     };
-    for (const [n, s, d] of seqs[type] || seqs.follow) tone(N(n), s, d, wave, wave === 'square' || wave === 'sawtooth' ? .12 : .28);
+    const g = wave === 'square' || wave === 'sawtooth' ? .12 : .28;
+    for (const [n, s, d] of seqs[type] || seqs.follow) tone(N(n), s, d, wave, g);
+    // większe zdarzenie: oktawa wyżej, uderzenie basu, a na samej górze fanfara
+    if (tier >= 3) for (const [n, s, d] of seqs[type] || seqs.follow) tone(N(n + 12), s + .02, d, 'sine', g * .6);
+    if (tier >= 4) { tone(N(36), 0, .9, 'sine', .5); tone(N(43), .45, .9, 'sine', .4); }
+    if (tier >= 5) [72, 76, 79, 84, 88, 91, 96].forEach((n, i) => tone(N(n), .8 + i * .09, .7, 'triangle', .2));
   }
 
   // ---------------------------------------------------------------- kolejka alertów
@@ -228,18 +257,28 @@
     if (seen.has(key)) return; seen.add(key);
     if (settings.alertTypes[ev.type] === false) return;
     queue.push(ev);
+    // tryb szybki: bez czekania – nowy alert od razu zastępuje bieżący
+    if (settings.alertFast && busy) { clearTimeout(hideTimer); clearTimeout(nextTimer); $('wrap').classList.remove('show'); nextTimer = setTimeout(next, 120); return; }
     if (!busy) next();
   }
+  let hideTimer = null, nextTimer = null;
   function next() {
     const ev = queue.shift();
     if (!ev) { busy = false; GT.FX.set(null); return; }
     busy = true;
+    const tier = window.OverlayTiers ? window.OverlayTiers.tier(ev) : 1;
+    const R = window.OverlayTiers ? window.OverlayTiers.react(tier) : { scale: 1, extra: 0, fx: 1, effect: null, shake: 0, name: '' };
     // głos postaci (themes/voices.js); Myr losuje rejestr – syndrom szarpie kartą, terminal zmienia czcionkę
     const n = ev.count || ev.months || ev.amount || ev.viewers || '';
     const activeGame = fusion.game ? fusion.game.name : '';
-    const v = window.OverlayVoices ? window.OverlayVoices.pick(themeIdPeek(), ev.type, { user: ev.user || '', n, reward: ev.reward || '', game: activeGame }) : null;
+    const v = window.OverlayVoices ? window.OverlayVoices.pick(themeIdPeek(), ev.type, { user: ev.user || '', n, reward: ev.reward || '', game: activeGame }, tier) : null;
     const reg = v ? v.register : '';
-    const { def, reduced } = applyStyle(reg === 'syndrome' ? ' syndrome' : reg === 'terminal' ? ' terminal-voice' : '');
+    const { def, reduced } = applyStyle((reg === 'syndrome' ? ' syndrome' : reg === 'terminal' ? ' terminal-voice' : '') + ` tier-${tier}` + (R.shake ? ` shake-${R.shake}` : ''));
+    document.documentElement.style.setProperty('--scale', (+settings.alertScale || 1.25) * R.scale);
+    // większy alert potrzebuje więcej miejsca od krawędzi (gwiazdki, postać wyglądająca zza karty)
+    document.documentElement.style.setProperty('--margin', (60 + (tier - 1) * 30) + 'px');
+    $('tierStars').innerHTML = tier >= 3 ? Array.from({ length: tier }, (_, i) => `<i style="--i:${i}"></i>`).join('') : '';
+    $('tierName').textContent = R.name || '';
     const labels = { ...LABELS._, ...(LABELS[themeId] || {}) };
     $('labelText').textContent = (v && v.label) || labels[ev.type] || ev.type;
     $('quote').textContent = v && v.line ? v.line : '';
@@ -252,15 +291,23 @@
     card.classList.toggle('xlong', (ev.user || '').length > 34);
     $('icon').className = 'glyph';
     $('icon').innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[ev.type] || ICONS.follow}</svg>`;
-    const dur = Math.max(3, +settings.alertDuration || 6);
+    const dur = settings.alertFast ? 2.5 : Math.max(3, +settings.alertDuration || 6) + R.extra;
     document.documentElement.style.setProperty('--dur', dur + 's');
-    GT.FX.set(!reduced ? (GT.fusionFx ? GT.fusionFx(fusion) : def && def.fx) : null);
+    const baseFx = !reduced ? (GT.fusionFx ? GT.fusionFx(fusion) : def && def.fx) : null;
+    GT.FX.set(baseFx ? { ...baseFx, count: Math.round(baseFx.count * R.fx) } : null);
     const wrap = $('wrap');
     requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('show')));
-    play(ev.type);
-    setTimeout(() => {
+    play(ev.type, tier);
+    // duże zdarzenie: efekt na cały ekran + reakcja avatara w układach i na ekranach
+    if (R.effect && !reduced && !settings.alertFast && window.OverlayEffects) {
+      const cs = getComputedStyle(document.documentElement);
+      const colors = ['--accent', '--accent2', '--g1', '--g2'].map(x => cs.getPropertyValue(x).trim()).filter(Boolean);
+      R.effect.forEach((e, i) => setTimeout(() => window.OverlayEffects.run($('effects'), e, colors, 5 + tier), 300 + i * 900));
+    }
+    try { new BroadcastChannel('obsGameOverlay').postMessage({ type: 'react', tier, kind: ev.type }); } catch {}
+    hideTimer = setTimeout(() => {
       wrap.classList.remove('show');
-      setTimeout(next, 700);
+      nextTimer = setTimeout(next, settings.alertFast ? 150 : 700);
     }, dur * 1000);
   }
 

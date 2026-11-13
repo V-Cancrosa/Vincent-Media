@@ -16,6 +16,12 @@
   .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
   .tab { display: flex; flex-direction: column; gap: 10px; }
   .preview-sec { padding: 6px; }
+  .fastchip { position: absolute; right: 6px; top: 6px; z-index: 3; padding: 4px 8px; font-size: 11px; border-radius: 999px; background: rgba(20,22,27,.85); }
+  .fastchip[aria-pressed="true"] { background: #ffd43b; color: #1b1405; border-color: #ffd43b; font-weight: 700; }
+  .sub-off { display: none !important; }
+  .subtabs { display: flex; gap: 4px; flex-wrap: wrap; padding: 2px 0 4px; }
+  .subtabs button { padding: 6px 10px; font-size: 11px; border-radius: 999px; background: transparent; }
+  .subtabs button[aria-selected="true"] { background: #2e323d; border-color: var(--accent); color: #fff; font-weight: 600; }
   .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .seg3 button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
   .meter { position: relative; height: 12px; border-radius: 6px; background: #14161b; border: 1px solid var(--line); overflow: hidden; }
@@ -78,11 +84,14 @@
 <script src="themes/library.js"></script>
 <script src="themes/fusion.js"></script>
 <script src="themes/obsws.js"></script>
+<script src="themes/tiers.js"></script>
 </head>
 <body>
 <main>
   <section class="preview-sec">
-    <div class="preview" id="preview"><iframe id="frame" title="podgląd"></iframe><iframe id="frameAlerts" title="podgląd alertów"></iframe></div>
+    <div class="preview" id="preview"><iframe id="frame" title="podgląd"></iframe><iframe id="frameAlerts" title="podgląd alertów"></iframe>
+      <button class="fastchip" id="fastChip" title="Szybkie powiadomienia: od razu, bez kolejki – do sprawdzania">⚡ szybkie: wył.</button>
+    </div>
   </section>
   <nav class="tabs" role="tablist" aria-label="Sekcje panelu">
     <button role="tab" data-tab="live">Na żywo</button>
@@ -117,7 +126,7 @@
     <div class="chips" id="chips"></div>
   </section>
   <section>
-    <h2>Ekrany przerw</h2>
+    <h2>Ekrany</h2>
     <div class="seg3" id="sceneBtns">
       <button data-s="prep">Przygotowania</button><button data-s="soon">Stream za…</button><button data-s="start">Zaraz zaczynamy</button>
       <button data-s="late">Spóźnienie</button><button data-s="brb">Przerwa</button><button data-s="brb-late">Przerwa się przedłuża</button>
@@ -156,6 +165,13 @@
 
   <section>
     <h2>Alerty</h2>
+    <label class="check"><input id="alertFast" type="checkbox"> ⚡ szybkie powiadomienia – od razu, bez kolejki, krótko (do sprawdzania)</label>
+    <label>Wielkość zdarzenia w teście (bitsy, gift, miesiące, raid, koszt nagrody)
+      <select id="testTier">
+        <option value="0">losowa</option><option value="1">1 – małe</option><option value="2">2 – średnie</option>
+        <option value="3">3 – duże (efekt na ekranie)</option><option value="4">4 – ogromne (drżenie, fanfara)</option><option value="5">5 – legendarne</option>
+      </select>
+    </label>
     <div class="tests" id="tests">
       <button data-t="follow">Follow</button><button data-t="sub">Sub</button><button data-t="resub">Resub</button>
       <button data-t="gift">Gift</button><button data-t="cheer">Bitsy</button><button data-t="raid">Raid</button><button data-t="redeem">Nagroda</button>
@@ -529,7 +545,7 @@
     $('toggleBtn').textContent = s.visible ? 'Ukryj nakładkę' : 'Pokaż nakładkę';
     renderDetected();
     renderStaticUrl();
-    if (typeof syncAlerts === 'function') try { syncAlerts(); syncScenes(); applyFeatures(); } catch {}
+    if (typeof syncAlerts === 'function') try { syncAlerts(); syncScenes(); applyFeatures(); syncFast(); } catch {}
   }
 
   // --- status wykrywania (zapisywany przez nakładkę w podglądzie) ---
@@ -766,8 +782,13 @@
 
   // --- alerty: test ---
   const FAKE_NAMES = ['LunaFox', 'Kuba_Gra', 'PixelWilk', 'Nocny_Smok', 'herbatka99', 'MrówkaPancerna'];
-  function fakeEvent(type) {
+  function fakeEvent(type, tier) {
     const user = FAKE_NAMES[Math.floor(Math.random() * FAKE_NAMES.length)];
+    const base = fakeBase(type, user);
+    // wybrana wielkość: wartości jak w themes/tiers.js
+    return base && tier && window.OverlayTiers ? { ...base, ...window.OverlayTiers.sample(type, tier) } : base;
+  }
+  function fakeBase(type, user) {
     return ({
       follow: { type, user }, sub: { type, user, tier: 'Tier 1' },
       resub: { type, user, tier: 'Tier 1', months: 7, message: 'Siódmy miesiąc, dalej najlepszy kanał!' },
@@ -782,13 +803,24 @@
   $('tests').addEventListener('click', async e => {
     const t = e.target.closest('button'); if (!t) return;
     const type = t.dataset.t;
+    let tier = +$('testTier').value || 0;
+    if (!tier && ['cheer', 'gift', 'resub', 'raid', 'redeem', 'sub'].includes(type)) tier = 1 + Math.floor(Math.random() * 5);
     // najpierw przez wykrywacz (ta sama droga co prawdziwe alerty), a bez niego – bezpośrednio do nakładek
     try {
       if (!s.local) throw 0;
-      const r = await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/test?type=' + type, { cache: 'no-store' });
+      const r = await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/test?type=' + type + (tier ? '&tier=' + tier : ''), { cache: 'no-store' });
       if (!r.ok) throw 0;
-    } catch { if (bc) bc.postMessage({ type: 'alert', event: fakeEvent(type) }); }
+    } catch { if (bc) bc.postMessage({ type: 'alert', event: fakeEvent(type, tier) }); }
   });
+  // szybkie powiadomienia (dwa przełączniki: w sekcji Alerty i na podglądzie)
+  const setFast = on => { s.alertFast = !!on; save(); };
+  $('alertFast').onchange = () => setFast($('alertFast').checked);
+  $('fastChip').onclick = () => setFast(!s.alertFast);
+  function syncFast() {
+    $('alertFast').checked = !!s.alertFast;
+    $('fastChip').setAttribute('aria-pressed', !!s.alertFast);
+    $('fastChip').textContent = s.alertFast ? '⚡ szybkie: wł.' : '⚡ szybkie: wył.';
+  }
 
   // --- Twitch ---
   let twState = null;
@@ -841,6 +873,45 @@
   for (const b of document.querySelectorAll('.tabs button')) b.onclick = () => showTab(b.dataset.tab);
   showTab((() => { try { return localStorage.getItem(TAB_KEY) || 'live'; } catch { return 'live'; } })());
 
+  // --- podzakładki (zakładki w zakładkach) ---
+  const SUBS = {
+    live: [['Gra', ['Gra']], ['Ekrany', ['Ekrany', 'Sceny OBS']], ['Alerty', ['Alerty']]],
+    look: [['Karta', ['Wygląd']], ['Avatar', ['Avatar / kamerka']]],
+    conn: [['Gra', ['Wykrywanie gier', 'Lokalny wykrywacz']], ['OBS', ['OBS (WebSocket)']], ['Twitch', ['Twitch']], ['Discord', ['Discord (Lanyard)']]],
+    set: [['Funkcje', ['Funkcje']], ['Telefon', ['Pilot z telefonu']], ['Wersja', ['Wersja']], ['Źródła', ['Źródła w OBS', '']]]
+  };
+  const SUB_KEY = 'obsGameOverlay.panelSub';
+  const subState = (() => { try { return JSON.parse(localStorage.getItem(SUB_KEY)) || {}; } catch { return {}; } })();
+  const h2name = sec => { const h = sec.querySelector(':scope > h2'); return h ? h.firstChild.textContent.trim() : ''; };
+  for (const tab of document.querySelectorAll('.tab')) {
+    const def = SUBS[tab.dataset.tab]; if (!def) continue;
+    const nav = document.createElement('nav'); nav.className = 'subtabs'; nav.setAttribute('role', 'tablist');
+    for (const [name, titles] of def) {
+      const b = document.createElement('button'); b.textContent = name; b.dataset.sub = name; b.setAttribute('role', 'tab');
+      b.onclick = () => showSub(tab, name);
+      nav.appendChild(b);
+      for (const sec of tab.querySelectorAll(':scope > section')) if (titles.includes(h2name(sec))) sec.dataset.sub = name;
+    }
+    tab.prepend(nav);
+  }
+  function showSub(tab, name) {
+    for (const b of tab.querySelectorAll('.subtabs button')) b.setAttribute('aria-selected', b.dataset.sub === name);
+    for (const sec of tab.querySelectorAll(':scope > section[data-sub]')) sec.classList.toggle('sub-off', sec.dataset.sub !== name);
+    subState[tab.dataset.tab] = name;
+    try { localStorage.setItem(SUB_KEY, JSON.stringify(subState)); } catch {}
+  }
+  function updateSubs() {
+    for (const tab of document.querySelectorAll('.tab')) {
+      const btns = [...tab.querySelectorAll('.subtabs button')]; if (!btns.length) continue;
+      for (const b of btns) b.hidden = ![...tab.querySelectorAll(`:scope > section[data-sub="${b.dataset.sub}"]`)].some(sec => !sec.hidden);
+      const visible = btns.filter(b => !b.hidden);
+      const want = subState[tab.dataset.tab];
+      const cur = visible.find(b => b.dataset.sub === want) || visible[0];
+      if (cur) showSub(tab, cur.dataset.sub);
+      tab.querySelector('.subtabs').hidden = visible.length < 2;   // jedna podzakładka – bez paska
+    }
+  }
+
   // --- funkcje: wyłączone znikają z panelu ---
   const feats = () => ({ ...DEFAULTS.features, ...(s.features || {}) });
   $('featLocal').onchange = () => { s.local = $('featLocal').checked; save(); };
@@ -852,7 +923,8 @@
     $('featLocal').checked = !!s.local; $('featTwitch').checked = !!f.twitch; $('featDiscord').checked = !!f.discord; $('featObs').checked = f.obs !== false;
     const on = { local: !!s.local, twitch: !!f.twitch, discord: !!f.discord, detect: !!s.local || !!f.discord, obs: f.obs !== false };
     for (const sec of document.querySelectorAll('[data-feature]')) sec.hidden = !on[sec.dataset.feature];
-    $('connEmpty').hidden = on.local || on.twitch || on.discord;
+    $('connEmpty').hidden = on.local || on.twitch || on.discord || on.obs;
+    updateSubs();
   }
 
   // --- pilot z telefonu ---

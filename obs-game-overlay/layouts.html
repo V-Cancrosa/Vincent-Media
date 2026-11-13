@@ -70,6 +70,11 @@
   @keyframes av-talk { from { transform: translateY(0) scale(1); } to { transform: translateY(-10px) scale(1.03); } }
   .av-ring { position: absolute; left: 50%; bottom: 4%; width: 80%; height: 14%; transform: translateX(-50%); border-radius: 50%;
     background: radial-gradient(ellipse, color-mix(in srgb, var(--accent) 55%, transparent), transparent 70%); filter: blur(4px); }
+  /* reakcja na duże zdarzenie (poziom 2–5): podskok i błysk tym większy, im większe zdarzenie */
+  .hype .av-art img, .hype .av-art svg { animation: av-hype calc(.25s + var(--hype, 1) * .05s) cubic-bezier(.3,1.6,.5,1) calc(2 + var(--hype, 1)) alternate !important;
+    filter: drop-shadow(0 0 calc(20px + var(--hype, 1) * 12px) var(--accent)) brightness(1.15) !important; }
+  @keyframes av-hype { from { transform: translateY(0) scale(1) rotate(0); } to { transform: translateY(calc(var(--hype, 1) * -9px)) scale(calc(1 + var(--hype, 1) * .025)) rotate(calc(var(--hype, 1) * .6deg)); } }
+  .hype .av-camera .av-frame { filter: drop-shadow(0 0 calc(var(--hype, 1) * 14px) var(--accent)); }
   .talking .av-ring { animation: ring-pulse .5s ease-in-out infinite alternate; }
   @keyframes ring-pulse { to { transform: translateX(-50%) scale(1.15); opacity: .7; } }
   .av-frame { position: absolute; inset: 0; border-radius: 18px; pointer-events: none; }
@@ -186,7 +191,7 @@
   let fxKey = '';
   function render() {
     const s = C.settings();
-    th = C.applyTheme('l-' + layout + (document.body.classList.contains('talking') ? ' talking' : ''));
+    th = C.applyTheme('l-' + layout + (document.body.classList.contains('talking') ? ' talking' : '') + (document.body.classList.contains('hype') ? ' hype' : ''));
     if (BGFX) {
       const k = th.cls + (th.game ? th.game.id : '') + th.reduced;
       if (k !== fxKey) { fxKey = k; const base = GT.fusionFx ? GT.fusionFx(th) : th.def && th.def.fx; BGFX.set(base && !th.reduced && layout !== 'game-full' ? { ...base, count: Math.round(base.count * 2) } : null); }
@@ -232,7 +237,14 @@
     if (ev.type === 'voice') setTalking(ev.talking);
     if (['follow', 'sub', 'resub', 'raid'].includes(ev.type)) setTimeout(pollSession, 500);
   }, { onSettings: render });
-  try { const bc = new BroadcastChannel('obsGameOverlay'); bc.addEventListener('message', e => { if (e.data && e.data.type === 'voice') setTalking(e.data.talking); }); } catch (e) {}
+  let hypeTimer = null;
+  function hype(tier) {
+    if (!tier || tier < 2) return;
+    document.documentElement.style.setProperty('--hype', tier);
+    document.body.classList.add('hype'); clearTimeout(hypeTimer);
+    hypeTimer = setTimeout(() => document.body.classList.remove('hype'), 1200 + tier * 500);
+  }
+  try { const bc = new BroadcastChannel('obsGameOverlay'); bc.addEventListener('message', e => { if (e.data && e.data.type === 'voice') setTalking(e.data.talking); if (e.data && e.data.type === 'react') hype(e.data.tier); }); } catch (e) {}
   // mikrofon z OBS (WebSocket) → avatar ożywa, gdy mówisz
   (async () => {
     const s = C.settings();
