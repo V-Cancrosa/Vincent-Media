@@ -65,6 +65,7 @@
 <script src="version.js"></script>
 <script src="themes/games.js"></script>
 <script src="themes/fursona.js"></script>
+<script src="themes/library.js"></script>
 </head>
 <body>
 <main>
@@ -356,7 +357,8 @@
   // lista motywów gier z themes/games.js
   try {
     const list = (window.OverlayGameThemes && window.OverlayGameThemes.list) || [];
-    for (const t of list) {
+    const games = list.filter(t => t.group !== 'fursona' && !t.hidden).sort((a, b) => a.name.localeCompare(b.name, 'pl'));
+    for (const t of [...list.filter(t => t.group === 'fursona'), ...games]) {
       const o = document.createElement('option'); o.value = 'g-' + t.id; o.textContent = t.name;
       $(t.group === 'fursona' ? 'furThemeOpts' : 'gameThemeOpts').appendChild(o);
     }

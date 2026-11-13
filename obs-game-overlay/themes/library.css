@@ -1,0 +1,172 @@
+/* Motywy gier z biblioteki Steam. Grafika własna, CC0. */
+.em-swing { transform-origin: 45px 4px; animation: em-swing 4s ease-in-out infinite; }
+@keyframes em-swing { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+.em-hop { animation: em-hop 1.8s cubic-bezier(.3,0,.3,1) infinite; transform-origin: 50px 92px; }
+@keyframes em-hop { 0%, 60%, 100% { transform: translateY(0) scale(1, 1); } 70% { transform: translateY(0) scale(1.08, .92); } 82% { transform: translateY(-14px) scale(.96, 1.05); } 92% { transform: translateY(0) scale(1.04, .96); } }
+.em-spin-me { transform-origin: 55px 55px; animation: em-tilt 6s linear infinite; }
+@keyframes em-tilt { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ============================================================ TALISMAN – plansza, pergamin, złoto */
+.theme-g-tal #card {
+  font-family: 'IM Fell English', Georgia, serif; color: #3a2410;
+  padding: 16px 44px 16px 16px; gap: 18px;
+  background: radial-gradient(120% 140% at 30% 20%, #f3e3bd, #dcc08a 70%, #c9a66a);
+  border: 3px solid #5a3a10; border-radius: 6px;
+  box-shadow: inset 0 0 0 3px #c8962e, inset 0 0 30px rgba(90,58,16,.45), 0 12px 32px rgba(0,0,0,.55);
+}
+.theme-g-tal #card::before, .theme-g-tal #card::after { /* złote narożniki */
+  content: ""; position: absolute; width: 18px; height: 18px; background: #c8962e; transform: rotate(45deg); box-shadow: 0 0 0 2px #5a3a10;
+}
+.theme-g-tal #card::before { left: -10px; top: -10px; }
+.theme-g-tal #card::after { right: -10px; bottom: -10px; }
+.theme-g-tal #icon { border: 3px solid #5a3a10; box-shadow: inset 0 0 0 2px #c8962e; background: #7a1a12; border-radius: 4px; }
+.theme-g-tal #mono { font-family: 'Uncial Antiqua', serif; color: #f3e3bd; }
+.theme-g-tal #name { font-family: 'IM Fell English SC', Georgia, serif; font-size: 38px; color: #7a1a12; text-shadow: 0 1px 0 #fff3cf, 0 2px 4px rgba(90,58,16,.4); }
+.theme-g-tal #label { font-family: 'IM Fell English SC', serif; font-size: 15px; letter-spacing: .14em; color: #5a3a10; }
+.theme-g-tal #label .dot { background: #b3201a; box-shadow: none; transform: rotate(45deg); border-radius: 0; }
+.theme-g-tal #meta { font-style: italic; color: #5a3a10; font-size: 17px; }
+.theme-g-tal #timer { font-style: normal; font-family: 'IM Fell English SC', serif; color: #7a1a12; }
+.theme-g-tal #emblem { width: 76px; height: 92px; left: -30px; top: -58px; }
+
+/* ============================================================ PALWORLD – słońce, trawa, przygoda */
+.theme-g-pal #card {
+  font-family: 'Fredoka', 'Nunito', sans-serif; color: #1f2b44;
+  padding: 14px 40px 14px 14px; gap: 16px;
+  background: linear-gradient(180deg, #e9f7ff 0%, #ffffff 60%, #eaffd9 100%);
+  border: 4px solid #1f2b44; border-radius: 22px;
+  box-shadow: 0 6px 0 #1f2b44, 0 14px 30px rgba(0,0,0,.35);
+}
+.theme-g-pal #card::after { /* pasek trawy */
+  content: ""; position: absolute; left: 10px; right: 10px; bottom: 6px; height: 6px; border-radius: 6px;
+  background: repeating-linear-gradient(90deg, #7ed957 0 10px, #5cc23a 10px 20px);
+}
+.theme-g-pal #icon { border-radius: 16px; border: 3px solid #1f2b44; background: linear-gradient(160deg, #6fd0ff, #2fa8ff); }
+.theme-g-pal #mono { font-family: 'Fredoka', sans-serif; font-weight: 700; color: #fff; text-shadow: 0 2px 0 #1f2b44; }
+.theme-g-pal #name { font-weight: 700; font-size: 40px; color: #1f2b44; letter-spacing: .01em; }
+.theme-g-pal #label { font-weight: 700; font-size: 14px; letter-spacing: .12em; color: #2fa8ff; }
+.theme-g-pal #label .dot { background: #7ed957; box-shadow: none; }
+.theme-g-pal #meta { font-weight: 600; color: #4a5a78; font-size: 16px; }
+.theme-g-pal #timer { background: #ffd36b; color: #1f2b44; border: 2px solid #1f2b44; border-radius: 999px; padding: 0 9px; }
+.theme-g-pal #emblem { width: 100px; height: 100px; right: -28px; top: -66px; }
+
+/* ============================================================ MASS EFFECT – hologram, omni-klucz */
+.theme-g-me #card {
+  font-family: 'Exo 2', 'Rajdhani', sans-serif; color: #e8f2fb;
+  padding: 16px 42px 16px 16px; gap: 18px;
+  background: linear-gradient(100deg, rgba(10,16,26,.94), rgba(18,30,46,.9));
+  border: 1px solid rgba(79,183,255,.35);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+}
+.theme-g-me #card::before { /* pomarańczowa linia holo u góry, która przesuwa się w poprzek */
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, #ff8a1c 30%, #ffc27a 50%, #ff8a1c 70%, transparent); background-size: 200% 100%; animation: sweep 3.5s linear infinite;
+}
+.theme-g-me #card::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(79,183,255,.05) 0 1px, transparent 1px 4px); }
+.theme-g-me #icon { border: 1px solid #ff8a1c; background: rgba(255,138,28,.08); box-shadow: 0 0 14px rgba(255,138,28,.35); clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
+.theme-g-me #mono { font-family: 'Exo 2', sans-serif; font-weight: 800; color: #ff8a1c; }
+.theme-g-me #name { font-weight: 800; font-size: 38px; letter-spacing: .14em; text-transform: uppercase; color: #ffffff; text-shadow: 0 0 14px rgba(79,183,255,.6); }
+.theme-g-me #card.long #name { font-size: 30px; letter-spacing: .1em; }
+.theme-g-me #label { font-weight: 700; font-size: 12px; letter-spacing: .32em; color: #ff8a1c; }
+.theme-g-me #label .dot { background: #ff8a1c; box-shadow: 0 0 10px #ff8a1c; border-radius: 0; }
+.theme-g-me #meta { color: #8fb6d6; font-size: 15px; letter-spacing: .06em; }
+.theme-g-me #timer { color: #4fb7ff; }
+.theme-g-me #emblem { width: 92px; height: 92px; left: -34px; top: -54px; }
+
+/* ============================================================ WARFRAME – energia i złota ornamentyka */
+.theme-g-wf #card {
+  font-family: 'Exo 2', 'Rajdhani', sans-serif; color: #eaf8ff;
+  padding: 16px 44px 16px 16px; gap: 18px;
+  background: radial-gradient(90% 160% at 0% 50%, rgba(79,209,255,.18), transparent 60%), linear-gradient(180deg, rgba(10,16,30,.95), rgba(14,22,40,.95));
+  border-radius: 2px 26px 2px 26px;
+  border: 1px solid rgba(212,175,106,.7);
+  box-shadow: 0 0 24px rgba(79,209,255,.3), inset 0 0 0 4px rgba(10,16,30,.9), inset 0 0 0 5px rgba(212,175,106,.35);
+}
+.theme-g-wf #card::after { /* linia energii u dołu */
+  content: ""; position: absolute; left: 20px; right: 20px; bottom: -1px; height: 2px;
+  background: linear-gradient(90deg, transparent, #4fd1ff, #ffffff, #4fd1ff, transparent); box-shadow: 0 0 12px #4fd1ff; animation: wf-flow 2.8s ease-in-out infinite;
+}
+@keyframes wf-flow { 0%, 100% { opacity: .5; transform: scaleX(.6); } 50% { opacity: 1; transform: scaleX(1); } }
+.theme-g-wf #icon { border-radius: 2px 16px 2px 16px; border: 1px solid #d4af6a; background: #0a1020; box-shadow: 0 0 12px rgba(79,209,255,.35); }
+.theme-g-wf #mono { font-family: 'Exo 2', sans-serif; font-weight: 800; color: #4fd1ff; text-shadow: 0 0 10px #4fd1ff; }
+.theme-g-wf #name { font-weight: 700; font-size: 38px; letter-spacing: .2em; text-transform: uppercase; color: #fff; text-shadow: 0 0 16px rgba(79,209,255,.65); }
+.theme-g-wf #card.long #name { font-size: 28px; letter-spacing: .12em; }
+.theme-g-wf #label { font-weight: 600; font-size: 12px; letter-spacing: .34em; color: #d4af6a; }
+.theme-g-wf #label .dot { background: #4fd1ff; box-shadow: 0 0 10px #4fd1ff; }
+.theme-g-wf #meta { color: #9cc7da; font-size: 15px; letter-spacing: .08em; }
+.theme-g-wf #timer { color: #d4af6a; }
+.theme-g-wf #emblem { width: 90px; height: 90px; left: -36px; top: -54px; }
+
+/* ============================================================ DEADLOCK – art déco, okultystyczny noir */
+.theme-g-dl #card {
+  font-family: 'Poiret One', 'Josefin Sans', sans-serif; color: #efe6c8;
+  padding: 18px 46px 18px 18px; gap: 18px;
+  background: linear-gradient(180deg, rgba(16,36,33,.96), rgba(10,24,22,.96));
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+  box-shadow: inset 0 0 0 2px #d8c99b, inset 0 0 0 6px rgba(16,36,33,.96), inset 0 0 0 7px rgba(216,201,155,.5);
+}
+.theme-g-dl #icon { border: 2px solid #d8c99b; background: #0a1816; clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px); }
+.theme-g-dl #mono { font-family: 'Limelight', serif; color: #d8c99b; }
+.theme-g-dl #name { font-family: 'Limelight', 'Poiret One', serif; font-size: 38px; color: #efe6c8; letter-spacing: .06em; text-shadow: 0 0 18px rgba(216,201,155,.3); }
+.theme-g-dl #label { font-weight: 400; font-size: 14px; letter-spacing: .4em; color: #8fc7bb; }
+.theme-g-dl #label .dot { background: #d8c99b; box-shadow: none; transform: rotate(45deg); border-radius: 0; animation: none; }
+.theme-g-dl #meta { color: #b3ab8c; font-size: 16px; letter-spacing: .1em; }
+.theme-g-dl #timer { color: #d8c99b; }
+.theme-g-dl #emblem { width: 100px; height: 72px; right: 10px; top: -52px; }
+.dl-fan { animation: em-pulse 6s ease-in-out infinite; transform-origin: 50% 100%; }
+
+/* ============================================================ DARKEST DUNGEON – pochodnia i krew */
+.theme-g-dd #card {
+  font-family: 'IM Fell English', Georgia, serif; color: #e8dcc6;
+  padding: 16px 44px 16px 16px; gap: 18px;
+  background: radial-gradient(90% 140% at 100% 0%, rgba(232,163,61,.22), transparent 60%), linear-gradient(180deg, rgba(20,14,12,.95), rgba(10,8,8,.95));
+  border: 2px solid #3a2a22;
+  box-shadow: inset 0 0 0 1px #6b1a16, 0 0 40px rgba(232,163,61,.18), 0 12px 32px rgba(0,0,0,.7);
+  animation: dd-torch 3.2s ease-in-out infinite;
+}
+@keyframes dd-torch { 0%, 100% { box-shadow: inset 0 0 0 1px #6b1a16, 0 0 40px rgba(232,163,61,.18), 0 12px 32px rgba(0,0,0,.7); } 45% { box-shadow: inset 0 0 0 1px #6b1a16, 0 0 26px rgba(232,163,61,.1), 0 12px 32px rgba(0,0,0,.7); } 70% { box-shadow: inset 0 0 0 1px #6b1a16, 0 0 48px rgba(232,163,61,.24), 0 12px 32px rgba(0,0,0,.7); } }
+.theme-g-dd #card::after { /* postrzępiona krawędź pergaminu u dołu */
+  content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 8px;
+  background: linear-gradient(135deg, transparent 50%, #0a0808 50%) 0 0 / 12px 8px repeat-x, linear-gradient(225deg, transparent 50%, #0a0808 50%) 0 0 / 12px 8px repeat-x;
+}
+.theme-g-dd #icon { border: 2px solid #6b1a16; background: #140e0c; box-shadow: inset 0 0 14px rgba(0,0,0,.9); }
+.theme-g-dd #mono { font-family: 'IM Fell English SC', serif; color: #e8a33d; }
+.theme-g-dd #name { font-family: 'IM Fell English SC', Georgia, serif; font-size: 38px; color: #e8dcc6; text-shadow: 0 2px 0 #000, 0 0 14px rgba(196,48,43,.45); }
+.theme-g-dd #label { font-family: 'IM Fell English SC', serif; font-size: 15px; letter-spacing: .12em; color: #c4302b; }
+.theme-g-dd #label .dot { background: #c4302b; box-shadow: 0 0 8px #c4302b; }
+.theme-g-dd #meta { font-style: italic; color: #a8957a; font-size: 17px; }
+.theme-g-dd #timer { font-style: normal; color: #e8a33d; }
+.theme-g-dd #emblem { width: 60px; height: 104px; right: -18px; top: -76px; }
+.dd-flame { transform-origin: 35px 46px; animation: dd-flicker 1.4s ease-in-out infinite; }
+@keyframes dd-flicker { 0%, 100% { transform: scale(1, 1) skewX(0); } 25% { transform: scale(.94, 1.06) skewX(3deg); } 50% { transform: scale(1.04, .95) skewX(-2deg); } 75% { transform: scale(.97, 1.03) skewX(2deg); } }
+
+/* ============================================================ HOLLOW KNIGHT / SILKSONG – blade dusze i czerwona nić */
+.theme-g-hk #card {
+  font-family: 'Cinzel', Georgia, serif; color: #e8eef7;
+  padding: 16px 44px 16px 16px; gap: 18px;
+  background: radial-gradient(80% 160% at 50% 120%, rgba(185,200,230,.14), transparent 60%), linear-gradient(180deg, rgba(10,14,26,.95), rgba(6,8,16,.95));
+  border-radius: 40px 4px 40px 4px;
+  border: 1px solid rgba(232,238,247,.55);
+  box-shadow: 0 0 0 4px rgba(6,8,16,.9), 0 0 0 5px rgba(232,238,247,.18), 0 14px 36px rgba(0,0,0,.7);
+}
+.theme-g-hk #icon { border-radius: 30px 4px 30px 4px; border: 1px solid #e8eef7; background: #0a0e1a; box-shadow: 0 0 14px rgba(232,238,247,.25); }
+.theme-g-hk #mono { font-family: 'Cinzel', serif; color: #e8eef7; }
+.theme-g-hk #name { font-weight: 700; font-size: 36px; letter-spacing: .1em; text-transform: uppercase; color: #f4f7fc; text-shadow: 0 0 18px rgba(232,238,247,.35); }
+.theme-g-hk #card.long #name { font-size: 28px; }
+.theme-g-hk #label { font-size: 12px; letter-spacing: .36em; color: #9fb0cf; }
+.theme-g-hk #label .dot { background: #c72c3b; box-shadow: 0 0 8px #c72c3b; }
+.theme-g-hk #meta { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; color: #b9c8e6; font-size: 18px; }
+.theme-g-hk #timer { font-style: normal; color: #c72c3b; }
+.theme-g-hk #emblem { width: 150px; height: 112px; right: -30px; top: -78px; }
+.hk-thread { stroke-dasharray: 220; stroke-dashoffset: 220; animation: hk-sew 5s ease-in-out infinite; }
+@keyframes hk-sew { 0% { stroke-dashoffset: 220; } 45%, 70% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -220; } }
+
+/* ekrany przerw: tła */
+.theme-g-tal { --scene-bg: #2a1a0c; --scene-font: 'IM Fell English SC', serif; }
+.theme-g-pal { --scene-bg: #7cc8ff; --scene-font: 'Fredoka', sans-serif; --scene-ink: #1f2b44; --scene-muted: #34507a; }
+.theme-g-me { --scene-bg: #070b12; --scene-font: 'Exo 2', sans-serif; }
+.theme-g-wf { --scene-bg: #060a14; --scene-font: 'Exo 2', sans-serif; }
+.theme-g-dl { --scene-bg: #0a1816; --scene-font: 'Poiret One', sans-serif; }
+.theme-g-dd { --scene-bg: #0a0808; --scene-font: 'IM Fell English SC', serif; }
+.theme-g-hk { --scene-bg: #05070e; --scene-font: 'Cinzel', serif; }
+
+.reduced-motion .hk-thread { stroke-dashoffset: 0; animation: none !important; }

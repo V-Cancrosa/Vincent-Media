@@ -15,7 +15,8 @@ Do wpisywania gry ręcznie wystarczą dwa pliki HTML.
 `neon` · `glass` · `minimal` · `retro` (pixel art) · `esport` (pasek)
 
 **Motywy gier** (włączają się same, gdy gra ma swój motyw; można to wyłączyć w panelu):
-Elden Ring · Minecraft · Fortnite · League of Legends · VALORANT · Counter-Strike 2 · GTA V · Cyberpunk 2077.
+Talisman (obie edycje) · Palworld · Mass Effect · Warframe · Deadlock · Darkest Dungeon · Hollow Knight (też Silksong) · Cyberpunk 2077 · Counter-Strike 2.
+W plikach są też Elden Ring, Minecraft, Fortnite, League of Legends, VALORANT i GTA V – działają przy wykryciu gry, ale nie ma ich na liście w panelu (nie ma ich w bibliotece). Listę ukrytych zmienisz w `themes/library.js`.
 Mają animowane ozdobniki wystające nad panel i cząsteczki wokół niego. Cała grafika jest narysowana od zera (SVG i canvas), bez logotypów i grafik z gier – licencja CC0. Definicje są w `themes/games.js` i `themes/games.css`.
 
 **Motywy postaci:** Vince · Chip · Ragnar · Toro · Myr-35 · Zarin (w panelu w grupie *Postacie*, w adresie `theme=g-vince` itd.).
