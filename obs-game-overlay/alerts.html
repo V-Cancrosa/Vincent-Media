@@ -13,6 +13,9 @@
 <script src="themes/fursona.js"></script>
 <link rel="stylesheet" href="themes/library.css">
 <script src="themes/library.js"></script>
+<link rel="stylesheet" href="themes/fusion.css">
+<script src="themes/fusion.js"></script>
+<script src="themes/voices.js"></script>
 <link rel="stylesheet" href="themes/base.css">
 <style>
   /* Alert = ta sama karta co „Teraz gram”, tylko większa, z ikoną zdarzenia i błyskiem przy wejściu. */
@@ -55,6 +58,7 @@
         <div id="label"><span class="dot"></span><span id="labelText"></span></div>
         <div id="name"></div>
         <div id="meta"><span id="sub"></span><span id="timer"></span></div>
+        <div id="quote"></div>
       </div>
     </div>
     <div id="emblem" aria-hidden="true"></div>
@@ -126,22 +130,33 @@
   const GT = window.OverlayGameThemes || { byId: () => null, FX: { attach() {}, set() {} }, texture: () => '' };
   GT.FX.attach($('fx'));
   let emblemFor = null, themeId = 'neon';
-  function applyStyle() {
+  let fusion = { cls: 'neon', def: null, game: null };
+  function themeIdPeek() {
+    const active = read(ACTIVE_KEY, null);
+    const cls = p.has('theme') ? settings.theme : (active && active.cls) || settings.theme || 'neon';
+    return cls.startsWith('g-') ? cls.slice(2) : cls;
+  }
+  function applyStyle(extra = '') {
+    // styl i gra z karty „Teraz gram” (overlay.html publikuje je w activeTheme) – ta sama fuzja
     const active = read(ACTIVE_KEY, null);
     let cls = p.has('theme') ? settings.theme : (active && active.cls) || settings.theme || 'neon';
     const def = cls.startsWith('g-') ? GT.byId(cls.slice(2)) : null;
     if (cls.startsWith('g-') && !def) cls = 'neon';
+    const game = !p.has('theme') && active && active.game && (!def || def.id !== active.game) ? GT.byId(active.game) : null;
+    fusion = { cls, def, game };
     themeId = def ? def.id : cls;
     const reduced = settings.motion === 'reduced';
-    document.body.className = `theme-${cls} pos-${settings.alertPos}` + (def ? ' game-theme' : '') +
-      (def && def.group === 'fursona' ? ' f-theme' : '') + (reduced ? ' reduced-motion' : '');
-    if (emblemFor !== cls) {
-      emblemFor = cls;
+    document.body.className = `theme-${cls} pos-${settings.alertPos}` + (GT.bodyClasses ? GT.bodyClasses(fusion) : '') +
+      (reduced ? ' reduced-motion' : '') + extra;
+    const key = cls + '|' + (game ? game.id : '');
+    if (emblemFor !== key) {
+      emblemFor = key;
       $('emblem').innerHTML = def ? def.emblem || '' : '';
       $('backdrop').innerHTML = def ? def.back || '' : '';
     }
+    if (GT.applyFusion) GT.applyFusion($('wrap'), fusion);
     const root = document.documentElement.style;
-    const acc = def ? def.accent : ['#7c5cff', '#00e1ff'];
+    const acc = GT.fusionAccent ? GT.fusionAccent(fusion, ['#7c5cff', '#00e1ff']) : (def ? def.accent : ['#7c5cff', '#00e1ff']);
     root.setProperty('--accent', settings.accent || acc[0]);
     root.setProperty('--accent2', settings.accent2 || acc[1]);
     root.setProperty('--scale', settings.alertScale);
@@ -202,9 +217,15 @@
     const ev = queue.shift();
     if (!ev) { busy = false; GT.FX.set(null); return; }
     busy = true;
-    const { def, reduced } = applyStyle();
+    // głos postaci (themes/voices.js); Myr losuje rejestr – syndrom szarpie kartą, terminal zmienia czcionkę
+    const n = ev.count || ev.months || ev.amount || ev.viewers || '';
+    const activeGame = fusion.game ? fusion.game.name : '';
+    const v = window.OverlayVoices ? window.OverlayVoices.pick(themeIdPeek(), ev.type, { user: ev.user || '', n, reward: ev.reward || '', game: activeGame }) : null;
+    const reg = v ? v.register : '';
+    const { def, reduced } = applyStyle(reg === 'syndrome' ? ' syndrome' : reg === 'terminal' ? ' terminal-voice' : '');
     const labels = { ...LABELS._, ...(LABELS[themeId] || {}) };
-    $('labelText').textContent = labels[ev.type] || ev.type;
+    $('labelText').textContent = (v && v.label) || labels[ev.type] || ev.type;
+    $('quote').textContent = v && v.line ? v.line : '';
     $('name').textContent = ev.user || '';
     $('name').dataset.text = ev.user || '';
     $('sub').textContent = details(ev);
@@ -216,7 +237,7 @@
     $('icon').innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[ev.type] || ICONS.follow}</svg>`;
     const dur = Math.max(3, +settings.alertDuration || 6);
     document.documentElement.style.setProperty('--dur', dur + 's');
-    GT.FX.set(def && !reduced ? def.fx : null);
+    GT.FX.set(!reduced ? (GT.fusionFx ? GT.fusionFx(fusion) : def && def.fx) : null);
     const wrap = $('wrap');
     requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('show')));
     play(ev.type);

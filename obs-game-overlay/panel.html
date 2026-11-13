@@ -71,6 +71,7 @@
 <script src="themes/games.js"></script>
 <script src="themes/fursona.js"></script>
 <script src="themes/library.js"></script>
+<script src="themes/fusion.js"></script>
 </head>
 <body>
 <main>
@@ -204,7 +205,13 @@
       <label class="check"><input id="showLabel" type="checkbox"> napis</label>
     </div>
     <div class="checks">
-      <label class="check"><input id="gameThemes" type="checkbox"> gra ma własny motyw → włącz go sam</label>
+      <label style="flex-basis:100%">Gdy gra ma własny motyw
+        <select id="gameMode">
+          <option value="fuse">Fuzja: mój styl + kolory, cząsteczki i znak gry</option>
+          <option value="game">Motyw gry zastępuje mój styl</option>
+          <option value="off">Ignoruj motywy gier</option>
+        </select>
+      </label>
       <label class="check"><input id="reducedMotion" type="checkbox"> ogranicz animacje</label>
     </div>
   </section>
@@ -331,7 +338,7 @@
     accent: '', accent2: '', mode: 'auto', discordId: '', ignore: '',
     timer: true, icon: true, showLabel: true, visible: true, scale: 1, margin: 40,
     local: true, localUrl: 'http://localhost:7777',
-    gameThemes: true, motion: 'full',
+    gameThemes: true, gameMode: 'fuse', motion: 'full',
     features: { discord: false, twitch: true },
     scene: 'start', sceneUntil: 0, sceneSub: '', socials: '', sceneHero: true,
     alertPos: 'tc', alertScale: 1.25, alertDuration: 6, alertVolume: 0.5,
@@ -438,7 +445,8 @@
     for (const id of ['furThemeOpts', 'gameThemeOpts']) if (!$(id).children.length) $(id).remove();
   } catch {}
   $('reducedMotion').addEventListener('change', () => { s.motion = $('reducedMotion').checked ? 'reduced' : 'full'; save(); });
-  ['timer', 'icon', 'showLabel', 'local', 'gameThemes'].forEach(id => $(id).addEventListener('change', () => { s[id] = $(id).checked; save(); }));
+  $('gameMode').addEventListener('change', () => { s.gameMode = $('gameMode').value; s.gameThemes = s.gameMode !== 'off'; save(); });
+  ['timer', 'icon', 'showLabel', 'local'].forEach(id => $(id).addEventListener('change', () => { s[id] = $(id).checked; save(); }));
   $('scale').addEventListener('input', () => { s.scale = +$('scale').value; save(); });
   $('margin').addEventListener('input', () => { s.margin = +$('margin').value; save(); });
   $('accent').addEventListener('input', () => { s.accent = $('accent').value; $('autoColor').checked = false; save(); });
@@ -449,7 +457,7 @@
     for (const id of ['label', 'discordId', 'ignore', 'localUrl']) if (document.activeElement !== $(id)) $(id).value = s[id];
     $('mode').value = s.mode; $('theme').value = s.theme; $('position').value = s.position;
     $('local').checked = s.local;
-    $('gameThemes').checked = s.gameThemes;
+    $('gameMode').value = s.gameThemes === false ? 'off' : (s.gameMode || 'fuse');
     $('reducedMotion').checked = s.motion === 'reduced';
     $('timer').checked = s.timer; $('icon').checked = s.icon; $('showLabel').checked = s.showLabel;
     $('scale').value = s.scale; $('scaleVal').textContent = Math.round(s.scale * 100) + '%';
@@ -581,7 +589,8 @@
     if (!s.icon) q.set('icon', '0');
     if (!s.showLabel) q.set('showLabel', '0');
     if (!s.local) q.set('local', '0');
-    if (!s.gameThemes) q.set('gameThemes', '0');
+    if (s.gameThemes === false) q.set('gameThemes', '0');
+    if (s.gameMode && s.gameMode !== 'fuse') q.set('gameMode', s.gameMode);
     if (s.motion === 'reduced') q.set('motion', 'reduced');
     if (s.localUrl !== DEFAULTS.localUrl) q.set('localUrl', s.localUrl);
     $('staticUrl').value = u.href;

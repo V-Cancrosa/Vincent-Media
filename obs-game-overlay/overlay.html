@@ -13,6 +13,9 @@
 <script src="themes/fursona.js"></script>
 <link rel="stylesheet" href="themes/library.css">
 <script src="themes/library.js"></script>
+<link rel="stylesheet" href="themes/fusion.css">
+<script src="themes/fusion.js"></script>
+<script src="themes/voices.js"></script>
 <link rel="stylesheet" href="themes/base.css">
 </head>
 <body class="theme-neon pos-bl">
@@ -58,6 +61,7 @@
   };
   for (const [k, v] of Object.entries(map)) if (p.has(k)) fromUrl[v] = p.get(k);
   if (p.has('gameThemes')) fromUrl.gameThemes = bool(p.get('gameThemes'));
+  if (p.has('gameMode')) fromUrl.gameMode = p.get('gameMode');
   if (p.has('local')) fromUrl.local = bool(p.get('local'));
   if (p.has('timer')) fromUrl.timer = bool(p.get('timer'));
   if (p.has('icon')) fromUrl.icon = bool(p.get('icon'));
@@ -256,32 +260,29 @@
   const GT = window.OverlayGameThemes || { find: () => null, byId: () => null, FX: { attach() {}, set() {} }, texture: () => '' };
   GT.FX.attach($('fx'));
 
-  function resolveTheme(g) {
-    // 1) gra ma własny motyw i auto jest włączone  2) wybrany motyw (bazowy albo gry)  3) neon
-    const auto = g && settings.gameThemes ? GT.find(g.name) : null;
-    if (auto) return { cls: 'g-' + auto.id, game: auto };
-    const t = String(settings.theme || 'neon');
-    if (t.startsWith('g-')) { const def = GT.byId(t.slice(2)); return def ? { cls: t, game: def } : { cls: 'neon', game: null }; }
-    return { cls: t, game: null };
-  }
-
+  // styl + gra: postać / motyw bazowy łączy się z motywem gry (themes/fusion.js)
+  let fxFor = null;
   function applyStyle(g) {
-    const th = resolveTheme(g);
+    const th = GT.resolve ? GT.resolve(settings, g && g.name) : { cls: settings.theme || 'neon', def: null, game: null };
+    const def = th.def;
     const reduced = settings.motion === 'reduced';
-    document.body.className = `theme-${th.cls} pos-${settings.position}` +
-      (th.game ? ' game-theme' : '') + (th.game && th.game.group === 'fursona' ? ' f-theme' : '') + (reduced ? ' reduced-motion' : '') +
-      (settings.icon ? '' : ' no-icon') + (settings.showLabel ? '' : ' no-label');
-    if (emblemFor !== th.cls) {
-      emblemFor = th.cls;
-      // alerty (alerts.html) używają tego samego motywu co karta z grą
-      try { localStorage.setItem('obsGameOverlay.activeTheme', JSON.stringify({ cls: th.cls, at: Date.now() })); } catch {}
-      emblemEl.innerHTML = th.game ? th.game.emblem || '' : '';
-      backEl.innerHTML = th.game ? th.game.back || '' : '';
+    document.body.className = `theme-${th.cls} pos-${settings.position}` + (GT.bodyClasses ? GT.bodyClasses(th) : '') +
+      (reduced ? ' reduced-motion' : '') + (settings.icon ? '' : ' no-icon') + (settings.showLabel ? '' : ' no-label');
+    const key = th.cls + '|' + (th.game ? th.game.id : '');
+    if (emblemFor !== key) {
+      emblemFor = key;
+      // alerty i ekrany (alerts.html, scenes.html) używają tego samego stylu i tej samej gry
+      try { localStorage.setItem('obsGameOverlay.activeTheme', JSON.stringify({ cls: th.cls, game: th.game ? th.game.id : '', at: Date.now() })); } catch {}
+      emblemEl.innerHTML = def ? def.emblem || '' : '';
+      backEl.innerHTML = def ? def.back || '' : '';
     }
-    GT.FX.set(th.game && !reduced ? th.game.fx : null);
-    document.documentElement.style.setProperty('--tex', th.game ? GT.texture(th.game) : '');
+    if (GT.applyFusion) GT.applyFusion(wrap, th);
+    const fxKey = key + reduced;
+    if (fxKey !== fxFor) { fxFor = fxKey; GT.FX.set(!reduced ? (GT.fusionFx ? GT.fusionFx(th) : def && def.fx) : null); }
+    document.documentElement.style.setProperty('--tex', def ? GT.texture(def) : '');
     let [a1, a2] = autoAccents(g ? g.name : 'game');
-    if (th.game) [a1, a2] = th.game.accent;
+    if (GT.fusionAccent) [a1, a2] = GT.fusionAccent(th, [a1, a2]);
+    th.game = def;
     const root = document.documentElement.style;
     root.setProperty('--accent', settings.accent || a1);
     root.setProperty('--accent2', settings.accent2 || a2);
