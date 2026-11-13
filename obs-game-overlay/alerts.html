@@ -234,7 +234,7 @@
     let delay = 1000;
     if (!settings.local) { timer = setTimeout(poll, 5000); return; }
     try {
-      const base = settings.localUrl.replace(/\/+$/, '');
+      const base = window.vmHub(settings.localUrl);
       const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 2500);
       const r = await fetch(base + '/events' + (last != null ? '?after=' + last : ''), { cache: 'no-store', signal: ctl.signal });
       clearTimeout(t);

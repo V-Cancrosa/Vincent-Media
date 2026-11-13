@@ -703,6 +703,8 @@ function Update-Updater {
     if ($now -ge $script:UP.nextLocal) {
         $script:UP.nextLocal = $now.AddSeconds(30)
         if ((Get-AppVersion) -ne $script:AppVersion) { $script:RestartPending = $true }
+        # enable-remote.ps1 prosi o restart (włączono pilota z telefonu)
+        if (Test-Path $RestartFlag) { Remove-Item $RestartFlag -Force -ErrorAction SilentlyContinue; $script:RestartPending = $true }
     }
     if ($script:UP.auto -and $now -ge $script:UP.nextCheck) {
         $script:UP.nextCheck = $now.AddHours(6)
@@ -720,6 +722,60 @@ function Restart-Detector {
 }
 
 # ---------------------------------------------------------------- HTTP
+# ---------------------------------------------------------------- pilot z telefonu: ustawienia, pliki, klucz
+$SettingsFile = Join-Path $DataDir 'settings.json'
+$RemoteFile = Join-Path $DataDir 'remote.json'
+$RestartFlag = Join-Path $DataDir 'restart.flag'
+Remove-Item $RestartFlag -ErrorAction SilentlyContinue   # stara prośba o restart nie dotyczy świeżo uruchomionego wykrywacza
+$script:Settings = $null; $script:SettingsRev = 0; $script:SettingsFrom = ''
+if (Test-Path $SettingsFile) {
+    try { $j = (Get-Content $SettingsFile -Raw -Encoding UTF8) | ConvertFrom-Json; $script:Settings = [string]$j.json; $script:SettingsRev = [int]$j.rev } catch {}
+}
+$script:RemoteKey = ''
+try { $script:RemoteKey = [string]((Get-Content $RemoteFile -Raw) | ConvertFrom-Json).key } catch {}
+if (-not $script:RemoteKey) {
+    $chars = 'abcdefghjkmnpqrstuvwxyz23456789'.ToCharArray()
+    $script:RemoteKey = -join (1..8 | ForEach-Object { $chars[(Get-Random -Maximum $chars.Length)] })
+    [IO.File]::WriteAllText($RemoteFile, (@{ key = $script:RemoteKey } | ConvertTo-Json), $Utf8NoBom)
+}
+$script:LanMode = $false
+
+function Get-LanAddresses {
+    $ips = @()
+    try {
+        $ips = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Stop | Where-Object {
+            $_.IPAddress -notmatch '^(127\.|169\.254\.)' -and $_.PrefixOrigin -in @('Dhcp', 'Manual') } | ForEach-Object { $_.IPAddress })
+    } catch {
+        $ips = @([Net.Dns]::GetHostAddresses([Net.Dns]::GetHostName()) | Where-Object { $_.AddressFamily -eq 'InterNetwork' -and $_.ToString() -notmatch '^(127\.|169\.254\.)' } | ForEach-Object { $_.ToString() })
+    }
+    return $ips
+}
+
+$MimeTypes = @{ '.html' = 'text/html; charset=utf-8'; '.css' = 'text/css; charset=utf-8'; '.js' = 'application/javascript; charset=utf-8'
+    '.json' = 'application/json; charset=utf-8'; '.webp' = 'image/webp'; '.png' = 'image/png'; '.jpg' = 'image/jpeg'; '.svg' = 'image/svg+xml'; '.ico' = 'image/x-icon' }
+function Send-File($ctx, [string]$rel) {
+    $res = $ctx.Response
+    if (-not $rel) { $rel = 'panel.html' }
+    $rel = [Uri]::UnescapeDataString($rel).Replace('/', '\')
+    $full = [IO.Path]::GetFullPath((Join-Path $AppDir $rel))
+    $ext = [IO.Path]::GetExtension($full).ToLowerInvariant()
+    $okPath = $full.StartsWith($AppDir + '\', [StringComparison]::OrdinalIgnoreCase) -and $full -notlike '*\detector\*'
+    if (-not $okPath -or -not $MimeTypes.ContainsKey($ext) -or -not (Test-Path $full -PathType Leaf)) {
+        $res.StatusCode = 404; $res.OutputStream.Close(); return
+    }
+    $bytes = [IO.File]::ReadAllBytes($full)
+    $res.ContentType = $MimeTypes[$ext]
+    $res.Headers['Cache-Control'] = 'no-cache'
+    $res.ContentLength64 = $bytes.Length
+    $res.OutputStream.Write($bytes, 0, $bytes.Length)
+    $res.OutputStream.Close()
+}
+
+function Read-Body($req) {
+    $r = New-Object IO.StreamReader($req.InputStream, [Text.Encoding]::UTF8)
+    try { return $r.ReadToEnd() } finally { $r.Dispose() }
+}
+
 function Send-Json($ctx, $obj, [int]$code = 200) {
     $res = $ctx.Response
     $res.StatusCode = $code
@@ -758,9 +814,45 @@ function Invoke-Request($ctx) {
             Send-Json $ctx @{ ok = $true }; return
         }
         $q = Get-Query $req
-        switch ($req.Url.AbsolutePath.TrimEnd('/')) {
+        $path = $req.Url.AbsolutePath
+        # z sieci domowej (telefon) tylko z kluczem; na tym komputerze bez klucza
+        if (-not $req.IsLocal) {
+            $key = [string]$q['key']
+            if (-not $key) { $c = $req.Cookies['vmkey']; if ($c) { $key = $c.Value } }
+            if ($key -ne $script:RemoteKey) {
+                $ctx.Response.StatusCode = 403
+                $b = $Utf8NoBom.GetBytes('Brak dostępu: otwórz adres z kluczem z panelu w OBS (Ustawienia → Pilot z telefonu).')
+                $ctx.Response.ContentType = 'text/plain; charset=utf-8'
+                $ctx.Response.OutputStream.Write($b, 0, $b.Length); $ctx.Response.OutputStream.Close(); return
+            }
+            if ($q['key']) { $ctx.Response.AppendCookie((New-Object Net.Cookie('vmkey', $script:RemoteKey, '/'))) }
+        }
+        if ($path -eq '/ui' -or $path.StartsWith('/ui/')) { Send-File $ctx ($path -replace '^/ui/?', ''); return }
+        switch ($path.TrimEnd('/')) {
+            '/settings' {
+                if ($req.HttpMethod -eq 'POST') {
+                    $body = Read-Body $req
+                    try { $data = $body | ConvertFrom-Json } catch { Send-Json $ctx @{ ok = $false; error = 'zły JSON' } 400; return }
+                    $script:Settings = ($data.settings | ConvertTo-Json -Depth 10 -Compress)
+                    $script:SettingsRev++; $script:SettingsFrom = [string]$data.client
+                    [IO.File]::WriteAllText($SettingsFile, (@{ rev = $script:SettingsRev; json = $script:Settings } | ConvertTo-Json -Compress), $Utf8NoBom)
+                    Send-Json $ctx ([pscustomobject]@{ ok = $true; rev = $script:SettingsRev })
+                } else {
+                    # ustawienia jako tekst JSON – bez przepuszczania przez obiekty PowerShella
+                    $json = if ($script:Settings) { $script:Settings } else { 'null' }
+                    $raw = '{"rev":' + $script:SettingsRev + ',"from":' + ($script:SettingsFrom | ConvertTo-Json) + ',"settings":' + $json + '}'
+                    $res = $ctx.Response; $res.ContentType = 'application/json; charset=utf-8'
+                    $res.Headers['Access-Control-Allow-Origin'] = '*'; $res.Headers['Cache-Control'] = 'no-store'
+                    $b = $Utf8NoBom.GetBytes($raw); $res.ContentLength64 = $b.Length; $res.OutputStream.Write($b, 0, $b.Length); $res.OutputStream.Close()
+                }
+            }
+            '/remote/info' {
+                if (-not $req.IsLocal) { Send-Json $ctx @{ ok = $false } 403; return }
+                $urls = @(); if ($script:LanMode) { $urls = @(Get-LanAddresses | ForEach-Object { "http://${_}:$Port/ui/panel.html?key=$($script:RemoteKey)" }) }
+                Send-Json $ctx ([pscustomobject]@{ lan = $script:LanMode; urls = $urls; key = $script:RemoteKey })
+            }
             '/game' {
-                Send-Json $ctx ([pscustomobject]@{ online = $true; version = 2; appVersion = $script:AppVersion; game = $script:State.game; recent = @($script:State.recent); twitch = (Get-TwitchStatus) })
+                Send-Json $ctx ([pscustomobject]@{ online = $true; version = 2; appVersion = $script:AppVersion; settingsRev = $script:SettingsRev; game = $script:State.game; recent = @($script:State.recent); twitch = (Get-TwitchStatus) })
             }
             '/update/status' { Send-Json $ctx (Get-UpdateStatus) }
             '/update/check' { Invoke-UpdateCheck; Send-Json $ctx (Get-UpdateStatus) }
@@ -842,13 +934,25 @@ Initialize-CustomFile
 Import-Custom
 Initialize-Twitch
 
+# najpierw w całej sieci domowej (pilot z telefonu), a jeśli Windows nie pozwala – tylko na tym komputerze
 $listener = New-Object Net.HttpListener
-$listener.Prefixes.Add("http://localhost:$Port/")
-try { $listener.Start() } catch {
-    Log "Nie mogę otworzyć portu $Port – może wykrywacz już działa w innym oknie? ($($_.Exception.Message))" 'Red'
-    exit 1
+$listener.Prefixes.Add("http://+:$Port/")
+try { $listener.Start(); $script:LanMode = $true }
+catch {
+    try { $listener.Close() } catch {}
+    $listener = New-Object Net.HttpListener
+    $listener.Prefixes.Add("http://localhost:$Port/")
+    try { $listener.Start() } catch {
+        Log "Nie mogę otworzyć portu $Port – może wykrywacz już działa w innym oknie? ($($_.Exception.Message))" 'Red'
+        exit 1
+    }
 }
 Log "Nasłuchuję na http://localhost:$Port/" 'Green'
+if ($script:LanMode) {
+    foreach ($ip in Get-LanAddresses) { Log "Pilot z telefonu: http://${ip}:$Port/ui/panel.html?key=$($script:RemoteKey)" 'Cyan' }
+} else {
+    Log 'Pilot z telefonu wyłączony – włączysz go skrótem „Włącz pilota z telefonu” (jedna zgoda administratora).' 'DarkGray'
+}
 
 try {
     $next = [DateTime]::MinValue

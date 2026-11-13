@@ -242,7 +242,7 @@
   async function pollRecent() {
     if (settings.local) {
       try {
-        const r = await fetch(settings.localUrl.replace(/\/+$/, '') + '/events?after=0', { cache: 'no-store' });
+        const r = await fetch(window.vmHub(settings.localUrl) + '/events?after=0', { cache: 'no-store' });
         const j = await r.json();
         if (window.vmCheckVersion) window.vmCheckVersion(j.appVersion);
         for (const ev of j.events || []) {

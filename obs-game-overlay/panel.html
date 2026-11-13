@@ -281,6 +281,18 @@
     </ul>
   </section>
 
+  <section id="remoteSec">
+    <h2>Pilot z telefonu <span id="rmPill" class="pill off">WYŁ.</span></h2>
+    <div class="status" id="rmStatus">Sprawdzam…</div>
+    <div id="rmOn" hidden>
+      <p class="hint" style="margin:0">Telefon w tej samej sieci Wi‑Fi: zeskanuj kod albo otwórz adres. Zmiany z telefonu od razu widać w OBS.</p>
+      <div id="rmQr" style="background:#fff;padding:10px;border-radius:8px;align-self:center;line-height:0"></div>
+      <input id="rmUrl" type="text" readonly>
+      <div class="row"><button class="auto" id="rmCopy">Kopiuj adres</button></div>
+      <p class="hint" style="margin:0">Adres zawiera klucz – nie pokazuj go na streamie.</p>
+    </div>
+  </section>
+
   <section>
     <h2>Funkcje</h2>
     <p class="hint" style="margin:0">Włącz tylko to, czego używasz – wyłączone funkcje znikają z panelu.</p>
@@ -335,6 +347,38 @@
     try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {}
     if (bc) bc.postMessage('update');
     syncUi();
+    pushHub();
+  }
+
+  // --- wspólne ustawienia przez wykrywacz (dok w OBS + pilot z telefonu) ---
+  const CLIENT = Math.random().toString(36).slice(2);
+  let hubRev = null, pushTimer = null;
+  function pushHub() {
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(async () => {
+      try {
+        const r = await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/settings', {
+          method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ client: CLIENT, settings: s })
+        });
+        const j = await r.json(); if (j.ok) hubRev = j.rev;
+      } catch {}
+    }, 250);
+  }
+  async function pullHub() {
+    try {
+      const r = await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/settings', { cache: 'no-store' });
+      const j = await r.json();
+      if (!j.settings && hubRev === null) { hubRev = 0; pushHub(); }          // pierwszy raz: wyślij ustawienia z OBS
+      else if (j.settings && j.rev !== hubRev && j.from !== CLIENT) {
+        hubRev = j.rev;
+        s = { ...DEFAULTS, ...j.settings };
+        try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {}
+        if (bc) bc.postMessage('update');
+        syncUi();
+        if (document.activeElement !== $('game')) { $('game').value = s.game || ''; $('subtitle').value = s.subtitle || ''; }
+      } else hubRev = j.rev;
+    } catch {}
+    setTimeout(pullHub, 2000);
   }
 
   // --- historia gier ---
@@ -487,7 +531,7 @@
       if (bc) bc.postMessage('sim');
       return;
     }
-    const base = (s.localUrl || DEFAULTS.localUrl).replace(/\/+$/, '');
+    const base = window.vmHub(s.localUrl || DEFAULTS.localUrl);
     const r = await fetch(base + path, { cache: 'no-store' });
     const j = await r.json().catch(() => ({}));
     if (!r.ok || !j.ok) throw new Error(j.error || r.status);
@@ -603,7 +647,7 @@
     // najpierw przez wykrywacz (ta sama droga co prawdziwe alerty), a bez niego – bezpośrednio do nakładek
     try {
       if (!s.local) throw 0;
-      const r = await fetch((s.localUrl || DEFAULTS.localUrl).replace(/\/+$/, '') + '/test?type=' + type, { cache: 'no-store' });
+      const r = await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/test?type=' + type, { cache: 'no-store' });
       if (!r.ok) throw 0;
     } catch { if (bc) bc.postMessage({ type: 'alert', event: fakeEvent(type) }); }
   });
@@ -613,7 +657,7 @@
   async function twPoll() {
     let st = null;
     try {
-      const r = await fetch((s.localUrl || DEFAULTS.localUrl).replace(/\/+$/, '') + '/twitch/status', { cache: 'no-store' });
+      const r = await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/twitch/status', { cache: 'no-store' });
       st = await r.json();
     } catch { st = null; }
     twState = st; twRender();
@@ -638,7 +682,7 @@
     const id = $('twClient').value.trim();
     if (!id && !(twState && twState.hasClient)) { $('twClient').focus(); return; }
     try {
-      const base = (s.localUrl || DEFAULTS.localUrl).replace(/\/+$/, '');
+      const base = window.vmHub(s.localUrl || DEFAULTS.localUrl);
       const r = await fetch(base + '/twitch/setup?clientId=' + encodeURIComponent(id || 'keep'), { cache: 'no-store' });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || r.status);
@@ -646,7 +690,7 @@
     } catch (e) { setStatus($('twStatus'), ['Nie udało się: ' + e.message]); }
   };
   $('twLogout').onclick = async () => {
-    try { const r = await fetch((s.localUrl || DEFAULTS.localUrl).replace(/\/+$/, '') + '/twitch/logout', { cache: 'no-store' }); twState = await r.json(); twRender(); } catch {}
+    try { const r = await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/twitch/logout', { cache: 'no-store' }); twState = await r.json(); twRender(); } catch {}
   };
 
   // --- zakładki ---
@@ -672,8 +716,37 @@
     $('connEmpty').hidden = on.local || on.twitch || on.discord;
   }
 
+  // --- pilot z telefonu ---
+  const onPhone = /^https?:$/.test(location.protocol) && location.pathname.indexOf('/ui/') === 0;
+  if (onPhone) $('remoteSec').hidden = true;
+  let qrLib = null, rmShown = '';
+  function loadQr() {
+    if (qrLib) return qrLib;
+    qrLib = new Promise((ok, fail) => { const sc = document.createElement('script'); sc.src = 'lib/qrcode.min.js'; sc.onload = ok; sc.onerror = fail; document.head.appendChild(sc); });
+    return qrLib;
+  }
+  async function rmPoll() {
+    if (onPhone) return;
+    let info = null;
+    try { const r = await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/remote/info', { cache: 'no-store' }); info = await r.json(); } catch {}
+    $('rmOn').hidden = !(info && info.lan && info.urls && info.urls.length);
+    if (!info) { pill('rmPill', false, '', 'BRAK'); setStatus($('rmStatus'), ['Pilot działa przez wykrywacz. Uruchom ', { b: 'start-detector.bat' }, '.']); }
+    else if (!info.lan) { pill('rmPill', false, '', 'WYŁ.'); setStatus($('rmStatus'), ['Wymaga jednej zgody administratora: ', { b: 'Menu Start → Vincent-Media → Włącz pilota z telefonu' }, '. Wykrywacz sam uruchomi się ponownie.']); }
+    else {
+      pill('rmPill', true, 'DZIAŁA'); setStatus($('rmStatus'), [info.urls.length > 1 ? 'Komputer ma kilka adresów – użyj tego z Twojej sieci Wi‑Fi.' : '']);
+      const url = info.urls[0];
+      if (rmShown !== url) {
+        rmShown = url; $('rmUrl').value = url; $('rmQr').textContent = '';
+        try { await loadQr(); new window.QRCode($('rmQr'), { text: url, width: 180, height: 180, correctLevel: window.QRCode.CorrectLevel.M }); }
+        catch { $('rmQr').hidden = true; }
+      }
+    }
+    setTimeout(rmPoll, 10000);
+  }
+  $('rmCopy').onclick = async () => { $('rmUrl').select(); try { await navigator.clipboard.writeText($('rmUrl').value); } catch { document.execCommand('copy'); } };
+
   // --- wersja i aktualizacje (przez wykrywacz) ---
-  const hub = path => fetch((s.localUrl || DEFAULTS.localUrl).replace(/\/+$/, '') + path, { cache: 'no-store' }).then(r => r.json());
+  const hub = path => fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + path, { cache: 'no-store' }).then(r => r.json());
   let upState = null;
   function upRender(msg) {
     const st = upState;
@@ -717,6 +790,8 @@
   syncAlerts();
   syncScenes();
   applyFeatures();
+  pullHub();
+  rmPoll();
   twPoll();
   upPoll();
 })();

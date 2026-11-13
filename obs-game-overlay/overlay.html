@@ -181,10 +181,11 @@
         if (sim && sim.active === false) throw new Error('sim off');
         const ctl = new AbortController();
         const t = setTimeout(() => ctl.abort(), 1500);
-        const r = await fetch(settings.localUrl.replace(/\/+$/, '') + '/game', { signal: ctl.signal, cache: 'no-store' });
+        const r = await fetch(window.vmHub(settings.localUrl) + '/game', { signal: ctl.signal, cache: 'no-store' });
         clearTimeout(t);
         j = await r.json();
         if (window.vmCheckVersion) window.vmCheckVersion(j.appVersion);
+        if (usePanel && j.settingsRev != null && j.settingsRev !== hubRev) syncFromHub(j.settingsRev);
       }
       localOnline = true;
       localRecent = Array.isArray(j.recent) ? j.recent : j.recent ? [j.recent] : [];
@@ -200,6 +201,19 @@
     }
     publish();
     localTimer = setTimeout(pollLocal, delay);
+  }
+
+  // ustawienia z wykrywacza (np. zmienione z telefonu) – działa też przy zamkniętym doku
+  let hubRev = null;
+  async function syncFromHub(rev) {
+    try {
+      const r = await fetch(window.vmHub(settings.localUrl) + '/settings', { cache: 'no-store' });
+      const j = await r.json();
+      hubRev = j.rev;
+      if (!j.settings) return;
+      const next = JSON.stringify(j.settings);
+      if (localStorage.getItem(KEY) !== next) { localStorage.setItem(KEY, next); reload(); }
+    } catch {}
   }
 
   // status dla panelu

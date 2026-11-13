@@ -131,6 +131,22 @@ Nazwy z tego pliku mają pierwszeństwo przed bazą Discorda, więc możesz w ni
 Jeśli wpiszesz ręcznie tę samą nazwę co wykryta gra, Twój podtytuł i okładka mają pierwszeństwo.
 Licznik czasu przy wykrytej grze liczy od uruchomienia gry, przy wpisanej ręcznie – od chwili jej ustawienia.
 
+## Panel i pilot z telefonu
+
+Panel ma zakładki **Na żywo** (gra, ekrany przerw, alerty testowe), **Wygląd**, **Połączenia** i **Ustawienia**.
+W *Ustawienia → Funkcje* włączasz tylko to, czego używasz – wyłączone rzeczy (np. Discord) znikają z panelu.
+
+**Pilot z telefonu:** ten sam panel na telefonie w domowej sieci Wi‑Fi – zmieniasz grę, motyw, ekran przerwy albo wywołujesz alert testowy, a OBS od razu to pokazuje (nawet przy zamkniętym doku).
+
+1. Raz: *Menu Start → Vincent-Media → Włącz pilota z telefonu* (albo zgoda w instalatorze). Windows poprosi o zgodę administratora: wykrywacz dostaje pozwolenie na nasłuchiwanie w sieci, a zapora przepuszcza port 7777 **tylko w sieciach prywatnych**.
+2. W panelu w OBS: *Ustawienia → Pilot z telefonu* – zeskanuj kod QR telefonem.
+
+Adres zawiera klucz dostępu (bez niego wykrywacz nie odpowiada nikomu spoza komputera) – nie pokazuj go na streamie.
+Jeśli telefon się nie łączy, sprawdź, czy sieć Wi‑Fi jest w Windows ustawiona jako *prywatna*.
+Wyłączenie pilota: `detector\enable-remote.bat -Disable`.
+
+Ustawienia panelu są teraz zapisywane w wykrywaczu (`detector\data\settings.json`), więc dok i telefon widzą to samo. Bez wykrywacza panel działa jak wcześniej, tylko w OBS.
+
 ## Ekrany przerw
 
 `scenes.html` to pełnoekranowe tło na sceny „Zaraz zaczynamy”, „Przerwa” i „Koniec” w aktywnym motywie: duża karta z odliczaniem, tło z cząsteczkami, duża postać albo emblemat obok, a na dole Twoje linki i ostatni follow / sub z Twitcha.

@@ -323,7 +323,15 @@ $det = Join-Path $InstallDir 'detector'
 New-Link (Join-Path $menu 'Wykrywacz gier.lnk') (Join-Path $det 'start-detector.bat') $det 'Wykrywa grę, łączy z Twitchem i pilnuje aktualizacji'
 New-Link (Join-Path $menu 'Aktualizuj Vincent-Media.lnk') (Join-Path $InstallDir 'update.bat') $InstallDir 'Sprawdź i zainstaluj aktualizacje nakładek'
 New-Link (Join-Path $menu 'Folder Vincent-Media.lnk') $InstallDir $InstallDir 'Pliki nakładek'
-Say 'Menu Start → Vincent-Media: Wykrywacz gier, Aktualizuj, Folder.' 'Green'
+New-Link (Join-Path $menu 'Włącz pilota z telefonu.lnk') (Join-Path $det 'enable-remote.bat') $det 'Sterowanie nakładkami z telefonu w sieci domowej'
+Say 'Menu Start → Vincent-Media: Wykrywacz gier, Aktualizuj, Folder, Włącz pilota z telefonu.' 'Green'
+
+Step 'Pilot z telefonu'
+Say 'Panel można otwierać na telefonie w domowej sieci Wi‑Fi (zmiana gry, ekrany przerw, alerty testowe).' 'Gray'
+Say 'Wymaga jednej zgody administratora (wpis w zaporze tylko dla sieci prywatnych). Panel jest chroniony kluczem.' 'DarkGray'
+if (Ask 'Włączyć pilota z telefonu?' $true) {
+    try { & (Join-Path $det 'enable-remote.ps1') } catch { Say "Nie udało się: $($_.Exception.Message)" 'Yellow' }
+}
 
 $startup = Join-Path ([Environment]::GetFolderPath('Startup')) 'Vincent-Media wykrywacz.lnk'
 if (Ask 'Uruchamiać wykrywacz razem z Windows (w tle, bez okna)? Pilnuje też aktualizacji.' $true) {
