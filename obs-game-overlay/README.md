@@ -4,7 +4,8 @@ Nakładka „Teraz gram” do OBS na nagrania i streamy na YouTube i Twitchu. Na
 
 - `overlay.html` – sama nakładka; w OBS dodajesz ją jako **źródło przeglądarki** (Browser Source)
 - `panel.html` – panel sterowania; w OBS dodajesz go jako **dock przeglądarki** (Custom Browser Dock)
-- `scenes.html` – ekrany przerw („Zaraz zaczynamy”, „Przerwa”, „Koniec”) z odliczaniem; w OBS osobne **źródło przeglądarki**
+- `scenes.html` – ekrany: przygotowania, stream za X, start, spóźnienie, przerwa, koniec z napisami
+- `layouts.html` – układy: gra na pełny ekran (dymki czatu), gra w ramce (czat obok), rozmowa; z miejscem na avatara/kamerkę
 - `chat.html` – czat z Twitcha: dymki albo panel, z wyglądem wybieranym przez widzów
 - `alerts.html` – alerty z Twitcha (follow, sub, raid…); w OBS osobne **źródło przeglądarki**
 - `detector/` – wykrywacz gier i połączenie z Twitchem dla Windows (skrypt PowerShell, nic nie trzeba instalować)
@@ -148,16 +149,33 @@ Wyłączenie pilota: `detector\enable-remote.bat -Disable`.
 
 Ustawienia panelu są teraz zapisywane w wykrywaczu (`detector\data\settings.json`), więc dok i telefon widzą to samo. Bez wykrywacza panel działa jak wcześniej, tylko w OBS.
 
-## Ekrany przerw
+## Ekrany i układy
 
-`scenes.html` to pełnoekranowe tło na sceny „Zaraz zaczynamy”, „Przerwa” i „Koniec” w aktywnym motywie: duża karta z odliczaniem, tło z cząsteczkami, duża postać albo emblemat obok, a na dole Twoje linki i ostatni follow / sub z Twitcha.
+Instalator dodaje wszystko jako sceny OBS `VM · …`. Każdy ekran ma motyw aktywnej postaci (z fuzją z grą), cząsteczki na całym ekranie, przelatujący snop światła przy zmianie ekranu i teksty w głosie postaci.
 
-W OBS dodaj źródło przeglądarki `file:///C:/OBS/obs-game-overlay/scenes.html` (1920×1080). Są dwie możliwości:
-- **Jedno źródło**, a ekran wybierasz w panelu (sekcja *Ekrany przerw*).
-- **Osobne źródło na każdą scenę OBS**: `scenes.html?scene=start`, `scenes.html?scene=brb`, `scenes.html?scene=end`. Wtedy przełączenie sceny w OBS od razu pokazuje właściwy ekran.
+**Ekrany pełnoekranowe** – `scenes.html?scene=…`:
 
-W panelu ustawiasz odliczanie (minuty + *Start*), podpis pod odliczaniem (pusty = „Dziś: [gra]”) i linki w stopce.
-Każda postać ma własne napisy, np. Myr-35: „TRANSMISJA ZA” / „PRZERWA SERWISOWA” / „KONIEC ZMIANY”.
+| Ekran | `scene=` | Co pokazuje |
+|---|---|---|
+| Stream w przygotowaniu | `prep` | „W przygotowaniu” + odhaczana lista (scena, dźwięk, mikrofon, czat…) |
+| Stream za X czasu | `soon` | odliczanie do terminu (dni/godziny), „start jutro o 20:00” |
+| Stream się zaczyna | `start` | odliczanie minut |
+| Stream się spóźnia | `late` | licznik spóźnienia „+05:12”; włącza się sam 30 s po końcu odliczania startu |
+| Przerwa | `brb` | odliczanie; po jego końcu sam przechodzi w „przerwa się przedłuża” (`brb-late`) |
+| Koniec | `end` | przewijane napisy: obecni na czacie i każdy follow, sub, gift, bitsy, raid i nagroda z tego streama |
+
+**Układy** – `layouts.html?layout=…` (źródło gry/kamerki w OBS kładziesz **pod** układem):
+
+| Układ | `layout=` | Co jest na ekranie |
+|---|---|---|
+| Gra na pełny ekran | `game-full` | przezroczysty; czat w dymkach, które wyskakują i znikają; avatar w rogu |
+| Gra w ramce | `game-frame` | gra w animowanej ramce 1440×810 (lewy górny róg 40,40), obok avatar i czat na stałe, pod grą ostatnie zdarzenia i linki |
+| Rozmowa | `talk` | duży avatar, temat rozmowy, czat |
+
+**Avatar / kamerka** (panel → Wygląd → Avatar): *art postaci* (ożywa, gdy mówisz), *kamerka* (przezroczyste okno w ramce – kamerkę ustaw w OBS pod układem w tym miejscu), *VTuber* (okno bez ramki) albo *bez avatara*.
+Możesz też podać własne obrazki „cisza” i „mówię” (PNGtuber).
+
+W panelu (Na żywo → Ekrany) wybierasz ekran, odliczanie, termin dla „Stream za…”, temat rozmowy, podpis i linki w stopce.
 
 ## Czat i komendy dla widzów
 

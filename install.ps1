@@ -173,7 +173,8 @@ if (-not (Test-Path $ObsDir)) {
     Step 'Konfiguracja OBS'
     Say 'Mogę dodać do OBS:' 'Gray'
     Say "  • scenę „${Prefix}Nakładki” (karta z grą + alerty) – dodasz ją jako źródło do swoich scen z grą" 'Gray'
-    Say "  • sceny „${Prefix}Zaraz zaczynamy”, „${Prefix}Przerwa”, „${Prefix}Koniec”" 'Gray'
+    Say "  • ekrany: Przygotowania, Stream za…, Zaraz zaczynamy, Spóźnienie, Przerwa, Koniec (z napisami)" 'Gray'
+    Say "  • układy: Gra – pełny ekran, Gra – w ramce (z czatem), Rozmowa" 'Gray'
     Say '  • dok „Vincent-Media” z panelem sterowania' 'Gray'
     Say 'Przed zmianą zrobię kopię zapasową plików OBS.' 'DarkGray'
     if (Ask 'Skonfigurować OBS?') {
@@ -220,12 +221,19 @@ if (-not (Test-Path $ObsDir)) {
                 $findSrc = { param($name) foreach ($x in $sources) { if ($x['name'] -eq $name) { return $x } } return $null }
 
                 # źródła przeglądarki (przy ponownej instalacji tylko aktualizujemy adresy)
+                $layouts = To-Url (Join-Path $InstallDir 'layouts.html')
                 $want = @(
                     @{ key = 'overlay'; name = "${Prefix}Teraz gram"; url = $Urls.overlay; audio = $false },
                     @{ key = 'alerts'; name = "${Prefix}Alerty"; url = $Urls.alerts; audio = $true },
+                    @{ key = 'prep'; name = "${Prefix}Ekran przygotowania"; url = "$($Urls.scenes)?scene=prep"; audio = $false },
+                    @{ key = 'soon'; name = "${Prefix}Ekran stream za"; url = "$($Urls.scenes)?scene=soon"; audio = $false },
                     @{ key = 'start'; name = "${Prefix}Ekran start"; url = "$($Urls.scenes)?scene=start"; audio = $false },
+                    @{ key = 'late'; name = "${Prefix}Ekran spóźnienie"; url = "$($Urls.scenes)?scene=late"; audio = $false },
                     @{ key = 'brb'; name = "${Prefix}Ekran przerwa"; url = "$($Urls.scenes)?scene=brb"; audio = $false },
-                    @{ key = 'end'; name = "${Prefix}Ekran koniec"; url = "$($Urls.scenes)?scene=end"; audio = $false }
+                    @{ key = 'end'; name = "${Prefix}Ekran koniec"; url = "$($Urls.scenes)?scene=end"; audio = $false },
+                    @{ key = 'lfull'; name = "${Prefix}Układ gra pełny ekran"; url = "$layouts`?layout=game-full"; audio = $false },
+                    @{ key = 'lframe'; name = "${Prefix}Układ gra w ramce"; url = "$layouts`?layout=game-frame"; audio = $false },
+                    @{ key = 'ltalk'; name = "${Prefix}Układ rozmowa"; url = "$layouts`?layout=talk"; audio = $false }
                 )
                 $S = @{}
                 foreach ($w in $want) {
@@ -235,10 +243,17 @@ if (-not (Test-Path $ObsDir)) {
                 }
 
                 # nasze sceny (zawartość nadpisujemy, żeby były zawsze aktualne)
+                # kolejność elementów: od dołu do góry; w scenach z grą dodaj przechwytywanie gry i przesuń je na sam dół
                 $sceneDefs = @(
                     @{ name = "${Prefix}Nakładki"; items = @('overlay', 'alerts') },
+                    @{ name = "${Prefix}Przygotowania"; items = @('prep', 'alerts') },
+                    @{ name = "${Prefix}Stream za…"; items = @('soon', 'alerts') },
                     @{ name = "${Prefix}Zaraz zaczynamy"; items = @('start', 'alerts') },
+                    @{ name = "${Prefix}Spóźnienie"; items = @('late', 'alerts') },
+                    @{ name = "${Prefix}Gra – pełny ekran"; items = @('lfull', 'overlay', 'alerts') },
+                    @{ name = "${Prefix}Gra – w ramce"; items = @('lframe', 'alerts') },
                     @{ name = "${Prefix}Przerwa"; items = @('brb', 'alerts') },
+                    @{ name = "${Prefix}Rozmowa"; items = @('ltalk', 'alerts') },
                     @{ name = "${Prefix}Koniec"; items = @('end', 'alerts') }
                 )
                 $overlayScene = $null
@@ -284,6 +299,8 @@ if (-not (Test-Path $ObsDir)) {
                 $coll['scene_order'] = $order.ToArray()
                 [IO.File]::WriteAllText($collPath, $Json.Serialize($coll), (New-Object Text.UTF8Encoding $false))
                 Say 'Sceny i źródła dodane.' 'Green'
+                Say "W scenach „${Prefix}Gra – …” dodaj swoje przechwytywanie gry i przesuń je na sam dół listy źródeł." 'Yellow'
+                Say 'Kamerka / VTuber: w panelu (Wygląd → Avatar) wybierz tryb, a źródło kamerki ustaw pod układem w miejscu okna.' 'DarkGray'
 
                 # --- dok z panelem
                 $bk2 = Backup $iniPath

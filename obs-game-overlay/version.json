@@ -1,5 +1,5 @@
 {
-  "version": "1.10.0",
+  "version": "1.11.0",
   "date": "2026-11-13",
-  "notes": "Czat z Twitcha na nakładce (dymki i panel), komendy widzów !styl !kolor !efekt, efekty na cały ekran"
+  "notes": "Nowe ekrany (przygotowania, stream za X, spóźnienie, napisy końcowe) i układy: gra pełny ekran, gra w ramce z czatem, rozmowa"
 }

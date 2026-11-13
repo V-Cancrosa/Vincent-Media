@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Layouts</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="themes/fonts.css">
+<link rel="stylesheet" href="themes/chat.css">
+<link rel="stylesheet" href="themes/fusion.css">
+<script src="version.js"></script>
+<script src="themes/games.js"></script>
+<script src="themes/fursona.js"></script>
+<script src="themes/library.js"></script>
+<script src="themes/fusion.js"></script>
+<script src="themes/voices.js"></script>
+<script src="themes/chat.js"></script>
+<script src="themes/client.js"></script>
+<style>
+  /*
+    Układy streamu (1920×1080):
+      ?layout=game-full  – gra na pełnym ekranie: czat w dymkach, avatar w rogu (tło przezroczyste)
+      ?layout=game-frame – gra w ramce (źródło gry w OBS POD tym źródłem), obok czat na stałe i avatar
+      ?layout=talk       – rozmowa: duży avatar, temat, czat
+    Avatar (Ustawienia → Avatar): brak, art (reaguje na głos), kamerka albo VTuber (przezroczyste okno na Twoje źródło).
+  */
+  :root { --accent: #7c5cff; --accent2: #00e1ff; --ink: #f2f2f6; --font: 'Inter', system-ui, sans-serif; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: transparent; color: var(--ink); font-family: var(--font); }
+  * { box-sizing: border-box; }
+
+  /* tło z oknami na grę i kamerkę (clip-path ustawia skrypt) */
+  #bg { position: absolute; inset: 0; background: #0b0b10; overflow: hidden; display: none; }
+  .l-game-frame #bg, .l-talk #bg { display: block; }
+  #bg::before, #bg::after { content: ""; position: absolute; width: 70%; aspect-ratio: 1; border-radius: 50%; filter: blur(70px); opacity: .45; }
+  #bg::before { left: -20%; top: -30%; background: radial-gradient(circle, var(--accent), transparent 65%); animation: drift1 26s ease-in-out infinite alternate; }
+  #bg::after { right: -20%; bottom: -40%; background: radial-gradient(circle, var(--g1, var(--accent2)), transparent 65%); animation: drift2 32s ease-in-out infinite alternate; }
+  @keyframes drift1 { to { transform: translate(18%, 14%) scale(1.15); } }
+  @keyframes drift2 { to { transform: translate(-16%, -10%) scale(1.1); } }
+  #bgfx { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #grid { position: absolute; inset: 0; opacity: .5; background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 48px 48px; }
+
+  /* ramka gry */
+  #gameFrame { position: absolute; display: none; pointer-events: none; }
+  .l-game-frame #gameFrame { display: block; left: 40px; top: 40px; width: 1440px; height: 810px; }
+  #gameFrame::before { content: ""; position: absolute; inset: -6px; border-radius: 14px; padding: 3px;
+    background: linear-gradient(135deg, var(--accent), var(--g1, var(--accent2)), var(--accent2), var(--accent)); background-size: 300% 300%; animation: frameflow 8s linear infinite;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+    filter: drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 60%, transparent)); }
+  @keyframes frameflow { to { background-position: 300% 300%; } }
+  .corner { position: absolute; width: 46px; height: 46px; border: 4px solid var(--accent); filter: drop-shadow(0 0 8px var(--accent)); }
+  .c1 { left: -16px; top: -16px; border-right: 0; border-bottom: 0; } .c2 { right: -16px; top: -16px; border-left: 0; border-bottom: 0; }
+  .c3 { left: -16px; bottom: -16px; border-right: 0; border-top: 0; } .c4 { right: -16px; bottom: -16px; border-left: 0; border-top: 0; }
+  #gameTag { position: absolute; left: 30px; bottom: -22px; padding: 8px 18px; border-radius: 6px; font: 800 20px/1 var(--font); letter-spacing: .06em; text-transform: uppercase;
+    background: #0b0b10; border: 2px solid var(--accent); box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 50%, transparent); }
+  #gameTag:empty { display: none; }
+
+  /* avatar */
+  #avatar { position: absolute; display: none; }
+  .has-avatar #avatar { display: block; }
+  .l-game-frame #avatar { left: 1510px; top: 40px; width: 370px; height: 370px; }
+  .l-game-full #avatar { left: 40px; bottom: 40px; width: 300px; height: 300px; }
+  .l-talk #avatar { left: 110px; top: 150px; width: 780px; height: 780px; }
+  .av-art { position: absolute; inset: 0; display: grid; place-items: end center; }
+  .av-art img { width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; transform-origin: 50% 100%; transition: transform .12s ease, filter .2s ease;
+    filter: drop-shadow(0 0 24px color-mix(in srgb, var(--accent) 45%, transparent)); animation: av-idle 4.5s ease-in-out infinite; }
+  .av-art svg { width: 80%; height: 80%; overflow: visible; }
+  @keyframes av-idle { 50% { transform: translateY(-6px) scale(1.01); } }
+  .talking .av-art img, .talking .av-art svg { animation: av-talk .32s ease-in-out infinite alternate; filter: drop-shadow(0 0 34px var(--accent)) brightness(1.08); }
+  @keyframes av-talk { from { transform: translateY(0) scale(1); } to { transform: translateY(-10px) scale(1.03); } }
+  .av-ring { position: absolute; left: 50%; bottom: 4%; width: 80%; height: 14%; transform: translateX(-50%); border-radius: 50%;
+    background: radial-gradient(ellipse, color-mix(in srgb, var(--accent) 55%, transparent), transparent 70%); filter: blur(4px); }
+  .talking .av-ring { animation: ring-pulse .5s ease-in-out infinite alternate; }
+  @keyframes ring-pulse { to { transform: translateX(-50%) scale(1.15); opacity: .7; } }
+  .av-frame { position: absolute; inset: 0; border-radius: 18px; pointer-events: none; }
+  .av-camera .av-frame { padding: 4px; background: linear-gradient(135deg, var(--accent), var(--g1, var(--accent2)), var(--accent2)); background-size: 300% 300%; animation: frameflow 8s linear infinite;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; filter: drop-shadow(0 0 12px var(--accent)); }
+  .talking .av-camera .av-frame { filter: drop-shadow(0 0 26px var(--accent)); }
+  .av-label { position: absolute; left: 50%; bottom: -16px; transform: translateX(-50%); padding: 4px 14px; border-radius: 999px; background: #0b0b10; border: 2px solid var(--accent); font: 800 15px/1.2 var(--font); letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; }
+
+  /* czat */
+  #chat { position: absolute; }
+  .l-game-frame #chat { left: 1510px; top: 440px; width: 370px; height: 600px; }
+  .l-game-frame.no-avatar #chat { top: 40px; height: 1000px; }
+  .l-game-full #chat { right: 40px; bottom: 40px; width: 560px; max-height: 700px; }
+  .l-talk #chat { left: 1000px; top: 360px; width: 840px; height: 680px; }
+  .l-game-frame .chat, .l-talk .chat { font-size: 18px; }
+  .chat-panel .cmsg { background-color: rgba(10,10,16,.6); }
+
+  /* temat rozmowy */
+  #topic { position: absolute; display: none; left: 1000px; top: 90px; width: 840px; }
+  .l-talk #topic { display: block; }
+  #topicLabel { font: 800 18px/1 var(--font); letter-spacing: .3em; text-transform: uppercase; color: var(--accent); }
+  #topicText { font: 800 64px/1.05 var(--font); margin-top: 12px; text-wrap: balance; text-shadow: 0 0 30px color-mix(in srgb, var(--accent) 45%, transparent); }
+  #topicLine { margin-top: 12px; font-size: 22px; opacity: .8; font-style: italic; }
+
+  /* pasek pod grą: ostatnie zdarzenia i linki */
+  #bar { position: absolute; display: none; gap: 30px; align-items: center; font: 600 20px/1.2 var(--font); }
+  .l-game-frame #bar { display: flex; left: 40px; top: 880px; width: 1440px; height: 160px; padding: 0 30px; border-radius: 14px;
+    background: linear-gradient(90deg, rgba(0,0,0,.35), rgba(0,0,0,.15)); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+  .l-talk #bar { display: flex; left: 1000px; top: 250px; width: 840px; }
+  #bar .item { display: flex; flex-direction: column; gap: 6px; }
+  #bar .item small { font-size: 13px; letter-spacing: .24em; text-transform: uppercase; color: var(--accent); }
+  #bar .item b { font-size: 26px; }
+  #bar .socials { margin-left: auto; display: flex; flex-direction: column; gap: 6px; text-align: right; opacity: .9; }
+
+  /* motywy postaci: czcionki i tło */
+  .theme-g-vince { --font: 'Space Mono', monospace; } .theme-g-vince #bg { background: #0a0a0b; }
+  .theme-g-chip { --font: 'Nunito', sans-serif; } .theme-g-chip #bg { background: #3a2416; }
+  .theme-g-ragnar { --font: 'Anton', 'Inter', sans-serif; } .theme-g-ragnar #bg { background: #0c0614; }
+  .theme-g-toro { --font: 'Fraunces', serif; } .theme-g-toro #bg { background: #0d1220; }
+  .theme-g-myr { --font: 'IBM Plex Mono', monospace; } .theme-g-myr #bg { background: #1c1f23; }
+  .theme-g-zarin { --font: 'Space Grotesk', sans-serif; } .theme-g-zarin #bg { background: #14171b; }
+
+  .reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { animation: none !important; }
+</style>
+</head>
+<body>
+<div id="bg"><div id="grid"></div><canvas id="bgfx"></canvas></div>
+<div id="gameFrame"><i class="corner c1"></i><i class="corner c2"></i><i class="corner c3"></i><i class="corner c4"></i><div id="gameTag"></div></div>
+<div id="avatar"></div>
+<div id="topic"><div id="topicLabel"></div><div id="topicText"></div><div id="topicLine"></div></div>
+<div id="chat"></div>
+<div id="bar"></div>
+<script>
+(() => {
+  const C = window.VMClient, $ = id => document.getElementById(id);
+  const GT = window.OverlayGameThemes;
+  const layout = ['game-full', 'game-frame', 'talk'].includes(C.param('layout')) ? C.param('layout') : 'game-frame';
+  const RECTS = { 'game-frame': { game: [40, 40, 1440, 810], avatar: [1510, 40, 370, 370] }, 'game-full': { avatar: [40, 740, 300, 300] }, talk: { avatar: [110, 150, 780, 780] } };
+  const ART = { vince: 'themes/fursona/vince.webp', chip: 'themes/fursona/chip.webp', ragnar: 'themes/fursona/ragnar.webp', toro: 'themes/fursona/toro.webp' };
+  // w dużym oknie (rozmowa) pełne sylwetki, jeśli są
+  const ART_BIG = { ...ART, ragnar: 'themes/fursona/ragnar-full.webp', toro: 'themes/fursona/toro-full.webp', chip: 'themes/fursona/chip-polaroid.webp' };
+
+  const BGFX = GT ? Object.assign(Object.create(Object.getPrototypeOf(GT.FX)), GT.FX, { canvas: null, ctx: null, cfg: null, parts: [], raf: 0 }) : null;
+  if (BGFX) BGFX.attach($('bgfx'));
+  const chat = window.OverlayChat.mount($('chat'), { mode: layout === 'game-full' ? 'bubbles' : 'panel', life: 14 });
+
+  let th = null, avatarKey = '';
+  function holes(s) {
+    // okna w tle: gra (ramka) i kamerka/VTuber
+    const r = RECTS[layout], hs = [];
+    if (r.game) hs.push(r.game);
+    if (r.avatar && (s.avatarMode === 'camera' || s.avatarMode === 'vtuber')) hs.push(r.avatar);
+    if (!hs.length) { $('bg').style.clipPath = ''; return; }
+    const pt = (x, y) => `${x}px ${y}px`;
+    let poly = 'polygon(evenodd, 0 0, 1920px 0, 1920px 1080px, 0 1080px, 0 0';
+    for (const [x, y, w, h] of hs) poly += `, ${pt(x, y)}, ${pt(x + w, y)}, ${pt(x + w, y + h)}, ${pt(x, y + h)}, ${pt(x, y)}, 0 0`;
+    $('bg').style.clipPath = poly + ')';
+  }
+
+  function renderAvatar(s) {
+    const mode = s.avatarMode || 'art';
+    const id = th ? th.id : 'neon';
+    const key = mode + id + (s.avatarIdle || '') + (s.avatarTalk || '');
+    document.body.classList.toggle('has-avatar', mode !== 'none');
+    document.body.classList.toggle('no-avatar', mode === 'none');
+    if (key === avatarKey) return; avatarKey = key;
+    const a = $('avatar'); a.className = 'av-' + mode; a.textContent = '';
+    if (mode === 'art') {
+      const box = document.createElement('div'); box.className = 'av-art';
+      const ring = document.createElement('div'); ring.className = 'av-ring'; box.appendChild(ring);
+      const src = s.avatarIdle || (layout === 'talk' ? ART_BIG : ART)[id];
+      if (src) { const img = new Image(); img.src = src; img.alt = ''; img.dataset.idle = src; img.dataset.talk = s.avatarTalk || src; box.appendChild(img); }
+      else if (th && th.def && th.def.emblem) { const d = document.createElement('div'); d.innerHTML = th.def.emblem; const svg = d.querySelector('svg'); if (svg) { svg.removeAttribute('class'); box.appendChild(svg); } }
+      else { const d = document.createElement('div'); d.style.cssText = 'width:60%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,var(--accent),transparent 70%)'; box.appendChild(d); }
+      a.appendChild(box);
+    }
+    if (mode === 'camera') { const f = document.createElement('div'); f.className = 'av-frame'; a.appendChild(f); }
+    if (mode !== 'none' && layout !== 'game-full') {
+      const l = document.createElement('div'); l.className = 'av-label';
+      const v = window.OverlayVoices ? window.OverlayVoices.pick(id, 'scene:talk', {}) : null;
+      l.textContent = (th && th.def && th.def.group === 'fursona') ? th.def.name : (s.avatarName || 'NA ŻYWO');
+      a.appendChild(l);
+    }
+  }
+
+  // reakcja na głos: na razie z kanału testowego / strony demo; mikrofon przez OBS – w następnym kroku
+  function setTalking(on) {
+    document.body.classList.toggle('talking', !!on);
+    const img = $('avatar').querySelector('img');
+    if (img && img.dataset.talk) { const want = on ? img.dataset.talk : img.dataset.idle; if (img.getAttribute('src') !== want) img.src = want; }
+  }
+  window.vmSetTalking = setTalking;
+
+  let fxKey = '';
+  function render() {
+    const s = C.settings();
+    th = C.applyTheme('l-' + layout + (document.body.classList.contains('talking') ? ' talking' : ''));
+    if (BGFX) {
+      const k = th.cls + (th.game ? th.game.id : '') + th.reduced;
+      if (k !== fxKey) { fxKey = k; const base = GT.fusionFx ? GT.fusionFx(th) : th.def && th.def.fx; BGFX.set(base && !th.reduced && layout !== 'game-full' ? { ...base, count: Math.round(base.count * 2) } : null); }
+    }
+    holes(s);
+    renderAvatar(s);
+    // gra
+    const det = C.read('obsGameOverlay.detected', {}) || {};
+    const game = (det.local && det.local.game && det.local.game.name) || (det.discord && det.discord.game && det.discord.game.name) || s.game || '';
+    $('gameTag').textContent = game;
+    // temat rozmowy
+    if (layout === 'talk') {
+      const v = window.OverlayVoices ? window.OverlayVoices.pick(th.id, 'scene:talk', {}) : { label: 'Rozmowa', line: '' };
+      if (!$('topicLabel').textContent || topicStale()) { $('topicLabel').textContent = v.label; $('topicLine').textContent = v.line; }
+      $('topicText').textContent = s.talkTopic || 'Pogadajmy';
+    }
+    renderBar(s);
+  }
+  let topicAt = 0; const topicStale = () => { if (Date.now() - topicAt > 40000) { topicAt = Date.now(); return true; } return false; };
+
+  // pasek: ostatnie zdarzenia z tej sesji + linki
+  let session = {};
+  function renderBar(s) {
+    const b = $('bar'); b.textContent = '';
+    const item = (label, val) => { if (!val) return; const d = document.createElement('div'); d.className = 'item'; const sm = document.createElement('small'); sm.textContent = label; const v = document.createElement('b'); v.textContent = val; d.append(sm, v); b.appendChild(d); };
+    const last = k => { const a = session[k]; return a && a.length ? a[a.length - 1].user : ''; };
+    item('Ostatni follow', last('follow'));
+    item('Ostatni sub', last('sub'));
+    item('Ostatni raid', last('raid'));
+    const soc = String(s.socials || '').split(/[,|\n]/).map(x => x.trim()).filter(Boolean);
+    if (soc.length && layout === 'game-frame') { const d = document.createElement('div'); d.className = 'socials'; for (const x of soc) { const e = document.createElement('span'); e.textContent = x; d.appendChild(e); } b.appendChild(d); }
+  }
+  async function pollSession() {
+    try { session = await C.hubGet('/session'); } catch (e) { session = C.read('obsGameOverlay.demoSession', session) || {}; }
+    setTimeout(pollSession, 15000);
+  }
+
+  render();
+  setInterval(render, 2000);
+  pollSession();
+  C.events(ev => {
+    if (ev.type === 'chat') chat.add(ev);
+    if (ev.type === 'voice') setTalking(ev.talking);
+    if (['follow', 'sub', 'resub', 'raid'].includes(ev.type)) setTimeout(pollSession, 500);
+  }, { onSettings: render });
+  try { const bc = new BroadcastChannel('obsGameOverlay'); bc.addEventListener('message', e => { if (e.data && e.data.type === 'voice') setTalking(e.data.talking); }); } catch (e) {}
+})();
+</script>
+</body>
+</html>

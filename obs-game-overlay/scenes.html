@@ -98,6 +98,38 @@
   .theme-g-val { --scene-bg: #0f1923; --scene-font: 'Teko', sans-serif; }
   .theme-g-gta #pattern { background: linear-gradient(180deg, #2b1a4a 0%, #a2386a 55%, #ff8a4c 85%, #ffc56b 100%); opacity: .8; }
 
+  /* --- dodatki ekranów --- */
+  #quote { font-size: 20px; }
+  #extra { position: fixed; z-index: 2; pointer-events: none; display: none; font-family: var(--scene-font); color: var(--scene-ink); }
+  .k-prep #extra { display: block; left: 7vw; bottom: 150px; }
+  .checklist { display: flex; gap: 14px; flex-wrap: wrap; font: 700 22px/1 var(--scene-font); }
+  .checklist span { display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 999px; background: rgba(0,0,0,.35);
+    border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent); opacity: .45; transition: opacity .4s, transform .4s; }
+  .checklist span::before { content: ""; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--accent); }
+  .checklist span.ok { opacity: 1; transform: translateY(-3px); }
+  .checklist span.ok::before { background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+  .k-end { --scale: 1.55; }
+  .k-end #extra { display: block; right: 4vw; top: 6vh; bottom: 110px; width: 30vw; overflow: hidden;
+    -webkit-mask: linear-gradient(transparent, #000 12%, #000 88%, transparent); mask: linear-gradient(transparent, #000 12%, #000 88%, transparent); }
+  .credits { text-align: center; animation: roll var(--roll, 40s) linear infinite; padding-top: 100%; }
+  .credits h3 { margin: 40px 0 12px; font: 800 20px/1 var(--scene-font); letter-spacing: .3em; text-transform: uppercase; color: var(--accent); text-shadow: 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent); }
+  .credits p { margin: 6px 0; font: 600 30px/1.3 var(--scene-font); }
+  .credits p small { opacity: .65; font-size: .7em; margin-left: 8px; }
+  .credits .thanks { font-size: 26px; font-style: italic; opacity: .9; margin: 0 0 30px; }
+  @keyframes roll { from { transform: translateY(0); } to { transform: translateY(-100%); } }
+  .k-end #hero { display: none !important; }
+  .k-end.pos-mc #stage { justify-content: flex-start; padding-left: 7vw; }
+  .k-end #wrap { transform-origin: left center; }
+  #sweep { position: fixed; inset: 0; z-index: 5; pointer-events: none; opacity: 0;
+    background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, var(--accent) 55%, transparent) 47%, rgba(255,255,255,.85) 50%, color-mix(in srgb, var(--accent2) 55%, transparent) 53%, transparent 65%);
+    background-size: 300% 100%; }
+  #sweep.go { animation: sweep-go 1.3s cubic-bezier(.6,0,.2,1); }
+  @keyframes sweep-go { 0% { opacity: 1; background-position: 100% 0; } 100% { opacity: 1; background-position: -60% 0; } }
+  #name .ch { background: inherit; background-size: inherit; -webkit-background-clip: inherit; background-clip: inherit; display: inline-block; animation: ch-in .6s cubic-bezier(.2,.9,.3,1.4) both; animation-delay: calc(var(--i) * 45ms); }
+  @keyframes ch-in { from { opacity: 0; transform: translateY(30px) scale(.6) rotate(-8deg); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+  .k-late #name, .k-brbLate #name { color: color-mix(in srgb, var(--accent) 70%, #fff); }
+  .reduced-motion #sweep, .reduced-motion #name .ch, .reduced-motion .credits { animation: none !important; }
+  .reduced-motion .credits { padding-top: 0; }
   .reduced-motion #bg::before, .reduced-motion #bg::after, .reduced-motion #pattern, .reduced-motion #hero, .reduced-motion #hero * { animation: none !important; }
 </style>
 </head>
@@ -114,11 +146,14 @@
         <div id="label"><span class="dot"></span><span id="labelText"></span></div>
         <div id="name"></div>
         <div id="meta"><span id="sub"></span><span id="timer"></span></div>
+        <div id="quote"></div>
       </div>
     </div>
     <div id="emblem" aria-hidden="true"></div>
   </div>
 </div>
+<div id="extra" aria-live="polite"></div>
+<div id="sweep" aria-hidden="true"></div>
 <div id="foot"><div id="socials"></div><div id="recent"></div></div>
 
 <script>
@@ -129,34 +164,30 @@
   const $ = id => document.getElementById(id);
   const DEFAULTS = {
     theme: 'neon', accent: '', accent2: '', motion: 'full', localUrl: 'http://localhost:7777', local: true, game: '',
-    scene: 'start', sceneUntil: 0, sceneSub: '', sceneTitles: {}, socials: '', sceneScale: 2.1, sceneHero: true
+    scene: 'start', sceneUntil: 0, sceneAt: 0, sceneLateAt: 0, autoLate: true, sceneSub: '', socials: '', sceneScale: 2.1, sceneHero: true
   };
   const p = new URLSearchParams(location.search);
   const read = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
   const load = () => {
     const s = { ...DEFAULTS, ...(p.get('panel') === '0' ? {} : read(KEY, {})) };
-    if (p.has('scene')) s.scene = p.get('scene');      // np. osobne źródło na każdą scenę OBS
+    if (p.has('scene')) s.scene = p.get('scene');      // osobne źródło na każdą scenę OBS
     if (p.has('theme')) s.theme = p.get('theme');
     if (p.has('motion')) s.motion = p.get('motion');
     return s;
   };
   let settings = load();
+  const loadedAt = Date.now();
 
-  const TITLES = {
-    _: { start: 'Zaraz zaczynamy', brb: 'Przerwa', end: 'Dzięki za dziś!' },
-    vince: { end: 'Tunele mają wyjścia. Do zobaczenia.' },
-    chip: { start: 'no co. zaraz zaczynam', brb: 'przerwa na ciasteczko', end: 'no. to tyle.' },
-    ragnar: { start: 'Soundcheck…', brb: 'Przerwa przy barze', end: 'Ostatni numer' },
-    toro: { start: 'Latarnia się zapala', brb: 'Herbata pod mostem', end: 'Światło gaśnie. Panta rei.' },
-    myr: { start: 'TRANSMISJA ZA', brb: 'PRZERWA SERWISOWA', end: 'KONIEC ZMIANY' },
-    zarin: { start: 'rozgrzewam silniki…', brb: 'naprawiam coś. chwila.', end: 'zamykam warsztat' }
-  };
-  const DONE = { start: 'Już zaraz!', brb: 'Zaraz wracam', end: 'Do zobaczenia' };
   const ICONS = {
+    prep: '<path d="M22 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L8.4 6 6 8.4 1.6 4.1C.4 6.5.9 9.5 2.9 11.5c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l1.7-1.7c.4-.4.4-1 0-1.4z"/>',
+    soon: '<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 11h-5v-2h3V6h2z"/>',
     start: '<path d="M8 5v14l11-7z"/>',
+    late: '<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 5v5.4l3.8 2.2-1 1.7L11 13.6V7z"/>',
     brb: '<path d="M5 4h4v16H5zM15 4h4v16h-4z"/>',
+    brbLate: '<path d="M2 21h18v-2H2zM20 8h-2V5h2a1.5 1.5 0 0 1 0 3zM18 3H4v10a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-3h2a3.5 3.5 0 0 0 0-7z"/>',
     end: '<path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.9 4.5 6.6 4.5c2.2 0 3.6 1.3 4.4 2.6.8-1.3 2.2-2.6 4.4-2.6 3.7 0 5.7 3.9 4.2 7.3C19.5 16.4 12 21 12 21z"/>'
   };
+  const STATIC_BIG = { prep: 'W przygotowaniu', soon: 'Już zaraz!', start: 'Już zaraz!', brb: 'Zaraz wracam', end: 'Do zobaczenia' };
   const HERO = {
     vince: { cls: 'sheet', img: 'themes/fursona/vince-sheet.webp' },
     chip: { cls: 'photo', img: 'themes/fursona/chip-polaroid.webp' },
@@ -164,69 +195,135 @@
     toro: { cls: 'full', img: 'themes/fursona/toro-full.webp' }
   };
 
-  // ---------------------------------------------------------------- motyw
+  // ---------------------------------------------------------------- jaki ekran teraz
+  function kindNow() {
+    let k = String(settings.scene || 'start');
+    if (k === 'brb-late') k = 'brbLate';
+    if (!['prep', 'soon', 'start', 'late', 'brb', 'brbLate', 'end'].includes(k)) k = 'start';
+    const over = settings.sceneUntil && Date.now() > settings.sceneUntil + 30000;   // 30 s zapasu po końcu odliczania
+    if (settings.autoLate !== false && over) { if (k === 'start') k = 'late'; if (k === 'brb') k = 'brbLate'; }
+    if (k === 'soon' && settings.sceneAt && Date.now() > settings.sceneAt) k = 'start';
+    return k;
+  }
+
+  // ---------------------------------------------------------------- motyw (z fuzją z grą)
   const GT = window.OverlayGameThemes || { byId: () => null, FX: { attach() {}, set() {} }, texture: () => '' };
   const BGFX = Object.assign(Object.create(Object.getPrototypeOf(GT.FX)), GT.FX, { canvas: null, ctx: null, cfg: null, parts: [], raf: 0 });
   BGFX.attach($('bgfx'));
   let themeFor = null, themeId = 'neon', lastFx = null;
-  function applyStyle() {
+  function applyStyle(kind) {
     const active = read(ACTIVE_KEY, null);
     let cls = p.has('theme') ? settings.theme : (active && active.cls) || settings.theme || 'neon';
     const def = cls.startsWith('g-') ? GT.byId(cls.slice(2)) : null;
     if (cls.startsWith('g-') && !def) cls = 'neon';
+    const game = !p.has('theme') && active && active.game && (!def || def.id !== active.game) ? GT.byId(active.game) : null;
+    const fusion = { cls, def, game };
     themeId = def ? def.id : cls;
     const reduced = settings.motion === 'reduced';
-    const hero = settings.sceneHero && def ? (HERO[def.id] || { cls: 'emblem' }) : null;
-    document.body.className = `theme-${cls} pos-mc` + (def ? ' game-theme' : '') + (def && def.group === 'fursona' ? ' f-theme' : '') +
+    const hero = settings.sceneHero && def && kind !== 'end' ? (HERO[def.id] || { cls: 'emblem' }) : null;
+    document.body.className = `theme-${cls} pos-mc k-${kind}` + (GT.bodyClasses ? GT.bodyClasses(fusion) : '') +
       (reduced ? ' reduced-motion' : '') + (hero ? ' has-hero' : '');
-    if (themeFor !== cls) {
-      themeFor = cls;
+    const key = cls + '|' + (game ? game.id : '') + '|' + (hero ? 1 : 0);
+    if (themeFor !== key) {
+      themeFor = key;
       $('emblem').innerHTML = def ? def.emblem || '' : '';
       $('backdrop').innerHTML = def ? def.back || '' : '';
       const h = $('hero');
       h.className = hero ? 'on ' + hero.cls : '';
       h.innerHTML = !hero ? '' : hero.img ? `<img src="${hero.img}" alt="">` : (def.emblem || '');
-      // przy dużej postaci obok karty nie dublujemy postaci wyglądającej zza karty
       if (hero && hero.cls === 'full') $('backdrop').innerHTML = '';
       if (hero && hero.cls !== 'full') $('emblem').innerHTML = '';
     }
+    if (GT.applyFusion) GT.applyFusion($('wrap'), fusion);
     const root = document.documentElement.style;
-    const acc = def ? def.accent : ['#7c5cff', '#00e1ff'];
+    const acc = GT.fusionAccent ? GT.fusionAccent(fusion, ['#7c5cff', '#00e1ff']) : ['#7c5cff', '#00e1ff'];
     root.setProperty('--accent', settings.accent || acc[0]);
     root.setProperty('--accent2', settings.accent2 || acc[1]);
     root.setProperty('--scale', settings.sceneScale);
     root.setProperty('--margin', '60px');
     root.setProperty('--tex', def ? GT.texture(def) : '');
-    // cząsteczki na całym ekranie zamiast wokół karty
-    const fxKey = cls + reduced;
+    const fxKey = key + reduced;
     if (fxKey !== lastFx) {
       lastFx = fxKey;
-      BGFX.set(def && def.fx && !reduced ? { ...def.fx, count: Math.round(def.fx.count * 3) } : null);
+      const base = GT.fusionFx ? GT.fusionFx(fusion) : def && def.fx;
+      BGFX.set(base && !reduced ? { ...base, count: Math.round(base.count * 3) } : null);
     }
     GT.FX.set(null);
   }
 
-  // ---------------------------------------------------------------- treść
+  // ---------------------------------------------------------------- czas
   const pad = n => String(n).padStart(2, '0');
+  function clock(ms) {
+    const t = Math.max(0, Math.ceil(ms / 1000));
+    const d = Math.floor(t / 86400), h = Math.floor(t / 3600) % 24, m = Math.floor(t / 60) % 60, s = t % 60;
+    if (d) return `${d} d ${pad(h)}:${pad(m)}:${pad(s)}`;
+    return h ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+  }
+  function whenText(ts) {
+    const d = new Date(ts), now = new Date();
+    const hm = d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+    const day = new Date(d.getFullYear(), d.getMonth(), d.getDate()), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diff = Math.round((day - today) / 86400000);
+    if (diff === 0) return `dziś o ${hm}`;
+    if (diff === 1) return `jutro o ${hm}`;
+    return d.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }) + ` o ${hm}`;
+  }
+
+  // ---------------------------------------------------------------- głos postaci (zmienia się co 40 s)
+  let voice = null, voiceKey = '', voiceAt = 0;
+  function voiceFor(kind) {
+    const k = kind + '|' + themeId;
+    if (k !== voiceKey || Date.now() - voiceAt > 40000) {
+      voiceKey = k; voiceAt = Date.now();
+      voice = window.OverlayVoices ? window.OverlayVoices.pick(themeId, 'scene:' + kind, {}) : { label: '', line: '', register: '' };
+      document.body.classList.toggle('terminal-voice', voice.register === 'terminal');
+      if (voice.register === 'syndrome') { document.body.classList.add('syndrome'); setTimeout(() => document.body.classList.remove('syndrome'), 2000); }
+    }
+    return voice;
+  }
+
+  // ---------------------------------------------------------------- treść
+  let shownKind = null, bigShown = '';
+  function setBig(text, animate) {
+    if (text === bigShown) return;
+    bigShown = text;
+    const n = $('name'); n.dataset.text = text;
+    if (!animate || settings.motion === 'reduced') { n.textContent = text; return; }
+    n.textContent = '';
+    [...text].forEach((c, i) => { const s = document.createElement('span'); s.className = 'ch'; s.style.setProperty('--i', i); s.textContent = c === ' ' ? ' ' : c; n.appendChild(s); });
+    // po animacji zwykły tekst (motywy z gradientem w napisie)
+    setTimeout(() => { if (bigShown === text) n.textContent = text; }, 700 + text.length * 45);
+  }
   function render() {
-    applyStyle();
-    const scene = ['start', 'brb', 'end'].includes(settings.scene) ? settings.scene : 'start';
-    const titles = { ...TITLES._, ...(TITLES[themeId] || {}), ...(settings.sceneTitles || {}) };
-    $('labelText').textContent = titles[scene];
-    $('icon').innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[scene]}</svg>`;
-    const left = (settings.sceneUntil || 0) - Date.now();
-    let big;
-    if (scene !== 'end' && left > 0) {
-      const t = Math.ceil(left / 1000);
-      big = t >= 3600 ? `${Math.floor(t / 3600)}:${pad(Math.floor(t / 60) % 60)}:${pad(t % 60)}` : `${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
-    } else big = DONE[scene];
-    if ($('name').textContent !== big) { $('name').textContent = big; $('name').dataset.text = big; }
-    let sub = settings.sceneSub;
-    // gra: wykryta (wykrywacz / Discord) albo wpisana ręcznie
+    const kind = kindNow();
+    applyStyle(kind);
+    if (kind !== shownKind) {
+      shownKind = kind; bigShown = '';
+      const sw = $('sweep'); sw.classList.remove('go'); void sw.offsetWidth; sw.classList.add('go');
+      renderExtra(kind);
+    }
+    const v = voiceFor(kind);
+    $('labelText').textContent = v.label || '';
+    $('quote').textContent = v.line || '';
+    $('icon').className = 'glyph';
+    $('icon').innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[kind] || ICONS.start}</svg>`;
+    const now = Date.now();
+    let big = STATIC_BIG[kind] || '', animate = true;
+    if (kind === 'soon' && settings.sceneAt > now) { big = clock(settings.sceneAt - now); animate = false; }
+    if ((kind === 'start' || kind === 'brb') && settings.sceneUntil > now) { big = clock(settings.sceneUntil - now); animate = false; }
+    if (kind === 'late' || kind === 'brbLate') {
+      const since = settings.sceneUntil && settings.sceneUntil < now ? settings.sceneUntil : (settings.sceneLateAt || loadedAt);
+      big = '+' + clock(now - since); animate = false;
+    }
+    setBig(big, animate);
+    // podpis: własny, termin (stream za…) albo gra
     const det = read(DETECTED_KEY, {}) || {};
     const game = (det.local && det.local.game && det.local.game.name) || (det.discord && det.discord.game && det.discord.game.name) || settings.game;
-    if (!sub && scene !== 'end' && game) sub = (scene === 'start' ? 'Dziś: ' : 'Gramy dalej w ') + game;
+    let sub = settings.sceneSub;
+    if (!sub && kind === 'soon' && settings.sceneAt) sub = 'Start ' + whenText(settings.sceneAt) + (game ? ' · ' + game : '');
+    if (!sub && game && kind !== 'end') sub = (kind === 'brb' || kind === 'brbLate' ? 'Gramy dalej w ' : 'Dziś: ') + game;
     $('sub').textContent = sub || '';
+    if (kind === 'prep') tickChecklist();
     $('socials').innerHTML = '';
     for (const s of String(settings.socials || '').split(/[,|\n]/).map(x => x.trim()).filter(Boolean)) {
       const el = document.createElement('span'); el.textContent = s; $('socials').appendChild(el);
@@ -234,10 +331,62 @@
     renderRecent();
   }
 
+  // ---------------------------------------------------------------- przygotowania: lista kontrolna
+  const CHECK = ['Scena', 'Dźwięk', 'Mikrofon', 'Czat', 'Alerty', 'Napój', 'Gra'];
+  let checkStep = 0;
+  function tickChecklist() {
+    const items = $('extra').querySelectorAll('.checklist span');
+    if (!items.length) return;
+    checkStep = (checkStep + 1) % (items.length + 3);
+    items.forEach((it, i) => it.classList.toggle('ok', i < checkStep));
+  }
+
+  // ---------------------------------------------------------------- koniec: napisy z sesji
+  let session = null;
+  function renderExtra(kind) {
+    const x = $('extra'); x.textContent = '';
+    if (kind === 'prep') {
+      const c = document.createElement('div'); c.className = 'checklist';
+      for (const t of CHECK) { const s = document.createElement('span'); s.textContent = t; c.appendChild(s); }
+      x.appendChild(c); checkStep = 0;
+    }
+    if (kind === 'end') renderCredits();
+  }
+  function renderCredits() {
+    const x = $('extra'); if (shownKind !== 'end') return;
+    x.textContent = '';
+    const c = document.createElement('div'); c.className = 'credits';
+    const add = (tag, text, small) => { const e = document.createElement(tag); e.textContent = text; if (small) { const sm = document.createElement('small'); sm.textContent = small; e.appendChild(sm); } c.appendChild(e); return e; };
+    const endVoice = window.OverlayVoices ? window.OverlayVoices.pick(themeId, 'scene:end', {}) : { line: '' };
+    add('p', endVoice.line || 'Dziękuję, że byliście!').className = 'thanks';
+    const S = session || {};
+    const sec = (title, list, fmt) => { if (!list || !list.length) return; add('h3', title); for (const it of list) add('p', it.user, fmt ? fmt(it) : ''); };
+    sec('Nowi obserwujący', S.follow);
+    sec('Subskrypcje', S.sub, it => it.n > 1 ? `${it.n}. miesiąc` : '');
+    sec('Prezenty', S.gift, it => `${it.n}× sub`);
+    sec('Bitsy', S.cheer, it => `${it.n}`);
+    sec('Raidy', S.raid, it => `${it.n} osób`.replace(/^1 osób$/, '1 osoba').replace(/^([234]) osób$/, '$1 osoby'));
+    sec('Nagrody za punkty', S.redeem);
+    sec('Byli z nami na czacie', (S.chatters || []).slice().sort((a, b) => b.n - a.n));
+    if (c.children.length < 3) add('p', 'Każdemu, kto dziś zajrzał – dziękuję!');
+    c.style.setProperty('--roll', Math.max(20, c.children.length * 2.2) + 's');
+    x.appendChild(c);
+  }
+  async function pollSession() {
+    if (shownKind === 'end' || kindNow() === 'end') {
+      let next = null;
+      try { const r = await fetch(window.vmHub(settings.localUrl) + '/session', { cache: 'no-store' }); next = await r.json(); }
+      catch { next = read('obsGameOverlay.demoSession', null); }   // strona demo
+      if (next && JSON.stringify(next) !== JSON.stringify(session)) { session = next; renderCredits(); }
+    }
+    setTimeout(pollSession, 20000);
+  }
+
   // ostatni follow / sub z wykrywacza (prawdziwe zdarzenia, bez testowych)
   let recent = {};
   function renderRecent() {
     const r = $('recent'); r.textContent = '';
+    if (shownKind === 'end') return;
     const add = (label, v) => { if (!v) return; const s = document.createElement('span'); s.append(label + ' '); const b = document.createElement('b'); b.textContent = v; s.append(b); r.appendChild(s); };
     add('Ostatni follow:', recent.follow);
     add('Ostatni sub:', recent.sub);
@@ -263,9 +412,11 @@
   render();
   requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('show')));
   setInterval(render, 1000);
-  pollRecent();
-  try { const bc = new BroadcastChannel('obsGameOverlay'); bc.onmessage = e => { if (e.data === 'update') { settings = load(); render(); } }; } catch {}
-  window.addEventListener('storage', e => { if (e.key === KEY || e.key === ACTIVE_KEY) { settings = load(); render(); } });
+  pollRecent(); pollSession();
+  const refresh = () => { settings = load(); render(); if (shownKind === 'end') pollSessionNow(); };
+  const pollSessionNow = () => { session = read('obsGameOverlay.demoSession', session); renderCredits(); };
+  try { const bc = new BroadcastChannel('obsGameOverlay'); bc.addEventListener('message', e => { if (e.data === 'update') refresh(); }); } catch {}
+  window.addEventListener('storage', e => { if (e.key === KEY || e.key === ACTIVE_KEY || e.key === 'obsGameOverlay.demoSession') refresh(); });
 })();
 </script>
 </body>
