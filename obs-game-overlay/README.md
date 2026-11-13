@@ -4,7 +4,8 @@ Nakładka „Teraz gram” do OBS na nagrania i streamy na YouTube i Twitchu. Na
 
 - `overlay.html` – sama nakładka; w OBS dodajesz ją jako **źródło przeglądarki** (Browser Source)
 - `panel.html` – panel sterowania; w OBS dodajesz go jako **dock przeglądarki** (Custom Browser Dock)
-- `detector/` – opcjonalny wykrywacz gier dla Windows (skrypt PowerShell, nic nie trzeba instalować)
+- `alerts.html` – alerty z Twitcha (follow, sub, raid…); w OBS osobne **źródło przeglądarki**
+- `detector/` – wykrywacz gier i połączenie z Twitchem dla Windows (skrypt PowerShell, nic nie trzeba instalować)
 
 Do wpisywania gry ręcznie wystarczą dwa pliki HTML.
 
@@ -97,6 +98,39 @@ Nazwy z tego pliku mają pierwszeństwo przed bazą Discorda, więc możesz w ni
 
 Jeśli wpiszesz ręcznie tę samą nazwę co wykryta gra, Twój podtytuł i okładka mają pierwszeństwo.
 Licznik czasu przy wykrytej grze liczy od uruchomienia gry, przy wpisanej ręcznie – od chwili jej ustawienia.
+
+## Alerty z Twitcha
+
+Follow, sub, resub, gifty, bitsy, raid i nagrody za punkty kanału – bez StreamElements. Alerty mają wygląd aktywnego motywu (bazowego, gry albo postaci), własne napisy postaci i dźwięki generowane w przeglądarce (bez plików, bez licencji).
+
+### W OBS
+
+*Źródła → + → Przeglądarka*, odznaczone „Plik lokalny”, URL:
+`file:///C:/OBS/obs-game-overlay/alerts.html`, 1920×1080. Ustaw źródło **nad** resztą sceny.
+Żeby dźwięk alertów szedł przez mikser OBS, zaznacz w źródle *Kontroluj dźwięk przez OBS*.
+
+W panelu, w sekcji **Alerty**, są przyciski testowe i ustawienia: które alerty pokazywać, głośność, czas, pozycja i wielkość.
+Przyciski testowe działają także bez połączenia z Twitchem.
+
+### Połączenie z Twitchem (raz, ok. 3 minuty)
+
+Alerty przychodzą przez wykrywacz (`detector\start-detector.bat`), więc musi być uruchomiony.
+
+1. Wejdź na <https://dev.twitch.tv/console/apps> i zaloguj się kontem kanału. Twitch wymaga włączonego logowania dwuetapowego.
+2. **Register Your Application**:
+   - *Name*: dowolna, unikalna, np. `VincentMedia Overlay`
+   - *OAuth Redirect URLs*: `http://localhost` (pole jest wymagane, ale nieużywane)
+   - *Category*: `Broadcaster Suite`
+   - *Client Type*: **Public**
+3. Kliknij **Manage** przy aplikacji i skopiuj **Client ID**. Sekretu nie trzeba.
+4. W panelu, w sekcji **Twitch**, wklej Client ID i kliknij **Połącz z Twitchem**.
+5. Panel pokaże kod. Wejdź na <https://www.twitch.tv/activate> (może być na telefonie), wpisz kod i zatwierdź.
+6. Panel pokaże **POŁĄCZONO**. W oknie wykrywacza zobaczysz, które zdarzenia są aktywne.
+
+Logowanie zostaje zapamiętane (zaszyfrowane Twoim kontem Windows w `detector\data\twitch-token.bin`) i odświeża się samo.
+Jeśli nie używasz komputera z Twitchem przez ponad 30 dni, trzeba będzie połączyć się jeszcze raz.
+
+> Sub, resub, gifty i bitsy działają tylko na kanałach z afiliacją lub partnerstwem. Bez nich wykrywacz po prostu pominie te zdarzenia.
 
 ## Wykrywanie przez Discord (opcjonalnie)
 

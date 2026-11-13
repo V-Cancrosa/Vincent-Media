@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Alerts</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Rajdhani:wght@500;700&family=Inter:wght@400;600;800&family=Press+Start+2P&family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@1,500&family=Silkscreen:wght@400;700&family=Luckiest+Guy&family=Marcellus+SC&family=Teko:wght@500;600&family=Chakra+Petch:wght@600;700&family=Anton&family=JetBrains+Mono:wght@500&family=Archivo:wdth,wght@125,700;125,800&family=Space+Mono:wght@400;700&family=Baloo+2:wght@800&family=Caveat:wght@600;700&family=Nunito:wght@700;800&family=Fraunces:ital,wght@0,600;1,500&family=Saira+Stencil+One&family=IBM+Plex+Mono:wght@500&family=Space+Grotesk:wght@700&family=Barlow:wght@400;600&display=swap">
+<link rel="stylesheet" href="themes/games.css">
+<script src="themes/games.js"></script>
+<link rel="stylesheet" href="themes/fursona.css">
+<script src="themes/fursona.js"></script>
+<link rel="stylesheet" href="themes/base.css">
+<style>
+  /* Alert = ta sama karta co „Teraz gram”, tylko większa, z ikoną zdarzenia i błyskiem przy wejściu. */
+  #icon.glyph { display: grid; place-items: center; }
+  /* w motywach bazowych tło ikony to kolor akcentu, więc znak jest biały; w ciemnych ikonach – w kolorze akcentu */
+  #icon.glyph svg { width: 62%; height: 62%; color: #fff; filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); }
+  .theme-retro #icon.glyph svg, .game-theme #icon.glyph svg { color: var(--accent); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 60%, transparent)); }
+  .theme-g-chip #icon.glyph svg, .theme-g-val #icon.glyph svg { color: #fff; }
+  .theme-g-cp #icon.glyph svg { color: #00f0ff; }
+  #icon.glyph #mono { display: none; }
+  #name { max-width: 900px; }
+  #meta #sub { white-space: normal; max-width: 640px; }
+
+  /* błysk – rozchodzący się pierścień przy pojawieniu się alertu */
+  #burst {
+    position: absolute; left: 50%; top: 50%; width: 120%; aspect-ratio: 1; z-index: 0; pointer-events: none;
+    transform: translate(-50%, -50%) scale(.2); border-radius: 50%; opacity: 0;
+    border: 6px solid var(--accent); box-shadow: 0 0 60px var(--accent), inset 0 0 40px var(--accent);
+  }
+  #wrap.show #burst { animation: burst 1.1s cubic-bezier(.2,.7,.3,1) .1s; }
+  @keyframes burst { 0% { opacity: .9; transform: translate(-50%, -50%) scale(.2); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.15); } }
+  .reduced-motion #wrap.show #burst { animation: none; }
+
+  /* pasek czasu alertu */
+  #timebar { position: absolute; left: 0; right: 0; bottom: -10px; height: 3px; z-index: 3; background: color-mix(in srgb, var(--accent) 25%, transparent); overflow: hidden; border-radius: 2px; }
+  #timebar i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; }
+  #wrap.show #timebar i { animation: timebar var(--dur, 6s) linear forwards; }
+  @keyframes timebar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+</style>
+</head>
+<body class="theme-neon pos-tc">
+<div id="stage">
+  <div id="wrap">
+    <canvas id="fx"></canvas>
+    <div id="burst"></div>
+    <div id="backdrop" aria-hidden="true"></div>
+    <div id="card">
+      <div id="icon"><span id="mono"></span></div>
+      <div id="text">
+        <div id="label"><span class="dot"></span><span id="labelText"></span></div>
+        <div id="name"></div>
+        <div id="meta"><span id="sub"></span><span id="timer"></span></div>
+      </div>
+    </div>
+    <div id="emblem" aria-hidden="true"></div>
+    <div id="timebar"><i></i></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const KEY = 'obsGameOverlay.v1';
+  const ACTIVE_KEY = 'obsGameOverlay.activeTheme';
+  const $ = id => document.getElementById(id);
+  const DEFAULTS = {
+    theme: 'neon', accent: '', accent2: '', motion: 'full', localUrl: 'http://localhost:7777', local: true,
+    alertPos: 'tc', alertScale: 1.25, alertDuration: 6, alertVolume: 0.5,
+    alertTypes: { follow: true, sub: true, resub: true, gift: true, cheer: true, raid: true, redeem: true }
+  };
+  const p = new URLSearchParams(location.search);
+  const read = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
+  const load = () => {
+    const s = { ...DEFAULTS, ...(p.get('panel') === '0' ? {} : read(KEY, {})) };
+    s.alertTypes = { ...DEFAULTS.alertTypes, ...(s.alertTypes || {}) };
+    if (p.has('pos')) s.alertPos = p.get('pos');
+    if (p.has('theme')) s.theme = p.get('theme');
+    if (p.has('motion')) s.motion = p.get('motion');
+    if (p.has('volume')) s.alertVolume = parseFloat(p.get('volume'));
+    return s;
+  };
+  let settings = load();
+
+  // ---------------------------------------------------------------- teksty
+  const ICONS = {
+    follow: '<path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.9 4.5 6.6 4.5c2.2 0 3.6 1.3 4.4 2.6.8-1.3 2.2-2.6 4.4-2.6 3.7 0 5.7 3.9 4.2 7.3C19.5 16.4 12 21 12 21z"/>',
+    sub: '<path d="M12 2.5l2.9 6.2 6.6.7-5 4.5 1.4 6.6L12 17.2l-5.9 3.3 1.4-6.6-5-4.5 6.6-.7z"/>',
+    resub: '<path d="M12 2.5l2.9 6.2 6.6.7-5 4.5 1.4 6.6L12 17.2l-5.9 3.3 1.4-6.6-5-4.5 6.6-.7z"/>',
+    gift: '<path d="M3 9h18v4H3zM5 13h14v8H5z"/><path d="M12 9v12" stroke="#000" stroke-opacity=".35" stroke-width="2"/><path d="M12 9c-1.5-3.5-6-4.5-6-1.8C6 9 9.5 9 12 9zm0 0c1.5-3.5 6-4.5 6-1.8C18 9 14.5 9 12 9z"/>',
+    cheer: '<path d="M12 2l7 7-7 13L5 9z"/><path d="M5 9h14M12 2v20" stroke="#000" stroke-opacity=".3" stroke-width="1.2" fill="none"/>',
+    raid: '<path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zm8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM1.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5zm13.5 0c0-2.2-.8-4.2-2.1-5.6.9-.6 2-.9 3.1-.9 3 0 5.5 2.5 5.5 6.5z"/>',
+    redeem: '<path d="M3 7h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4z"/><path d="M9 7v12" stroke="#000" stroke-opacity=".35" stroke-width="1.5" stroke-dasharray="2 2"/>'
+  };
+  const LABELS = {
+    _: { follow: 'Nowy obserwujący', sub: 'Nowa subskrypcja', resub: 'Subskrypcja przedłużona', gift: 'Prezent dla czatu', cheer: 'Bitsy!', raid: 'Raid!', redeem: 'Nagroda za punkty' },
+    chip: { follow: 'no co. nowy follow', sub: 'no co. sub', resub: 'znowu ty. dobrze.', gift: 'ciasteczka dla wszystkich', cheer: 'okruszki bitsów', raid: 'ktoś wpadł. dużo ktosiów.', redeem: 'no dobra, nagroda' },
+    ragnar: { follow: 'Sala rośnie', sub: 'Sub na parkiecie', resub: 'Stały bywalec', gift: 'Kolejka dla sali', cheer: 'Głośniej!', raid: 'Raid! Cała sala!', redeem: 'Zamówienie dla DJ-a' },
+    toro: { follow: 'Kolejne światło pod mostem', sub: 'Nowa latarnia', resub: 'Latarnia świeci dalej', gift: 'Lampiony dla wszystkich', cheer: 'Iskry nad rzeką', raid: 'Goście z rzeki', redeem: 'Prośba pod mostem' },
+    myr: { follow: 'MELDUNEK: NOWY OBSERWUJĄCY', sub: 'MELDUNEK: NOWA SUBSKRYPCJA', resub: 'MELDUNEK: SUBSKRYPCJA PRZEDŁUŻONA', gift: 'MELDUNEK: ZAOPATRZENIE DLA ZAŁOGI', cheer: 'MELDUNEK: BITSY', raid: 'ALARM: ABORDAŻ', redeem: 'MELDUNEK: ROZKAZ Z CZATU' },
+    zarin: { follow: 'nowa część w kolekcji:', sub: 'to jeszcze działa! sub:', resub: 'nadal na chodzie:', gift: 'paczka części dla załogi', cheer: 'iskry z wymiennika', raid: 'frachtowiec ląduje:', redeem: 'zlecenie od załogi:' },
+    vince: { raid: 'Tunel ma wyjście – raid' }
+  };
+  const pl = (n, one, few, many) => {
+    const n10 = n % 10, n100 = n % 100;
+    if (n === 1) return one;
+    if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return few;
+    return many;
+  };
+  function details(ev) {
+    switch (ev.type) {
+      case 'sub': return ev.tier || '';
+      case 'resub': return [`${ev.months} ${pl(ev.months, 'miesiąc', 'miesiące', 'miesięcy')}`, ev.message ? `„${ev.message}”` : ''].filter(Boolean).join(' · ');
+      case 'gift': return `${ev.count} ${pl(ev.count, 'sub', 'suby', 'subów')} w prezencie`;
+      case 'cheer': return [`${ev.amount} ${pl(ev.amount, 'bits', 'bitsy', 'bitsów')}`, ev.message ? `„${ev.message}”` : ''].filter(Boolean).join(' · ');
+      case 'raid': return `${ev.viewers} ${pl(ev.viewers, 'osoba wpada', 'osoby wpadają', 'osób wpada')} na stream`;
+      case 'redeem': return [ev.reward, ev.message ? `„${ev.message}”` : ''].filter(Boolean).join(' · ');
+      default: return 'Dzięki!';
+    }
+  }
+
+  // ---------------------------------------------------------------- motyw (taki sam jak karta z grą)
+  const GT = window.OverlayGameThemes || { byId: () => null, FX: { attach() {}, set() {} }, texture: () => '' };
+  GT.FX.attach($('fx'));
+  let emblemFor = null, themeId = 'neon';
+  function applyStyle() {
+    const active = read(ACTIVE_KEY, null);
+    let cls = p.has('theme') ? settings.theme : (active && active.cls) || settings.theme || 'neon';
+    const def = cls.startsWith('g-') ? GT.byId(cls.slice(2)) : null;
+    if (cls.startsWith('g-') && !def) cls = 'neon';
+    themeId = def ? def.id : cls;
+    const reduced = settings.motion === 'reduced';
+    document.body.className = `theme-${cls} pos-${settings.alertPos}` + (def ? ' game-theme' : '') +
+      (def && def.group === 'fursona' ? ' f-theme' : '') + (reduced ? ' reduced-motion' : '');
+    if (emblemFor !== cls) {
+      emblemFor = cls;
+      $('emblem').innerHTML = def ? def.emblem || '' : '';
+      $('backdrop').innerHTML = def ? def.back || '' : '';
+    }
+    const root = document.documentElement.style;
+    const acc = def ? def.accent : ['#7c5cff', '#00e1ff'];
+    root.setProperty('--accent', settings.accent || acc[0]);
+    root.setProperty('--accent2', settings.accent2 || acc[1]);
+    root.setProperty('--scale', settings.alertScale);
+    root.setProperty('--margin', '60px');
+    root.setProperty('--tex', def ? GT.texture(def) : '');
+    return { def, reduced };
+  }
+
+  // ---------------------------------------------------------------- dźwięk (syntezowany, bez plików)
+  let ac = null;
+  function tone(freq, start, dur, type = 'sine', gain = .3, partials = null) {
+    const t0 = ac.currentTime + start;
+    const g = ac.createGain(); g.connect(master);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(gain, t0 + .01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    for (const [mul, amp] of partials || [[1, 1]]) {
+      const o = ac.createOscillator(); o.type = type; o.frequency.value = freq * mul;
+      const og = ac.createGain(); og.gain.value = amp; o.connect(og); og.connect(g);
+      o.start(t0); o.stop(t0 + dur + .05);
+    }
+  }
+  let master = null;
+  function play(type) {
+    const vol = Math.max(0, Math.min(1, +settings.alertVolume || 0));
+    if (!vol) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === 'suspended') ac.resume();
+      master = ac.createGain(); master.gain.value = vol; master.connect(ac.destination);
+    } catch { return; }
+    const N = n => 440 * Math.pow(2, (n - 69) / 12);
+    // Chip: pęknięty dzwonek (nieharmoniczne alikwoty)
+    if (themeId === 'chip' && type !== 'follow') { tone(N(84), 0, 1.6, 'sine', .35, [[1, 1], [2.32, .5], [4.1, .25], [5.43, .12]]); tone(N(84), .32, 1.2, 'sine', .25, [[1, 1], [2.32, .4], [4.1, .2]]); return; }
+    const wave = { ragnar: 'square', myr: 'square', mc: 'square', cp: 'sawtooth', val: 'triangle' }[themeId] || 'triangle';
+    const seqs = {
+      follow: [[76, 0, .25], [83, .12, .4]],
+      sub: [[72, 0, .2], [76, .1, .2], [79, .2, .2], [84, .3, .6]],
+      resub: [[72, 0, .2], [79, .12, .2], [84, .24, .6]],
+      gift: [[84, 0, .15], [88, .08, .15], [91, .16, .15], [96, .24, .5], [91, .4, .4]],
+      cheer: [[88, 0, .12], [95, .07, .45]],
+      raid: [[48, 0, .5], [55, .15, .5], [60, .3, .5], [67, .45, .9]],
+      redeem: [[79, 0, .2], [84, .12, .45]]
+    };
+    for (const [n, s, d] of seqs[type] || seqs.follow) tone(N(n), s, d, wave, wave === 'square' || wave === 'sawtooth' ? .12 : .28);
+  }
+
+  // ---------------------------------------------------------------- kolejka alertów
+  const queue = [], seen = new Set();
+  let busy = false;
+  function push(ev) {
+    if (!ev || !ev.type) return;
+    const key = ev.id != null ? 'id' + ev.id : JSON.stringify(ev);
+    if (seen.has(key)) return; seen.add(key);
+    if (settings.alertTypes[ev.type] === false) return;
+    queue.push(ev);
+    if (!busy) next();
+  }
+  function next() {
+    const ev = queue.shift();
+    if (!ev) { busy = false; GT.FX.set(null); return; }
+    busy = true;
+    const { def, reduced } = applyStyle();
+    const labels = { ...LABELS._, ...(LABELS[themeId] || {}) };
+    $('labelText').textContent = labels[ev.type] || ev.type;
+    $('name').textContent = ev.user || '';
+    $('name').dataset.text = ev.user || '';
+    $('sub').textContent = details(ev);
+    $('timer').textContent = '';
+    const card = $('card');
+    card.classList.toggle('long', (ev.user || '').length > 22);
+    card.classList.toggle('xlong', (ev.user || '').length > 34);
+    $('icon').className = 'glyph';
+    $('icon').innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[ev.type] || ICONS.follow}</svg>`;
+    const dur = Math.max(3, +settings.alertDuration || 6);
+    document.documentElement.style.setProperty('--dur', dur + 's');
+    GT.FX.set(def && !reduced ? def.fx : null);
+    const wrap = $('wrap');
+    requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('show')));
+    play(ev.type);
+    setTimeout(() => {
+      wrap.classList.remove('show');
+      setTimeout(next, 700);
+    }, dur * 1000);
+  }
+
+  // ---------------------------------------------------------------- źródła zdarzeń
+  // 1) wykrywacz na komputerze (Twitch + testy z panelu)
+  let last = null, timer = null;
+  async function poll() {
+    clearTimeout(timer);
+    let delay = 1000;
+    if (!settings.local) { timer = setTimeout(poll, 5000); return; }
+    try {
+      const base = settings.localUrl.replace(/\/+$/, '');
+      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 2500);
+      const r = await fetch(base + '/events' + (last != null ? '?after=' + last : ''), { cache: 'no-store', signal: ctl.signal });
+      clearTimeout(t);
+      const j = await r.json();
+      if (last != null && j.last < last) last = null;          // wykrywacz uruchomiony od nowa
+      for (const ev of j.events || []) push(ev);
+      last = j.last;
+    } catch { delay = 10000; }
+    timer = setTimeout(poll, delay);
+  }
+  // 2) przyciski testowe w panelu / strona demo (bez wykrywacza)
+  try {
+    const bc = new BroadcastChannel('obsGameOverlay');
+    bc.onmessage = e => {
+      const m = e.data;
+      if (m && typeof m === 'object' && m.type === 'alert') push({ ...m.event, id: undefined, _n: Math.random() });
+      else if (m === 'update') { settings = load(); }
+    };
+  } catch {}
+  window.addEventListener('storage', e => { if (e.key === KEY) settings = load(); });
+
+  applyStyle();
+  poll();
+})();
+</script>
+</body>
+</html>

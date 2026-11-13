@@ -11,6 +11,8 @@
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
+  .tests { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+  .twcode { font: 700 26px/1.2 ui-monospace, 'Cascadia Mono', Consolas, monospace; letter-spacing: .14em; color: #fff; background: #14161b; border: 1px dashed var(--accent); border-radius: 8px; padding: 10px; text-align: center; user-select: all; }
   code { font-size: 11px; background: #14161b; padding: 1px 5px; border-radius: 4px; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif; }
   main { padding: 10px; display: flex; flex-direction: column; gap: 10px; max-width: 720px; margin: 0 auto; }
@@ -122,6 +124,49 @@
   </section>
 
   <section>
+    <h2>Twitch <span id="twPill" class="pill off">WYŁ.</span></h2>
+    <div class="status" id="twStatus">Sprawdzam…</div>
+    <div id="twSetup" hidden>
+      <label>Client ID aplikacji z dev.twitch.tv
+        <input id="twClient" type="text" placeholder="np. gp762nuuoqcoxypju8c569th9wz7q5" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="row"><button class="primary auto" id="twConnect">Połącz z Twitchem</button></div>
+      <p class="hint" style="margin:0">Client ID dostajesz raz, za darmo – instrukcja w README, sekcja „Alerty z Twitcha”.</p>
+    </div>
+    <div id="twCode" hidden>
+      <p class="hint" style="margin:0 0 4px">Wejdź na <b>twitch.tv/activate</b> (na dowolnym urządzeniu) i wpisz kod:</p>
+      <div class="twcode" id="twCodeVal"></div>
+    </div>
+    <div class="row" id="twOnline" hidden><button id="twLogout" class="auto">Wyloguj</button></div>
+  </section>
+
+  <section>
+    <h2>Alerty</h2>
+    <p class="hint" style="margin:0">W OBS: źródło przeglądarki <code>alerts.html</code>, 1920×1080, nad resztą sceny. Wygląd bierze z aktywnego motywu.</p>
+    <div class="tests" id="tests">
+      <button data-t="follow">Follow</button><button data-t="sub">Sub</button><button data-t="resub">Resub</button>
+      <button data-t="gift">Gift</button><button data-t="cheer">Bitsy</button><button data-t="raid">Raid</button><button data-t="redeem">Nagroda</button>
+    </div>
+    <details>
+      <summary>Ustawienia alertów</summary>
+      <div class="checks" id="alertTypes"></div>
+      <div class="row" style="margin-top:8px">
+        <label>Głośność <span id="volVal"></span><input id="alertVolume" type="range" min="0" max="1" step="0.05"></label>
+        <label>Czas <span id="durVal"></span><input id="alertDuration" type="range" min="3" max="15" step="1"></label>
+      </div>
+      <div class="row">
+        <label>Pozycja
+          <select id="alertPos">
+            <option value="tc">Góra środek</option><option value="tl">Lewy górny</option><option value="tr">Prawy górny</option>
+            <option value="bc">Dół środek</option><option value="bl">Lewy dolny</option><option value="br">Prawy dolny</option>
+          </select>
+        </label>
+        <label>Wielkość <span id="ascVal"></span><input id="alertScale" type="range" min="0.6" max="2" step="0.05"></label>
+      </div>
+    </details>
+  </section>
+
+  <section>
     <h2>Discord (Lanyard) <span id="dcPill" class="pill off">WYŁ.</span></h2>
     <label>Twoje Discord User ID
       <input id="discordId" type="text" inputmode="numeric" placeholder="np. 123456789012345678">
@@ -185,7 +230,7 @@
 
   <section>
     <h2>Podgląd (1920×1080)</h2>
-    <div class="preview" id="preview"><iframe id="frame" title="podgląd"></iframe></div>
+    <div class="preview" id="preview"><iframe id="frame" title="podgląd"></iframe><iframe id="frameAlerts" title="podgląd alertów"></iframe></div>
   </section>
 
   <section>
@@ -209,7 +254,9 @@
     accent: '', accent2: '', mode: 'auto', discordId: '', ignore: '',
     timer: true, icon: true, showLabel: true, visible: true, scale: 1, margin: 40,
     local: true, localUrl: 'http://localhost:7777',
-    gameThemes: true, motion: 'full'
+    gameThemes: true, motion: 'full',
+    alertPos: 'tc', alertScale: 1.25, alertDuration: 6, alertVolume: 0.5,
+    alertTypes: { follow: true, sub: true, resub: true, gift: true, cheer: true, raid: true, redeem: true }
   };
   const $ = id => document.getElementById(id);
   const load = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
@@ -301,6 +348,7 @@
     $('toggleBtn').textContent = s.visible ? 'Ukryj nakładkę' : 'Pokaż nakładkę';
     renderDetected();
     renderStaticUrl();
+    if (typeof syncAlerts === 'function') try { syncAlerts(); } catch {}
   }
 
   // --- status wykrywania (zapisywany przez nakładkę w podglądzie) ---
@@ -432,16 +480,102 @@
     $('copyBtn').textContent = 'Skopiowano ✓'; setTimeout(() => $('copyBtn').textContent = 'Kopiuj', 1500);
   };
 
+  // --- alerty: ustawienia ---
+  const TYPE_NAMES = { follow: 'follow', sub: 'sub', resub: 'resub', gift: 'gift', cheer: 'bitsy', raid: 'raid', redeem: 'nagrody' };
+  s.alertTypes = { ...DEFAULTS.alertTypes, ...(s.alertTypes || {}) };
+  for (const [t, label] of Object.entries(TYPE_NAMES)) {
+    const l = document.createElement('label'); l.className = 'check';
+    const c = document.createElement('input'); c.type = 'checkbox'; c.id = 'at-' + t;
+    c.onchange = () => { s.alertTypes = { ...s.alertTypes, [t]: c.checked }; save(); };
+    l.append(c, ' ' + label); $('alertTypes').appendChild(l);
+  }
+  for (const id of ['alertVolume', 'alertDuration', 'alertScale']) $(id).addEventListener('input', () => { s[id] = +$(id).value; save(); });
+  $('alertPos').addEventListener('change', () => { s.alertPos = $('alertPos').value; save(); });
+  function syncAlerts() {
+    for (const t of Object.keys(TYPE_NAMES)) $('at-' + t).checked = s.alertTypes[t] !== false;
+    $('alertVolume').value = s.alertVolume; $('volVal').textContent = Math.round(s.alertVolume * 100) + '%';
+    $('alertDuration').value = s.alertDuration; $('durVal').textContent = s.alertDuration + ' s';
+    $('alertScale').value = s.alertScale; $('ascVal').textContent = Math.round(s.alertScale * 100) + '%';
+    $('alertPos').value = s.alertPos;
+  }
+
+  // --- alerty: test ---
+  const FAKE_NAMES = ['LunaFox', 'Kuba_Gra', 'PixelWilk', 'Nocny_Smok', 'herbatka99', 'MrówkaPancerna'];
+  function fakeEvent(type) {
+    const user = FAKE_NAMES[Math.floor(Math.random() * FAKE_NAMES.length)];
+    return ({
+      follow: { type, user }, sub: { type, user, tier: 'Tier 1' },
+      resub: { type, user, tier: 'Tier 1', months: 7, message: 'Siódmy miesiąc, dalej najlepszy kanał!' },
+      gift: { type, user, tier: 'Tier 1', count: 5 }, cheer: { type, user, amount: 500, message: 'Na nowe ciasteczka' },
+      raid: { type, user, viewers: 42 }, redeem: { type, user, reward: 'Nawodnij się', cost: 500, message: '' }
+    })[type];
+  }
+  $('tests').addEventListener('click', async e => {
+    const t = e.target.closest('button'); if (!t) return;
+    const type = t.dataset.t;
+    // najpierw przez wykrywacz (ta sama droga co prawdziwe alerty), a bez niego – bezpośrednio do nakładek
+    try {
+      if (!s.local) throw 0;
+      const r = await fetch((s.localUrl || DEFAULTS.localUrl).replace(/\/+$/, '') + '/test?type=' + type, { cache: 'no-store' });
+      if (!r.ok) throw 0;
+    } catch { if (bc) bc.postMessage({ type: 'alert', event: fakeEvent(type) }); }
+  });
+
+  // --- Twitch ---
+  let twState = null;
+  async function twPoll() {
+    let st = null;
+    try {
+      const r = await fetch((s.localUrl || DEFAULTS.localUrl).replace(/\/+$/, '') + '/twitch/status', { cache: 'no-store' });
+      st = await r.json();
+    } catch { st = null; }
+    twState = st; twRender();
+    setTimeout(twPoll, st && st.status === 'device' ? 2000 : 4000);
+  }
+  function twRender() {
+    const st = twState;
+    $('twSetup').hidden = true; $('twCode').hidden = true; $('twOnline').hidden = true;
+    if (!st) { pill('twPill', false, '', 'BRAK'); setStatus($('twStatus'), ['Twitch działa przez wykrywacz. Uruchom ', { b: 'start-detector.bat' }, '.']); return; }
+    switch (st.status) {
+      case 'online': pill('twPill', true, 'POŁĄCZONO'); setStatus($('twStatus'), ['Połączono jako ', { b: st.user }, '. Alerty przychodzą na żywo.']); $('twOnline').hidden = false; break;
+      case 'connecting': pill('twPill', false, '', 'ŁĄCZĘ'); setStatus($('twStatus'), ['Łączę z Twitchem', st.user ? ' jako ' : '', st.user ? { b: st.user } : '', '…']); $('twOnline').hidden = false; break;
+      case 'device': pill('twPill', false, '', 'CZEKA'); setStatus($('twStatus'), ['Czekam na potwierdzenie na Twitchu.']); $('twCode').hidden = false; $('twCodeVal').textContent = st.code; break;
+      case 'error': pill('twPill', false, '', 'BŁĄD'); setStatus($('twStatus'), ['Błąd: ' + (st.error || 'nieznany') + '. Ponawiam sam.']); $('twOnline').hidden = false; break;
+      default:
+        pill('twPill', false, '', 'WYŁ.');
+        setStatus($('twStatus'), [st.error || (st.hasClient ? 'Zaloguj się, żeby dostawać alerty.' : 'Wklej Client ID i połącz konto.')]);
+        $('twSetup').hidden = false;
+    }
+  }
+  $('twConnect').onclick = async () => {
+    const id = $('twClient').value.trim();
+    if (!id && !(twState && twState.hasClient)) { $('twClient').focus(); return; }
+    try {
+      const base = (s.localUrl || DEFAULTS.localUrl).replace(/\/+$/, '');
+      const r = await fetch(base + '/twitch/setup?clientId=' + encodeURIComponent(id || 'keep'), { cache: 'no-store' });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || r.status);
+      twState = j; twRender();
+    } catch (e) { setStatus($('twStatus'), ['Nie udało się: ' + e.message]); }
+  };
+  $('twLogout').onclick = async () => {
+    try { const r = await fetch((s.localUrl || DEFAULTS.localUrl).replace(/\/+$/, '') + '/twitch/logout', { cache: 'no-store' }); twState = await r.json(); twRender(); } catch {}
+  };
+
   // --- podgląd ---
   const frame = $('frame');
   frame.src = overlayUrl().href;
-  const fit = () => { frame.style.transform = `scale(${$('preview').clientWidth / 1920})`; };
+  const frameA = $('frameAlerts');
+  frameA.src = new URL('alerts.html?volume=0', location.href).href; // podgląd bez dźwięku – gra źródło w OBS
+  const fit = () => { const k = `scale(${$('preview').clientWidth / 1920})`; frame.style.transform = k; frameA.style.transform = k; };
   new ResizeObserver(fit).observe($('preview'));
 
   if (!s.since) s.since = Date.now();
   $('game').value = s.game; $('subtitle').value = s.subtitle; $('cover').value = s.cover;
   renderHistory();
   syncUi();
+  syncAlerts();
+  twPoll();
 })();
 </script>
 </body>
