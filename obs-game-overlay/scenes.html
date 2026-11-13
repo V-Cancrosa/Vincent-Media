@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Scenes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Rajdhani:wght@500;700&family=Inter:wght@400;600;800&family=Press+Start+2P&family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@1,500&family=Silkscreen:wght@400;700&family=Luckiest+Guy&family=Marcellus+SC&family=Teko:wght@500;600&family=Chakra+Petch:wght@600;700&family=Anton&family=JetBrains+Mono:wght@500&family=Archivo:wdth,wght@125,700;125,800&family=Space+Mono:wght@400;700&family=Baloo+2:wght@800&family=Caveat:wght@600;700&family=Nunito:wght@700;800&family=Fraunces:ital,wght@0,600;1,500&family=Saira+Stencil+One&family=IBM+Plex+Mono:wght@500&family=Space+Grotesk:wght@700&family=Barlow:wght@400;600&display=swap">
+<link rel="stylesheet" href="themes/games.css">
+<script src="themes/games.js"></script>
+<link rel="stylesheet" href="themes/fursona.css">
+<script src="themes/fursona.js"></script>
+<link rel="stylesheet" href="themes/base.css">
+<style>
+  /* Ekran przerwy: pełnoekranowe tło motywu + duża karta z odliczaniem + postać + stopka z linkami i ostatnimi zdarzeniami. */
+  html, body { background: #0b0b10; }
+  :root { --scene-font: 'Inter', system-ui, sans-serif; --scene-ink: #f2f2f6; --scene-muted: rgba(242,242,246,.65); --scene-bg: #0b0b10; }
+
+  #bg { position: fixed; inset: 0; background: var(--scene-bg); overflow: hidden; }
+  #bg::before, #bg::after { content: ""; position: absolute; width: 70vw; height: 70vw; border-radius: 50%; filter: blur(60px); opacity: .45; }
+  #bg::before { left: -20vw; top: -25vw; background: radial-gradient(circle, var(--accent), transparent 65%); animation: drift1 26s ease-in-out infinite alternate; }
+  #bg::after { right: -20vw; bottom: -30vw; background: radial-gradient(circle, var(--accent2), transparent 65%); animation: drift2 32s ease-in-out infinite alternate; }
+  @keyframes drift1 { to { transform: translate(18vw, 14vw) scale(1.15); } }
+  @keyframes drift2 { to { transform: translate(-16vw, -10vw) scale(1.1); } }
+  #bgfx { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #pattern { position: absolute; inset: 0; }
+
+  /* duża karta na środku */
+  .pos-mc #stage { align-items: center; justify-content: center; padding-bottom: 90px; }
+  .pos-mc #wrap { --dir: 0; transform-origin: center; }
+  #stage { z-index: 2; }
+  #name { font-variant-numeric: tabular-nums; }
+  #icon.glyph { display: grid; place-items: center; }
+  #icon.glyph svg { width: 58%; height: 58%; color: #fff; }
+  .theme-retro #icon.glyph svg, .game-theme #icon.glyph svg { color: var(--accent); }
+  .theme-g-chip #icon.glyph svg, .theme-g-val #icon.glyph svg { color: #fff; }
+  #icon.glyph #mono { display: none; }
+
+  /* postać / duży emblemat */
+  #hero { position: fixed; z-index: 1; pointer-events: none; display: none; }
+  #hero.on { display: block; }
+  #hero img { display: block; }
+  #hero.full { right: 5vw; bottom: 0; height: 88vh; }
+  #hero.full img { height: 100%; width: auto; filter: drop-shadow(0 0 40px color-mix(in srgb, var(--accent) 45%, transparent)); animation: hero-breathe 6s ease-in-out infinite; }
+  @keyframes hero-breathe { 50% { transform: translateY(-8px); } }
+  #hero.photo { right: 7vw; top: 50%; width: 22vw; transform: translateY(-55%) rotate(5deg); animation: hero-sway 7s ease-in-out infinite; }
+  #hero.photo img { width: 100%; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
+  @keyframes hero-sway { 50% { transform: translateY(-53%) rotate(2deg); } }
+  #hero.sheet { right: 5vw; top: 50%; width: 30vw; transform: translateY(-55%) rotate(-2deg); padding: 10px; background: #0a0a0b; border: 1px solid #e3a43f; box-shadow: 0 30px 70px rgba(0,0,0,.6); }
+  #hero.sheet img { width: 100%; }
+  #hero.sheet::after { content: "Ref sheet · art: Ash"; position: absolute; left: 0; right: 0; bottom: -28px; text-align: center; font: 400 13px 'Space Mono', monospace; letter-spacing: .14em; color: #8a857c; }
+  #hero.emblem { right: 8vw; top: 50%; width: 22vw; height: 22vw; transform: translateY(-58%); }
+  #hero.emblem svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 20px 40px rgba(0,0,0,.5)); }
+  #hero.emblem > div, #hero.emblem > svg { position: static !important; width: 100% !important; height: 100% !important; transform: none !important; }
+  .has-hero.pos-mc #stage { justify-content: flex-start; padding-left: 7vw; }
+  .has-hero #wrap { transform-origin: left center; }
+  #hero.emblem .fz-fan { display: none; }
+
+  /* stopka */
+  #foot {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; gap: 40px; justify-content: space-between; align-items: center;
+    padding: 22px 60px; font: 600 22px/1.2 var(--scene-font); color: var(--scene-ink);
+    background: linear-gradient(transparent, rgba(0,0,0,.55));
+  }
+  #foot:empty { display: none; }
+  #socials { display: flex; gap: 28px; flex-wrap: wrap; }
+  #socials span { white-space: nowrap; }
+  #socials span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 10px; border-radius: 2px; background: var(--accent); vertical-align: middle; }
+  #recent { display: flex; gap: 26px; color: var(--scene-muted); font-size: 18px; }
+  #recent b { color: var(--scene-ink); font-weight: 700; }
+
+  /* ---- tła postaci ---- */
+  .theme-g-vince { --scene-bg: #0a0a0b; --scene-font: 'Space Mono', monospace; }
+  .theme-g-vince #pattern { background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px); background-size: 96px 96px; }
+  .theme-g-vince #bg::before, .theme-g-vince #bg::after { opacity: .18; }
+  .theme-g-chip { --scene-bg: #f4e2c3; --scene-font: 'Nunito', sans-serif; --scene-ink: #4a2a17; --scene-muted: #8a6a4e; }
+  .theme-g-chip #pattern { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cg fill='%236f4a2a' fill-opacity='.16'%3E%3Cpath d='M20 30q7-12 14 0q-7 5-14 0z'/%3E%3Cpath d='M150 18q5-9 10 0q-5 4-10 0z' transform='rotate(25 155 18)'/%3E%3Cpath d='M210 90q8-13 16 0q-8 6-16 0z' transform='rotate(-30 218 90)'/%3E%3Cpath d='M70 120q6-10 12 0q-6 4-12 0z' transform='rotate(60 76 120)'/%3E%3Cpath d='M120 200q9-14 18 0q-9 6-18 0z' transform='rotate(-15 129 200)'/%3E%3Cpath d='M30 220q5-8 10 0q-5 3-10 0z'/%3E%3Cpath d='M235 205q6-10 12 0q-6 4-12 0z' transform='rotate(40 241 205)'/%3E%3C/g%3E%3C/svg%3E"); }
+  .theme-g-chip #bg::before, .theme-g-chip #bg::after { opacity: .25; }
+  .theme-g-chip #foot { background: linear-gradient(transparent, rgba(244,226,195,.9)); }
+  .theme-g-ragnar { --scene-bg: #0c0614; --scene-font: 'Space Mono', monospace; }
+  .theme-g-ragnar #pattern { background: conic-gradient(from 0deg at 50% -10%, transparent 0 40deg, rgba(255,46,136,.12) 46deg, transparent 52deg 80deg, rgba(38,198,224,.12) 86deg, transparent 92deg 130deg, rgba(180,224,60,.1) 136deg, transparent 142deg); animation: beams 12s ease-in-out infinite alternate; transform-origin: 50% -10%; }
+  @keyframes beams { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
+  .theme-g-toro { --scene-bg: #0d1220; --scene-font: 'Fraunces', serif; --scene-ink: #f6ead0; }
+  .theme-g-toro #pattern { background: radial-gradient(40% 50% at 75% 30%, rgba(255,190,90,.22), transparent 70%), linear-gradient(transparent 78%, rgba(47,127,214,.18) 78%, rgba(13,18,32,.9)); }
+  .theme-g-myr { --scene-bg: #1c1f23; --scene-font: 'IBM Plex Mono', monospace; --scene-ink: #ede6d6; }
+  .theme-g-myr #pattern { background: repeating-linear-gradient(0deg, rgba(0,0,0,.14) 0 1px, transparent 1px 3px), linear-gradient(115deg, transparent 8%, #0b0b0c 8%, #0b0b0c 13%, #ede6d6 13%, #ede6d6 13.6%, transparent 13.6%); }
+  .theme-g-myr #bg::before, .theme-g-myr #bg::after { opacity: .2; }
+  .theme-g-zarin { --scene-bg: #14171b; --scene-font: 'Space Mono', monospace; --scene-ink: #dfe5e8; }
+  .theme-g-mc #pattern { background: var(--tex); background-size: 128px 128px; image-rendering: pixelated; opacity: .5; }
+  .theme-g-elden { --scene-bg: #0d0b08; --scene-font: 'Cinzel', serif; }
+  .theme-g-cp { --scene-bg: #0b0f14; --scene-font: 'Chakra Petch', sans-serif; }
+  .theme-g-val { --scene-bg: #0f1923; --scene-font: 'Teko', sans-serif; }
+  .theme-g-gta #pattern { background: linear-gradient(180deg, #2b1a4a 0%, #a2386a 55%, #ff8a4c 85%, #ffc56b 100%); opacity: .8; }
+
+  .reduced-motion #bg::before, .reduced-motion #bg::after, .reduced-motion #pattern, .reduced-motion #hero, .reduced-motion #hero * { animation: none !important; }
+</style>
+</head>
+<body class="theme-neon pos-mc">
+<div id="bg"><div id="pattern"></div><canvas id="bgfx"></canvas></div>
+<div id="hero"></div>
+<div id="stage">
+  <div id="wrap">
+    <canvas id="fx"></canvas>
+    <div id="backdrop" aria-hidden="true"></div>
+    <div id="card">
+      <div id="icon" class="glyph"><span id="mono"></span></div>
+      <div id="text">
+        <div id="label"><span class="dot"></span><span id="labelText"></span></div>
+        <div id="name"></div>
+        <div id="meta"><span id="sub"></span><span id="timer"></span></div>
+      </div>
+    </div>
+    <div id="emblem" aria-hidden="true"></div>
+  </div>
+</div>
+<div id="foot"><div id="socials"></div><div id="recent"></div></div>
+
+<script>
+(() => {
+  const KEY = 'obsGameOverlay.v1';
+  const ACTIVE_KEY = 'obsGameOverlay.activeTheme';
+  const DETECTED_KEY = 'obsGameOverlay.detected';
+  const $ = id => document.getElementById(id);
+  const DEFAULTS = {
+    theme: 'neon', accent: '', accent2: '', motion: 'full', localUrl: 'http://localhost:7777', local: true, game: '',
+    scene: 'start', sceneUntil: 0, sceneSub: '', sceneTitles: {}, socials: '', sceneScale: 2.1, sceneHero: true
+  };
+  const p = new URLSearchParams(location.search);
+  const read = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
+  const load = () => {
+    const s = { ...DEFAULTS, ...(p.get('panel') === '0' ? {} : read(KEY, {})) };
+    if (p.has('scene')) s.scene = p.get('scene');      // np. osobne źródło na każdą scenę OBS
+    if (p.has('theme')) s.theme = p.get('theme');
+    if (p.has('motion')) s.motion = p.get('motion');
+    return s;
+  };
+  let settings = load();
+
+  const TITLES = {
+    _: { start: 'Zaraz zaczynamy', brb: 'Przerwa', end: 'Dzięki za dziś!' },
+    vince: { end: 'Tunele mają wyjścia. Do zobaczenia.' },
+    chip: { start: 'no co. zaraz zaczynam', brb: 'przerwa na ciasteczko', end: 'no. to tyle.' },
+    ragnar: { start: 'Soundcheck…', brb: 'Przerwa przy barze', end: 'Ostatni numer' },
+    toro: { start: 'Latarnia się zapala', brb: 'Herbata pod mostem', end: 'Światło gaśnie. Panta rei.' },
+    myr: { start: 'TRANSMISJA ZA', brb: 'PRZERWA SERWISOWA', end: 'KONIEC ZMIANY' },
+    zarin: { start: 'rozgrzewam silniki…', brb: 'naprawiam coś. chwila.', end: 'zamykam warsztat' }
+  };
+  const DONE = { start: 'Już zaraz!', brb: 'Zaraz wracam', end: 'Do zobaczenia' };
+  const ICONS = {
+    start: '<path d="M8 5v14l11-7z"/>',
+    brb: '<path d="M5 4h4v16H5zM15 4h4v16h-4z"/>',
+    end: '<path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.9 4.5 6.6 4.5c2.2 0 3.6 1.3 4.4 2.6.8-1.3 2.2-2.6 4.4-2.6 3.7 0 5.7 3.9 4.2 7.3C19.5 16.4 12 21 12 21z"/>'
+  };
+  const HERO = {
+    vince: { cls: 'sheet', img: 'themes/fursona/vince-sheet.webp' },
+    chip: { cls: 'photo', img: 'themes/fursona/chip-polaroid.webp' },
+    ragnar: { cls: 'full', img: 'themes/fursona/ragnar-full.webp' },
+    toro: { cls: 'full', img: 'themes/fursona/toro-full.webp' }
+  };
+
+  // ---------------------------------------------------------------- motyw
+  const GT = window.OverlayGameThemes || { byId: () => null, FX: { attach() {}, set() {} }, texture: () => '' };
+  const BGFX = Object.assign(Object.create(Object.getPrototypeOf(GT.FX)), GT.FX, { canvas: null, ctx: null, cfg: null, parts: [], raf: 0 });
+  BGFX.attach($('bgfx'));
+  let themeFor = null, themeId = 'neon', lastFx = null;
+  function applyStyle() {
+    const active = read(ACTIVE_KEY, null);
+    let cls = p.has('theme') ? settings.theme : (active && active.cls) || settings.theme || 'neon';
+    const def = cls.startsWith('g-') ? GT.byId(cls.slice(2)) : null;
+    if (cls.startsWith('g-') && !def) cls = 'neon';
+    themeId = def ? def.id : cls;
+    const reduced = settings.motion === 'reduced';
+    const hero = settings.sceneHero && def ? (HERO[def.id] || { cls: 'emblem' }) : null;
+    document.body.className = `theme-${cls} pos-mc` + (def ? ' game-theme' : '') + (def && def.group === 'fursona' ? ' f-theme' : '') +
+      (reduced ? ' reduced-motion' : '') + (hero ? ' has-hero' : '');
+    if (themeFor !== cls) {
+      themeFor = cls;
+      $('emblem').innerHTML = def ? def.emblem || '' : '';
+      $('backdrop').innerHTML = def ? def.back || '' : '';
+      const h = $('hero');
+      h.className = hero ? 'on ' + hero.cls : '';
+      h.innerHTML = !hero ? '' : hero.img ? `<img src="${hero.img}" alt="">` : (def.emblem || '');
+      // przy dużej postaci obok karty nie dublujemy postaci wyglądającej zza karty
+      if (hero && hero.cls === 'full') $('backdrop').innerHTML = '';
+      if (hero && hero.cls !== 'full') $('emblem').innerHTML = '';
+    }
+    const root = document.documentElement.style;
+    const acc = def ? def.accent : ['#7c5cff', '#00e1ff'];
+    root.setProperty('--accent', settings.accent || acc[0]);
+    root.setProperty('--accent2', settings.accent2 || acc[1]);
+    root.setProperty('--scale', settings.sceneScale);
+    root.setProperty('--margin', '60px');
+    root.setProperty('--tex', def ? GT.texture(def) : '');
+    // cząsteczki na całym ekranie zamiast wokół karty
+    const fxKey = cls + reduced;
+    if (fxKey !== lastFx) {
+      lastFx = fxKey;
+      BGFX.set(def && def.fx && !reduced ? { ...def.fx, count: Math.round(def.fx.count * 3) } : null);
+    }
+    GT.FX.set(null);
+  }
+
+  // ---------------------------------------------------------------- treść
+  const pad = n => String(n).padStart(2, '0');
+  function render() {
+    applyStyle();
+    const scene = ['start', 'brb', 'end'].includes(settings.scene) ? settings.scene : 'start';
+    const titles = { ...TITLES._, ...(TITLES[themeId] || {}), ...(settings.sceneTitles || {}) };
+    $('labelText').textContent = titles[scene];
+    $('icon').innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[scene]}</svg>`;
+    const left = (settings.sceneUntil || 0) - Date.now();
+    let big;
+    if (scene !== 'end' && left > 0) {
+      const t = Math.ceil(left / 1000);
+      big = t >= 3600 ? `${Math.floor(t / 3600)}:${pad(Math.floor(t / 60) % 60)}:${pad(t % 60)}` : `${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
+    } else big = DONE[scene];
+    if ($('name').textContent !== big) { $('name').textContent = big; $('name').dataset.text = big; }
+    let sub = settings.sceneSub;
+    // gra: wykryta (wykrywacz / Discord) albo wpisana ręcznie
+    const det = read(DETECTED_KEY, {}) || {};
+    const game = (det.local && det.local.game && det.local.game.name) || (det.discord && det.discord.game && det.discord.game.name) || settings.game;
+    if (!sub && scene !== 'end' && game) sub = (scene === 'start' ? 'Dziś: ' : 'Gramy dalej w ') + game;
+    $('sub').textContent = sub || '';
+    $('socials').innerHTML = '';
+    for (const s of String(settings.socials || '').split(/[,|\n]/).map(x => x.trim()).filter(Boolean)) {
+      const el = document.createElement('span'); el.textContent = s; $('socials').appendChild(el);
+    }
+    renderRecent();
+  }
+
+  // ostatni follow / sub z wykrywacza (prawdziwe zdarzenia, bez testowych)
+  let recent = {};
+  function renderRecent() {
+    const r = $('recent'); r.textContent = '';
+    const add = (label, v) => { if (!v) return; const s = document.createElement('span'); s.append(label + ' '); const b = document.createElement('b'); b.textContent = v; s.append(b); r.appendChild(s); };
+    add('Ostatni follow:', recent.follow);
+    add('Ostatni sub:', recent.sub);
+  }
+  async function pollRecent() {
+    if (settings.local) {
+      try {
+        const r = await fetch(settings.localUrl.replace(/\/+$/, '') + '/events?after=0', { cache: 'no-store' });
+        const j = await r.json();
+        for (const ev of j.events || []) {
+          if (ev.test) continue;
+          if (ev.type === 'follow') recent.follow = ev.user;
+          if (['sub', 'resub', 'gift'].includes(ev.type)) recent.sub = ev.user;
+        }
+      } catch {}
+    }
+    setTimeout(pollRecent, 15000);
+  }
+
+  // ---------------------------------------------------------------- start
+  const wrap = $('wrap');
+  render();
+  requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('show')));
+  setInterval(render, 1000);
+  pollRecent();
+  try { const bc = new BroadcastChannel('obsGameOverlay'); bc.onmessage = e => { if (e.data === 'update') { settings = load(); render(); } }; } catch {}
+  window.addEventListener('storage', e => { if (e.key === KEY || e.key === ACTIVE_KEY) { settings = load(); render(); } });
+})();
+</script>
+</body>
+</html>

@@ -4,6 +4,7 @@ Nakładka „Teraz gram” do OBS na nagrania i streamy na YouTube i Twitchu. Na
 
 - `overlay.html` – sama nakładka; w OBS dodajesz ją jako **źródło przeglądarki** (Browser Source)
 - `panel.html` – panel sterowania; w OBS dodajesz go jako **dock przeglądarki** (Custom Browser Dock)
+- `scenes.html` – ekrany przerw („Zaraz zaczynamy”, „Przerwa”, „Koniec”) z odliczaniem; w OBS osobne **źródło przeglądarki**
 - `alerts.html` – alerty z Twitcha (follow, sub, raid…); w OBS osobne **źródło przeglądarki**
 - `detector/` – wykrywacz gier i połączenie z Twitchem dla Windows (skrypt PowerShell, nic nie trzeba instalować)
 
@@ -98,6 +99,17 @@ Nazwy z tego pliku mają pierwszeństwo przed bazą Discorda, więc możesz w ni
 
 Jeśli wpiszesz ręcznie tę samą nazwę co wykryta gra, Twój podtytuł i okładka mają pierwszeństwo.
 Licznik czasu przy wykrytej grze liczy od uruchomienia gry, przy wpisanej ręcznie – od chwili jej ustawienia.
+
+## Ekrany przerw
+
+`scenes.html` to pełnoekranowe tło na sceny „Zaraz zaczynamy”, „Przerwa” i „Koniec” w aktywnym motywie: duża karta z odliczaniem, tło z cząsteczkami, duża postać albo emblemat obok, a na dole Twoje linki i ostatni follow / sub z Twitcha.
+
+W OBS dodaj źródło przeglądarki `file:///C:/OBS/obs-game-overlay/scenes.html` (1920×1080). Są dwie możliwości:
+- **Jedno źródło**, a ekran wybierasz w panelu (sekcja *Ekrany przerw*).
+- **Osobne źródło na każdą scenę OBS**: `scenes.html?scene=start`, `scenes.html?scene=brb`, `scenes.html?scene=end`. Wtedy przełączenie sceny w OBS od razu pokazuje właściwy ekran.
+
+W panelu ustawiasz odliczanie (minuty + *Start*), podpis pod odliczaniem (pusty = „Dziś: [gra]”) i linki w stopce.
+Każda postać ma własne napisy, np. Myr-35: „TRANSMISJA ZA” / „PRZERWA SERWISOWA” / „KONIEC ZMIANY”.
 
 ## Alerty z Twitcha
 

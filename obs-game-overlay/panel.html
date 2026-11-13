@@ -11,6 +11,8 @@
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
+  .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .seg3 button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
   .tests { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
   .twcode { font: 700 26px/1.2 ui-monospace, 'Cascadia Mono', Consolas, monospace; letter-spacing: .14em; color: #fff; background: #14161b; border: 1px dashed var(--accent); border-radius: 8px; padding: 10px; text-align: center; user-select: all; }
   code { font-size: 11px; background: #14161b; padding: 1px 5px; border-radius: 4px; }
@@ -121,6 +123,29 @@
       <summary>Adres wykrywacza</summary>
       <input id="localUrl" type="text" placeholder="http://localhost:7777">
     </details>
+  </section>
+
+  <section>
+    <h2>Ekrany przerw</h2>
+    <p class="hint" style="margin:0">W OBS: źródło <code>scenes.html</code> (1920×1080) na scenach „Start”, „Przerwa”, „Koniec”. Można dać w każdej scenie osobne źródło z <code>?scene=start</code>, <code>?scene=brb</code> albo <code>?scene=end</code>.</p>
+    <div class="seg3" id="sceneBtns">
+      <button data-s="start">Zaraz zaczynamy</button><button data-s="brb">Przerwa</button><button data-s="end">Koniec</button>
+    </div>
+    <div class="row">
+      <label>Odliczanie (min)
+        <input id="sceneMin" type="text" inputmode="numeric" value="5">
+      </label>
+      <button class="primary auto" id="sceneGo">Start</button>
+      <button class="auto" id="sceneStop">Stop</button>
+    </div>
+    <div class="status" id="sceneStatus"></div>
+    <label>Podpis pod odliczaniem (pusty = „Dziś: [gra]”)
+      <input id="sceneSub" type="text" placeholder="np. Dziś: ELDEN RING, boss Malenia">
+    </label>
+    <label>Linki w stopce (po przecinku)
+      <input id="socials" type="text" placeholder="twitch.tv/…, @…bsky.social, tiktok: @…">
+    </label>
+    <label class="check"><input id="sceneHero" type="checkbox"> duża postać / emblemat obok odliczania</label>
   </section>
 
   <section>
@@ -255,6 +280,7 @@
     timer: true, icon: true, showLabel: true, visible: true, scale: 1, margin: 40,
     local: true, localUrl: 'http://localhost:7777',
     gameThemes: true, motion: 'full',
+    scene: 'start', sceneUntil: 0, sceneSub: '', socials: '', sceneHero: true,
     alertPos: 'tc', alertScale: 1.25, alertDuration: 6, alertVolume: 0.5,
     alertTypes: { follow: true, sub: true, resub: true, gift: true, cheer: true, raid: true, redeem: true }
   };
@@ -348,7 +374,7 @@
     $('toggleBtn').textContent = s.visible ? 'Ukryj nakładkę' : 'Pokaż nakładkę';
     renderDetected();
     renderStaticUrl();
-    if (typeof syncAlerts === 'function') try { syncAlerts(); } catch {}
+    if (typeof syncAlerts === 'function') try { syncAlerts(); syncScenes(); } catch {}
   }
 
   // --- status wykrywania (zapisywany przez nakładkę w podglądzie) ---
@@ -480,6 +506,25 @@
     $('copyBtn').textContent = 'Skopiowano ✓'; setTimeout(() => $('copyBtn').textContent = 'Kopiuj', 1500);
   };
 
+  // --- ekrany przerw ---
+  $('sceneBtns').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; s.scene = b.dataset.s; save(); });
+  $('sceneGo').onclick = () => {
+    const m = parseFloat(String($('sceneMin').value).replace(',', '.'));
+    if (!(m > 0)) { $('sceneMin').focus(); return; }
+    s.sceneUntil = Date.now() + Math.round(m * 60000); save();
+  };
+  $('sceneStop').onclick = () => { s.sceneUntil = 0; save(); };
+  for (const id of ['sceneSub', 'socials']) $(id).addEventListener('change', () => { s[id] = $(id).value.trim(); save(); });
+  $('sceneHero').addEventListener('change', () => { s.sceneHero = $('sceneHero').checked; save(); });
+  function syncScenes() {
+    for (const b of $('sceneBtns').querySelectorAll('button')) b.setAttribute('aria-pressed', b.dataset.s === s.scene);
+    for (const id of ['sceneSub', 'socials']) if (document.activeElement !== $(id)) $(id).value = s[id] || '';
+    $('sceneHero').checked = s.sceneHero !== false;
+    const left = (s.sceneUntil || 0) - Date.now();
+    $('sceneStatus').textContent = left > 0 ? `Odliczanie do ${new Date(s.sceneUntil).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })} (jeszcze ${Math.ceil(left / 60000)} min)` : 'Odliczanie zatrzymane.';
+  }
+  setInterval(() => { try { syncScenes(); } catch {} }, 15000);
+
   // --- alerty: ustawienia ---
   const TYPE_NAMES = { follow: 'follow', sub: 'sub', resub: 'resub', gift: 'gift', cheer: 'bitsy', raid: 'raid', redeem: 'nagrody' };
   s.alertTypes = { ...DEFAULTS.alertTypes, ...(s.alertTypes || {}) };
@@ -575,6 +620,7 @@
   renderHistory();
   syncUi();
   syncAlerts();
+  syncScenes();
   twPoll();
 })();
 </script>
