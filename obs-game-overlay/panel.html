@@ -339,6 +339,17 @@
   }
 
   async function callDetector(path) {
+    // strona demo: zamiast prawdziwego wykrywacza zmieniamy udawany stan
+    const sim = load('obsGameOverlay.sim', null);
+    if (sim && sim.active) {
+      const q = new URLSearchParams(path.split('?')[1] || '');
+      if (path.startsWith('/add')) sim.game = { name: q.get('name'), exe: q.get('exe'), via: 'my-games', steam: '', start: Date.now(), images: [] };
+      if (path.startsWith('/ignore')) sim.game = null;
+      sim.last = { action: path.split('?')[0], exe: q.get('exe'), name: q.get('name'), at: Date.now() };
+      try { localStorage.setItem('obsGameOverlay.sim', JSON.stringify(sim)); } catch {}
+      if (bc) bc.postMessage('sim');
+      return;
+    }
     const base = (s.localUrl || DEFAULTS.localUrl).replace(/\/+$/, '');
     const r = await fetch(base + path, { cache: 'no-store' });
     const j = await r.json().catch(() => ({}));

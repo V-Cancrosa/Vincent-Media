@@ -205,6 +205,7 @@
 (() => {
   const KEY = 'obsGameOverlay.v1';
   const DETECTED_KEY = 'obsGameOverlay.detected';
+  const SIM_KEY = 'obsGameOverlay.sim'; // tylko strona demo: udawany wykrywacz
 
   const DEFAULTS = {
     game: '', subtitle: '', cover: '', since: 0,
@@ -336,11 +337,18 @@
     }
     let delay = 2000;
     try {
-      const ctl = new AbortController();
-      const t = setTimeout(() => ctl.abort(), 1500);
-      const r = await fetch(settings.localUrl.replace(/\/+$/, '') + '/game', { signal: ctl.signal, cache: 'no-store' });
-      clearTimeout(t);
-      const j = await r.json();
+      let j, sim = null;
+      try { sim = JSON.parse(localStorage.getItem(SIM_KEY)); } catch {}
+      if (sim && sim.active) {
+        j = { online: true, game: sim.game, recent: sim.recent || [] };
+      } else {
+        if (sim && sim.active === false) throw new Error('sim off');
+        const ctl = new AbortController();
+        const t = setTimeout(() => ctl.abort(), 1500);
+        const r = await fetch(settings.localUrl.replace(/\/+$/, '') + '/game', { signal: ctl.signal, cache: 'no-store' });
+        clearTimeout(t);
+        j = await r.json();
+      }
       localOnline = true;
       localRecent = Array.isArray(j.recent) ? j.recent : j.recent ? [j.recent] : [];
       const g = j.game;
@@ -477,10 +485,10 @@
     if (settings.discordId !== prevId || (settings.mode === 'manual') !== (prevMode === 'manual')) connect(settings.discordId);
     render();
   }
-  window.addEventListener('storage', e => { if (e.key === KEY) reload(); });
+  window.addEventListener('storage', e => { if (e.key === KEY) reload(); if (e.key === SIM_KEY) pollLocal(); });
   try {
     const bc = new BroadcastChannel('obsGameOverlay');
-    bc.onmessage = () => reload();
+    bc.onmessage = e => (e.data === 'sim' ? pollLocal() : reload());
   } catch {}
 
   connect(settings.discordId);
