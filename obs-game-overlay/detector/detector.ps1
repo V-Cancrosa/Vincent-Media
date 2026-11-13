@@ -361,9 +361,100 @@ function Add-Event($ev) {
     $ev | Add-Member -NotePropertyName id -NotePropertyValue $script:EventSeq -Force
     $ev | Add-Member -NotePropertyName at -NotePropertyValue ([DateTimeOffset]::Now.ToUnixTimeMilliseconds()) -Force
     [void]$script:Events.Add($ev)
-    while ($script:Events.Count -gt 100) { $script:Events.RemoveAt(0) }
+    while ($script:Events.Count -gt 400) { $script:Events.RemoveAt(0) }
+    Add-SessionEvent $ev
     $who = ''; if ($ev.user) { $who = $ev.user }
-    Log ("Alert: {0} {1}" -f $ev.type, $who) 'Magenta'
+    if ($ev.type -ne 'chat') { Log ("Alert: {0} {1}" -f $ev.type, $who) 'Magenta' }
+}
+
+# ---------------------------------------------------------------- sesja (do napisów końcowych)
+$script:Session = @{ chatters = [ordered]@{}; follow = [ordered]@{}; sub = [ordered]@{}; gift = [ordered]@{}; cheer = [ordered]@{}; raid = [ordered]@{}; redeem = [ordered]@{}; started = (Get-Date) }
+function Add-SessionEvent($ev) {
+    if ($ev.test -or -not $ev.user) { return }
+    $u = [string]$ev.user
+    switch ($ev.type) {
+        'chat'   { $script:Session.chatters[$u] = 1 + [int]$script:Session.chatters[$u] }
+        'follow' { $script:Session.follow[$u] = 1 }
+        'sub'    { $script:Session.sub[$u] = 1 }
+        'resub'  { $script:Session.sub[$u] = [int]$ev.months }
+        'gift'   { $script:Session.gift[$u] = [int]$script:Session.gift[$u] + [int]$ev.count }
+        'cheer'  { $script:Session.cheer[$u] = [int]$script:Session.cheer[$u] + [int]$ev.amount }
+        'raid'   { $script:Session.raid[$u] = [int]$ev.viewers }
+        'redeem' { $script:Session.redeem[$u] = 1 + [int]$script:Session.redeem[$u] }
+    }
+}
+function Get-Session {
+    $o = [ordered]@{ started = $script:Session.started.ToString('o') }
+    foreach ($k in @('chatters', 'follow', 'sub', 'gift', 'cheer', 'raid', 'redeem')) {
+        $o[$k] = @($script:Session[$k].GetEnumerator() | ForEach-Object { [pscustomobject]@{ user = $_.Key; n = $_.Value } })
+    }
+    return [pscustomobject]$o
+}
+
+# ---------------------------------------------------------------- czat: wygląd wybrany przez widzów i efekty
+$ViewersFile = Join-Path $DataDir 'viewers.json'
+$script:Viewers = @{}
+if (Test-Path $ViewersFile) {
+    try { $vj = (Get-Content $ViewersFile -Raw -Encoding UTF8) | ConvertFrom-Json; foreach ($pp in $vj.PSObject.Properties) { $script:Viewers[$pp.Name] = $pp.Value } } catch {}
+}
+$ChatStyles = @('neon', 'szklo', 'pixel', 'komiks', 'terminal', 'papier', 'holo', 'sakura', 'ogien', 'lod')
+$ChatColors = @{ czerwony = '#ff4d5e'; pomaranczowy = '#ff9f43'; zolty = '#ffd43b'; zielony = '#4cd97b'; turkus = '#2ee6d6'; niebieski = '#4c9dff'; fiolet = '#a77bff'; rozowy = '#ff6fb5'; bialy = '#f4f4f8'; zloty = '#e8b84a' }
+$ChatEffects = @('konfetti', 'serca', 'gwiazdy', 'fajerwerki', 'iskry', 'babelki')
+$script:EffectCooldown = @{}; $script:EffectGlobal = [DateTime]::MinValue
+
+function Remove-Diacritics([string]$t) {
+    $n = $t.ToLowerInvariant().Normalize([Text.NormalizationForm]::FormD)
+    $sb = New-Object Text.StringBuilder
+    foreach ($c in $n.ToCharArray()) { if ([Globalization.CharUnicodeInfo]::GetUnicodeCategory($c) -ne 'NonSpacingMark') { [void]$sb.Append($c) } }
+    return $sb.ToString().Replace('ł', 'l')
+}
+function Save-Viewers {
+    [IO.File]::WriteAllText($ViewersFile, ([pscustomobject]$script:Viewers | ConvertTo-Json -Depth 4 -Compress), $Utf8NoBom)
+}
+# zwraca $true, jeśli wiadomość była komendą (wtedy pokazujemy potwierdzenie zamiast treści)
+function Invoke-ChatCommand($login, $user, [string]$text) {
+    $t = $text.Trim()
+    if (-not $t.StartsWith('!')) { return $null }
+    $parts = $t.Substring(1).Split(' ', 2, [StringSplitOptions]::RemoveEmptyEntries)
+    if (-not $parts.Length) { return $null }
+    $cmd = Remove-Diacritics $parts[0]
+    $arg = if ($parts.Length -gt 1) { Remove-Diacritics $parts[1].Trim() } else { '' }
+    $v = $script:Viewers[$login]; if (-not $v) { $v = [pscustomobject]@{ style = ''; color = '' } }
+    switch ($cmd) {
+        { $_ -in @('styl', 'style') } {
+            if ($arg -eq 'szklo' -or $arg -eq 'glass') { $arg = 'szklo' }
+            if ($ChatStyles -notcontains $arg) { return "style: $($ChatStyles -join ', ')" }
+            $v.style = $arg; $script:Viewers[$login] = $v; Save-Viewers; return "styl: $arg ✓"
+        }
+        { $_ -in @('kolor', 'color') } {
+            $hex = $null
+            if ($arg -match '^#?[0-9a-f]{6}$') { $hex = '#' + $arg.TrimStart('#') } elseif ($ChatColors.ContainsKey($arg)) { $hex = $ChatColors[$arg] }
+            if (-not $hex) { return "kolory: $(($ChatColors.Keys | Sort-Object) -join ', ') albo #rrggbb" }
+            $v.color = $hex; $script:Viewers[$login] = $v; Save-Viewers; return "kolor: $arg ✓"
+        }
+        { $_ -in @('efekt', 'effect') } {
+            if ($ChatEffects -notcontains $arg) { return "efekty: $($ChatEffects -join ', ')" }
+            $now = Get-Date
+            $last = $script:EffectCooldown[$login]
+            if ($last -and ($now - $last).TotalSeconds -lt 60) { return "efekt za $([int](60 - ($now - $last).TotalSeconds)) s" }
+            if (($now - $script:EffectGlobal).TotalSeconds -lt 15) { return 'chwila – efekt właśnie leci' }
+            $script:EffectCooldown[$login] = $now; $script:EffectGlobal = $now
+            Add-Event ([pscustomobject]@{ type = 'effect'; effect = $arg; user = $user })
+            return "efekt: $arg ✓"
+        }
+        { $_ -in @('reset') } { $script:Viewers.Remove($login); Save-Viewers; return 'wygląd: domyślny ✓' }
+    }
+    return $null
+}
+function New-ChatEvent($login, $user, [string]$color, [string]$text, $fragments, $badges, [bool]$test = $false) {
+    $reply = Invoke-ChatCommand $login $user $text
+    $v = $script:Viewers[$login]
+    return [pscustomobject]@{
+        type = 'chat'; user = $user; login = $login; text = $text; fragments = @($fragments); badges = @($badges)
+        color = $(if ($v -and $v.color) { $v.color } elseif ($color) { $color } else { '' })
+        style = $(if ($v -and $v.style) { $v.style } else { '' })
+        command = [bool]$reply; reply = $(if ($reply) { [string]$reply } else { '' }); test = $test
+    }
 }
 
 # ---------------------------------------------------------------- Twitch (EventSub przez WebSocket)
@@ -519,7 +610,8 @@ function Register-TwitchEvents([string]$sessionId) {
         @{ type = 'channel.subscription.gift'; version = '1'; condition = @{ broadcaster_user_id = $uid } },
         @{ type = 'channel.cheer'; version = '1'; condition = @{ broadcaster_user_id = $uid } },
         @{ type = 'channel.raid'; version = '1'; condition = @{ to_broadcaster_user_id = $uid } },
-        @{ type = 'channel.channel_points_custom_reward_redemption.add'; version = '1'; condition = @{ broadcaster_user_id = $uid } }
+        @{ type = 'channel.channel_points_custom_reward_redemption.add'; version = '1'; condition = @{ broadcaster_user_id = $uid } },
+        @{ type = 'channel.chat.message'; version = '1'; condition = @{ broadcaster_user_id = $uid; user_id = $uid } }
     )
     $ok = 0
     foreach ($s in $subs) {
@@ -550,7 +642,19 @@ function Convert-TwitchEvent([string]$type, $e) {
             return [pscustomobject]@{ type = 'cheer'; user = $u; amount = [int]$e.bits; message = [string]$e.message }
         }
         'channel.raid' { return [pscustomobject]@{ type = 'raid'; user = $e.from_broadcaster_user_name; viewers = [int]$e.viewers } }
+        'channel.chat.message' {
+            $frags = @()
+            foreach ($f in @($e.message.fragments)) {
+                if ($f.type -eq 'emote' -and $f.emote) { $frags += [pscustomobject]@{ t = 'emote'; id = [string]$f.emote.id; v = [string]$f.text } }
+                else { $frags += [pscustomobject]@{ t = 'text'; v = [string]$f.text } }
+            }
+            $badges = @($e.badges | ForEach-Object { [string]$_.set_id })
+            return (New-ChatEvent ([string]$e.chatter_user_login) ([string]$e.chatter_user_name) ([string]$e.color) ([string]$e.message.text) $frags $badges)
+        }
         'channel.channel_points_custom_reward_redemption.add' {
+            # nagroda „Efekt: konfetti” (albo inny efekt) uruchamia efekt bez limitu czasu
+            $title = Remove-Diacritics ([string]$e.reward.title)
+            foreach ($fx in $ChatEffects) { if ($title -match "efekt\W*$fx") { Add-Event ([pscustomobject]@{ type = 'effect'; effect = $fx; user = $e.user_name }); break } }
             return [pscustomobject]@{ type = 'redeem'; user = $e.user_name; reward = [string]$e.reward.title; cost = [int]$e.reward.cost; message = [string]$e.user_input }
         }
     }
@@ -641,6 +745,12 @@ function New-TestEvent([string]$type) {
     $names = @('LunaFox', 'Kuba_Gra', 'PixelWilk', 'Nocny_Smok', 'herbatka99', 'MrówkaPancerna')
     $u = $names[(Get-Random -Maximum $names.Count)]
     switch ($type) {
+        'chat' {
+            $msgs = @('cześć wszystkim!', 'ale akcja', 'GG', 'jak długo już grasz?', '!styl pixel', 'to było mocne', 'pozdro z Krakowa', '!kolor turkus')
+            $m = $msgs[(Get-Random -Maximum $msgs.Count)]
+            return (New-ChatEvent ($u.ToLowerInvariant()) $u '' $m @([pscustomobject]@{ t = 'text'; v = $m }) @() $true)
+        }
+        'effect' { return [pscustomobject]@{ type = 'effect'; effect = $ChatEffects[(Get-Random -Maximum $ChatEffects.Count)]; user = $u; test = $true } }
         'follow' { return [pscustomobject]@{ type = 'follow'; user = $u; test = $true } }
         'sub'    { return [pscustomobject]@{ type = 'sub'; user = $u; tier = 'Tier 1'; test = $true } }
         'resub'  { return [pscustomobject]@{ type = 'resub'; user = $u; tier = 'Tier 1'; months = 7; message = 'Siódmy miesiąc, dalej najlepszy kanał!'; test = $true } }
@@ -846,6 +956,7 @@ function Invoke-Request($ctx) {
                     $b = $Utf8NoBom.GetBytes($raw); $res.ContentLength64 = $b.Length; $res.OutputStream.Write($b, 0, $b.Length); $res.OutputStream.Close()
                 }
             }
+            '/session' { Send-Json $ctx (Get-Session) }
             '/remote/info' {
                 if (-not $req.IsLocal) { Send-Json $ctx @{ ok = $false } 403; return }
                 $urls = @(); if ($script:LanMode) { $urls = @(Get-LanAddresses | ForEach-Object { "http://${_}:$Port/ui/panel.html?key=$($script:RemoteKey)" }) }

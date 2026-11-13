@@ -1,0 +1,56 @@
+/* Czat: dymki i panel. --accent / --g1 pochodzą z aktywnego motywu (fuzja z grą), --uc to kolor widza. */
+.chat { display: flex; flex-direction: column; gap: 10px; font: 600 20px/1.3 'Inter', system-ui, sans-serif; color: #f4f4f8; }
+.chat-bubbles { justify-content: flex-end; }
+.chat-panel { justify-content: flex-end; overflow: hidden; }
+.cmsg { position: relative; display: flex; gap: 12px; align-items: flex-start; padding: 10px 14px; max-width: 100%; border-radius: 14px;
+  opacity: 0; transform: translateY(18px) scale(.92); transition: opacity .35s ease, transform .45s cubic-bezier(.2,.9,.3,1.3); }
+.chat-bubbles .cmsg { align-self: flex-end; max-width: 560px; transform-origin: right bottom; transform: translateX(40px) scale(.6) rotate(3deg); }
+.cmsg.in { opacity: 1; transform: none; }
+.cmsg.out { opacity: 0; transform: translateY(-12px) scale(.96); }
+.cav { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 20px;
+  background: var(--uc); color: #0b0b10; box-shadow: 0 0 0 2px rgba(0,0,0,.35); }
+.cbody { min-width: 0; }
+.cname { font-weight: 800; color: var(--uc); display: flex; gap: 6px; align-items: center; font-size: 18px; letter-spacing: .01em; }
+.cbadge { font-size: 11px; font-weight: 800; letter-spacing: .08em; padding: 1px 6px; border-radius: 4px; background: var(--accent, #7c5cff); color: #fff; }
+.cb-broadcaster { background: #e91916; } .cb-moderator { background: #00ad03; } .cb-vip { background: #e005b9; }
+.ctext { word-break: break-word; }
+.cemote { height: 1.6em; vertical-align: middle; margin: 0 2px; }
+.cmsg-sys { align-items: center; font-size: 16px; padding: 6px 12px; gap: 0; background: rgba(10,10,16,.75); border: 1px dashed var(--accent, #7c5cff); }
+.csys-user { color: var(--uc); font-weight: 800; } .csys-arrow { opacity: .6; margin: 0 6px; } .csys-text { opacity: .95; }
+
+/* --- domyślny: fuzja z aktywnym motywem --- */
+.cs-theme { background: linear-gradient(100deg, rgba(12,12,20,.9), rgba(20,18,32,.82)); border: 1px solid color-mix(in srgb, var(--accent, #7c5cff) 45%, transparent);
+  box-shadow: inset 4px 0 0 var(--accent, #7c5cff), 0 8px 24px rgba(0,0,0,.4); }
+.fuse .cs-theme { box-shadow: inset 4px 0 0 var(--accent), inset -2px 0 0 var(--g1), 0 0 18px color-mix(in srgb, var(--g1) 30%, transparent); }
+
+/* --- style do wyboru przez widzów (każdy z akcentem motywu) --- */
+.cs-neon { background: rgba(8,6,20,.92); border: 2px solid var(--uc); box-shadow: 0 0 16px var(--uc), inset 0 0 12px color-mix(in srgb, var(--uc) 35%, transparent), 0 0 0 4px color-mix(in srgb, var(--accent) 30%, transparent); }
+.cs-neon .ctext { text-shadow: 0 0 8px color-mix(in srgb, var(--uc) 60%, transparent); }
+.cs-szklo { background: linear-gradient(135deg, rgba(255,255,255,.22), rgba(255,255,255,.07)); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.4); border-radius: 20px; box-shadow: 0 8px 26px rgba(0,0,0,.3), inset 0 -3px 0 var(--accent); }
+.cs-pixel { font-family: 'Press Start 2P', monospace; font-size: 12px; line-height: 1.7; background: #111; border: 4px solid #fff; border-radius: 0; box-shadow: 5px 5px 0 var(--accent); }
+.cs-pixel .cname { font-size: 11px; } .cs-pixel .cav { border-radius: 0; font-family: 'Press Start 2P', monospace; font-size: 14px; }
+.cs-komiks { background: #fff; color: #111; border: 3px solid #111; border-radius: 22px; box-shadow: 4px 5px 0 #111, 0 0 0 6px color-mix(in srgb, var(--accent) 35%, transparent); font-family: 'Luckiest Guy', 'Bangers', sans-serif; font-weight: 400; letter-spacing: .02em; }
+.cs-komiks .cname { color: #111; -webkit-text-stroke: 0; text-decoration: underline 3px var(--uc); }
+.cs-komiks::after { content: ""; position: absolute; right: 26px; bottom: -14px; border: 8px solid transparent; border-top: 12px solid #111; }
+.cs-terminal { font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace; font-size: 17px; font-weight: 500; background: rgba(2,8,4,.94); color: #7dff9a; border: 1px solid #1f5a2e; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(125,255,154,.1), 0 0 14px rgba(125,255,154,.18); }
+.cs-terminal .cname::before { content: "> "; color: #7dff9a; } .cs-terminal .cav { border-radius: 2px; background: #7dff9a; }
+.cs-terminal .ctext::after { content: "▌"; animation: blink-c 1s steps(1) infinite; margin-left: 2px; }
+@keyframes blink-c { 50% { opacity: 0; } }
+.cs-papier { background: linear-gradient(180deg, #fbf3df, #eadcb8); color: #3a2a18; border-radius: 4px; transform-origin: center; box-shadow: 0 8px 18px rgba(0,0,0,.35), inset 0 0 0 1px rgba(90,60,20,.25); font-family: 'Caveat', cursive; font-size: 26px; font-weight: 700; }
+.cs-papier .cname { font-family: 'Caveat', cursive; font-size: 24px; }
+.cs-papier.in { transform: rotate(-1.2deg); }
+.cs-holo { background: rgba(10,12,24,.9); border: 2px solid transparent; background-clip: padding-box; }
+.cs-holo::before { content: ""; position: absolute; inset: -2px; padding: 2px; border-radius: 16px; pointer-events: none; background: linear-gradient(90deg, #ff6fb5, #ffd43b, #4cd97b, #4c9dff, #a77bff, #ff6fb5); background-size: 300% 100%; animation: holo-c 4s linear infinite;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+@keyframes holo-c { to { background-position: 300% 0; } }
+.cs-sakura { background: linear-gradient(135deg, #ffe4ee, #ffc6da); color: #5a1f36; border-radius: 24px; border: 2px solid #ff9ec0; box-shadow: 0 6px 20px rgba(255,110,160,.35), inset 0 -3px 0 var(--accent); }
+.cs-sakura .cname { color: #c2185b; }
+.cs-sakura::after { content: "🌸"; position: absolute; right: -8px; top: -12px; font-size: 22px; animation: sak-c 3s ease-in-out infinite; }
+@keyframes sak-c { 50% { transform: rotate(20deg) translateY(-3px); } }
+.cs-ogien { background: linear-gradient(180deg, rgba(30,8,4,.95), rgba(12,4,2,.95)); border: 2px solid #ff7a2f; box-shadow: 0 0 18px rgba(255,122,47,.6), 0 -6px 18px rgba(255,180,60,.35); animation: fire-c 1.2s ease-in-out infinite alternate; }
+.cs-ogien .ctext { color: #ffe3c2; }
+@keyframes fire-c { to { box-shadow: 0 0 26px rgba(255,122,47,.85), 0 -10px 26px rgba(255,200,80,.45); } }
+.cs-lod { background: linear-gradient(135deg, rgba(220,245,255,.9), rgba(160,215,245,.75)); color: #0c3550; border: 2px solid #e8fbff; border-radius: 10px; box-shadow: 0 0 16px rgba(160,230,255,.6), inset 0 0 12px rgba(255,255,255,.7); }
+.cs-lod .cname { color: #0a5c8a; }
+
+.reduced-motion .cmsg, .reduced-motion .cs-holo::before, .reduced-motion .cs-ogien, .reduced-motion .cs-sakura::after, .reduced-motion .cs-terminal .ctext::after { animation: none !important; transition: opacity .3s ease !important; transform: none !important; }

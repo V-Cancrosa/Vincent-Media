@@ -1,5 +1,5 @@
 {
-  "version": "1.9.0",
+  "version": "1.10.0",
   "date": "2026-11-13",
-  "notes": "Głosy postaci w alertach (Myr: protokół, ludzki, terminal, Nanite Syndrome) i fuzja stylu z grą"
+  "notes": "Czat z Twitcha na nakładce (dymki i panel), komendy widzów !styl !kolor !efekt, efekty na cały ekran"
 }

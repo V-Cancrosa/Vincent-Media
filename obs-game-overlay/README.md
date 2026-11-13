@@ -5,6 +5,7 @@ Nakładka „Teraz gram” do OBS na nagrania i streamy na YouTube i Twitchu. Na
 - `overlay.html` – sama nakładka; w OBS dodajesz ją jako **źródło przeglądarki** (Browser Source)
 - `panel.html` – panel sterowania; w OBS dodajesz go jako **dock przeglądarki** (Custom Browser Dock)
 - `scenes.html` – ekrany przerw („Zaraz zaczynamy”, „Przerwa”, „Koniec”) z odliczaniem; w OBS osobne **źródło przeglądarki**
+- `chat.html` – czat z Twitcha: dymki albo panel, z wyglądem wybieranym przez widzów
 - `alerts.html` – alerty z Twitcha (follow, sub, raid…); w OBS osobne **źródło przeglądarki**
 - `detector/` – wykrywacz gier i połączenie z Twitchem dla Windows (skrypt PowerShell, nic nie trzeba instalować)
 
@@ -157,6 +158,27 @@ W OBS dodaj źródło przeglądarki `file:///C:/OBS/obs-game-overlay/scenes.html
 
 W panelu ustawiasz odliczanie (minuty + *Start*), podpis pod odliczaniem (pusty = „Dziś: [gra]”) i linki w stopce.
 Każda postać ma własne napisy, np. Myr-35: „TRANSMISJA ZA” / „PRZERWA SERWISOWA” / „KONIEC ZMIANY”.
+
+## Czat i komendy dla widzów
+
+`chat.html` pokazuje czat z Twitcha na nakładce (wymaga połączenia z Twitchem – patrz niżej):
+- `chat.html` – **dymki**: wiadomości wyskakują i po chwili znikają (do gry na pełnym ekranie). `?pos=br|bl|tr|tl`, `?life=12` (sekundy), `?width=560`.
+- `chat.html?mode=panel` – **czat na stałe** (do układu z grą w ramce).
+
+Emotki, kolory nicków i odznaki (HOST, MOD, VIP, SUB) są pokazywane. Wygląd czatu łączy się z aktywnym motywem (i grą przy fuzji).
+
+**Widzowie sami decydują o swoim wyglądzie** – komendy w czacie (wybór zapamiętuje wykrywacz w `detector\data\viewers.json`):
+
+| Komenda | Co robi |
+|---|---|
+| `!styl neon` | styl dymka: `neon`, `szklo`, `pixel`, `komiks`, `terminal`, `papier`, `holo`, `sakura`, `ogien`, `lod` |
+| `!kolor turkus` | kolor nicku: `czerwony`, `pomaranczowy`, `zolty`, `zielony`, `turkus`, `niebieski`, `fiolet`, `rozowy`, `bialy`, `zloty` albo `#rrggbb` |
+| `!efekt konfetti` | efekt na cały ekran: `konfetti`, `serca`, `gwiazdy`, `fajerwerki`, `iskry`, `babelki` (raz na minutę na osobę, co najmniej 15 s przerwy między efektami) |
+| `!reset` | powrót do wyglądu domyślnego |
+
+Komenda nie pojawia się w czacie na ekranie – zamiast niej widać krótkie potwierdzenie („LunaFox → styl: pixel ✓”).
+Efekty można też dać jako **nagrody za punkty kanału**: nagroda o nazwie zawierającej np. „Efekt: konfetti” uruchamia efekt bez limitu.
+Efekty pokazuje źródło `alerts.html`, więc musi być w scenie.
 
 ## Alerty z Twitcha
 

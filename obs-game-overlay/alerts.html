@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="themes/fusion.css">
 <script src="themes/fusion.js"></script>
 <script src="themes/voices.js"></script>
+<script src="themes/effects.js"></script>
 <link rel="stylesheet" href="themes/base.css">
 <style>
   /* Alert = ta sama karta co „Teraz gram”, tylko większa, z ikoną zdarzenia i błyskiem przy wejściu. */
@@ -47,6 +48,8 @@
 </style>
 </head>
 <body class="theme-neon pos-tc">
+<canvas id="effects" style="position:fixed;inset:0;width:100%;height:100%;z-index:20;pointer-events:none"></canvas>
+<div id="fxToast" style="position:fixed;left:50%;bottom:60px;transform:translateX(-50%);z-index:21;padding:10px 22px;border-radius:999px;background:rgba(10,10,16,.82);color:#fff;font:700 24px/1.2 Inter,system-ui,sans-serif;border:2px solid var(--accent);box-shadow:0 0 24px color-mix(in srgb,var(--accent) 55%,transparent);opacity:0;transition:opacity .4s"></div>
 <div id="stage">
   <div id="wrap">
     <canvas id="fx"></canvas>
@@ -205,8 +208,22 @@
   // ---------------------------------------------------------------- kolejka alertów
   const queue = [], seen = new Set();
   let busy = false;
+  const ALERT_TYPES = ['follow', 'sub', 'resub', 'gift', 'cheer', 'raid', 'redeem'];
+  const FX_NAMES = { konfetti: 'konfetti', serca: 'serca', gwiazdy: 'gwiazdy', fajerwerki: 'fajerwerki', iskry: 'iskry', babelki: 'bąbelki' };
+  let toastTimer = null;
+  function runEffect(ev) {
+    applyStyle();
+    const cs = getComputedStyle(document.documentElement);
+    const colors = ['--accent', '--accent2', '--g1', '--g2'].map(v => cs.getPropertyValue(v).trim()).filter(Boolean);
+    const t = $('fxToast');
+    t.textContent = `✨ ${ev.user || 'Czat'}: ${FX_NAMES[ev.effect] || ev.effect}`;
+    t.style.opacity = 1; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.style.opacity = 0; }, 4000);
+    if (settings.motion !== 'reduced' && window.OverlayEffects) window.OverlayEffects.run($('effects'), ev.effect, colors, 6);
+  }
   function push(ev) {
     if (!ev || !ev.type) return;
+    if (ev.type === 'effect') { runEffect(ev); return; }
+    if (!ALERT_TYPES.includes(ev.type)) return;     // czat i inne zdarzenia obsługują inne źródła
     const key = ev.id != null ? 'id' + ev.id : JSON.stringify(ev);
     if (seen.has(key)) return; seen.add(key);
     if (settings.alertTypes[ev.type] === false) return;

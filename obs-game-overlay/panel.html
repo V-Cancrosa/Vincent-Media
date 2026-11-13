@@ -136,6 +136,7 @@
     <div class="tests" id="tests">
       <button data-t="follow">Follow</button><button data-t="sub">Sub</button><button data-t="resub">Resub</button>
       <button data-t="gift">Gift</button><button data-t="cheer">Bitsy</button><button data-t="raid">Raid</button><button data-t="redeem">Nagroda</button>
+      <button data-t="chat">Czat</button><button data-t="effect">Efekt</button>
     </div>
     <details>
       <summary>Ustawienia alertów</summary>
@@ -647,7 +648,11 @@
       follow: { type, user }, sub: { type, user, tier: 'Tier 1' },
       resub: { type, user, tier: 'Tier 1', months: 7, message: 'Siódmy miesiąc, dalej najlepszy kanał!' },
       gift: { type, user, tier: 'Tier 1', count: 5 }, cheer: { type, user, amount: 500, message: 'Na nowe ciasteczka' },
-      raid: { type, user, viewers: 42 }, redeem: { type, user, reward: 'Nawodnij się', cost: 500, message: '' }
+      raid: { type, user, viewers: 42 }, redeem: { type, user, reward: 'Nawodnij się', cost: 500, message: '' },
+      chat: (() => { const t = ['cześć wszystkim!', 'ale akcja', 'GG', 'jak długo już grasz?', 'pozdro z Krakowa', 'to było mocne'][Math.floor(Math.random() * 6)];
+        const st = ['', 'neon', 'pixel', 'komiks', 'terminal', 'papier', 'holo', 'sakura', 'ogien', 'lod', 'szklo'][Math.floor(Math.random() * 11)];
+        return { type, user, text: t, fragments: [{ t: 'text', v: t }], style: st, badges: Math.random() < .3 ? ['subscriber'] : [] }; })(),
+      effect: { type, user, effect: ['konfetti', 'serca', 'gwiazdy', 'fajerwerki', 'iskry', 'babelki'][Math.floor(Math.random() * 6)] }
     })[type];
   }
   $('tests').addEventListener('click', async e => {
