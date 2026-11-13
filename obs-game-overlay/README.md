@@ -177,6 +177,15 @@ Możesz też podać własne obrazki „cisza” i „mówię” (PNGtuber).
 
 W panelu (Na żywo → Ekrany) wybierasz ekran, odliczanie, termin dla „Stream za…”, temat rozmowy, podpis i linki w stopce.
 
+## Połączenie z OBS: avatar reagujący na głos i przełączanie scen
+
+Nakładki łączą się z wbudowanym w OBS **WebSocketem** (OBS 28+). Instalator włącza go sam, ustawia hasło i przekazuje je nakładkom – nic nie trzeba wpisywać.
+- **Avatar ożywa, gdy mówisz:** nakładki czytają poziom Twojego mikrofonu z OBS (bez dostępu do mikrofonu w przeglądarce). Art postaci podskakuje i świeci, a na ekranach przerw reaguje duża postać. Własne obrazki „cisza” / „mówię” ustawisz w panelu (Wygląd → Avatar).
+- **Sceny OBS z panelu i z telefonu:** w zakładce *Na żywo* są przyciski wszystkich scen OBS (aktualna podświetlona na czerwono). Wybór ekranu (np. „Przerwa”) przełącza też scenę `VM · Przerwa`.
+- W *Połączenia → OBS* wybierasz mikrofon i próg głosu (z podglądem poziomu na żywo).
+
+Ręcznie: OBS → *Narzędzia → Ustawienia serwera WebSocket* → włącz, ustaw hasło i wpisz je w panelu (*Połączenia → OBS → Ręczne połączenie*).
+
 ## Czat i komendy dla widzów
 
 `chat.html` pokazuje czat z Twitcha na nakładce (wymaga połączenia z Twitchem – patrz niżej):

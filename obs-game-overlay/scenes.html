@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="themes/fusion.css">
 <script src="themes/fusion.js"></script>
 <script src="themes/voices.js"></script>
+<script src="themes/obsws.js"></script>
 <link rel="stylesheet" href="themes/base.css">
 <style>
   /* Ekran przerwy: pełnoekranowe tło motywu + duża karta z odliczaniem + postać + stopka z linkami i ostatnimi zdarzeniami. */
@@ -49,6 +50,10 @@
   #hero.full { right: 5vw; bottom: 0; height: 88vh; }
   #hero.full img { height: 100%; width: auto; filter: drop-shadow(0 0 40px color-mix(in srgb, var(--accent) 45%, transparent)); animation: hero-breathe 6s ease-in-out infinite; }
   @keyframes hero-breathe { 50% { transform: translateY(-8px); } }
+  /* mówię: postać podskakuje i mocniej świeci (mikrofon z OBS) */
+  .talking #hero.full img { animation: hero-talk .3s ease-in-out infinite alternate; filter: drop-shadow(0 0 60px var(--accent)) brightness(1.08); }
+  .talking #hero.photo, .talking #hero.sheet, .talking #hero.emblem { filter: drop-shadow(0 0 40px var(--accent)); }
+  @keyframes hero-talk { to { transform: translateY(-14px) scale(1.02); } }
   #hero.photo { right: 7vw; top: 50%; width: 22vw; transform: translateY(-55%) rotate(5deg); animation: hero-sway 7s ease-in-out infinite; }
   #hero.photo img { width: 100%; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
   @keyframes hero-sway { 50% { transform: translateY(-53%) rotate(2deg); } }
@@ -222,7 +227,7 @@
     const reduced = settings.motion === 'reduced';
     const hero = settings.sceneHero && def && kind !== 'end' ? (HERO[def.id] || { cls: 'emblem' }) : null;
     document.body.className = `theme-${cls} pos-mc k-${kind}` + (GT.bodyClasses ? GT.bodyClasses(fusion) : '') +
-      (reduced ? ' reduced-motion' : '') + (hero ? ' has-hero' : '');
+      (reduced ? ' reduced-motion' : '') + (hero ? ' has-hero' : '') + (window.__vmTalking ? ' talking' : '');
     const key = cls + '|' + (game ? game.id : '') + '|' + (hero ? 1 : 0);
     if (themeFor !== key) {
       themeFor = key;
@@ -417,6 +422,15 @@
   const pollSessionNow = () => { session = read('obsGameOverlay.demoSession', session); renderCredits(); };
   try { const bc = new BroadcastChannel('obsGameOverlay'); bc.addEventListener('message', e => { if (e.data === 'update') refresh(); }); } catch {}
   window.addEventListener('storage', e => { if (e.key === KEY || e.key === ACTIVE_KEY || e.key === 'obsGameOverlay.demoSession') refresh(); });
+  // mówię / nie mówię: mikrofon z OBS albo kanał testowy (strona demo)
+  let talking = false;
+  const setTalking = on => { talking = !!on; window.__vmTalking = talking; document.body.classList.toggle('talking', talking); };
+  try { const bc2 = new BroadcastChannel('obsGameOverlay'); bc2.addEventListener('message', e => { if (e.data && e.data.type === 'voice') setTalking(e.data.talking); }); } catch {}
+  (async () => {
+    if (settings.obsVoice === false || !window.OverlayOBS) return;
+    const cfg = await window.OverlayOBS.config(settings);
+    window.OverlayOBS.connect({ ...cfg, mic: settings.obsMic || '', threshold: settings.micThreshold ?? -38, onTalking: setTalking });
+  })();
 })();
 </script>
 </body>

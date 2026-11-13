@@ -319,6 +319,30 @@ if (-not (Test-Path $ObsDir)) {
                 Say 'Dok „Vincent-Media” dodany (OBS: menu Doki).' 'Green'
                 Say "Kopie zapasowe: $bk1" 'DarkGray'
                 Say "                $bk2" 'DarkGray'
+                # --- OBS WebSocket: avatar reagujący na głos i przełączanie scen z panelu / telefonu
+                $wsCfg = Join-Path $ObsDir 'plugin_config\obs-websocket\config.json'
+                New-Item -ItemType Directory -Force -Path (Split-Path $wsCfg) | Out-Null
+                if (Test-Path (Split-Path $wsCfg)) {
+                    Say 'OBS WebSocket pozwala nakładkom widzieć poziom mikrofonu (avatar ożywa, gdy mówisz) i przełączać sceny z panelu.' 'Gray'
+                    if (Ask 'Włączyć OBS WebSocket i połączyć z nim nakładki?' $true) {
+                        $ws = $null
+                        if (Test-Path $wsCfg) { try { $ws = $Json.DeserializeObject([IO.File]::ReadAllText($wsCfg, [Text.Encoding]::UTF8)) } catch {} ; [void](Backup $wsCfg) }
+                        if (-not $ws) { $ws = New-Object 'Collections.Generic.Dictionary[string,object]' }
+                        $ws['server_enabled'] = $true
+                        $ws['first_load'] = $false      # inaczej OBS przy pierwszym starcie wygeneruje własne hasło
+                        if (-not $ws.ContainsKey('server_port') -or -not $ws['server_port']) { $ws['server_port'] = 4455 }
+                        $ws['auth_required'] = $true
+                        if (-not $ws.ContainsKey('server_password') -or -not [string]$ws['server_password']) {
+                            $chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'.ToCharArray()
+                            $ws['server_password'] = -join (1..20 | ForEach-Object { $chars[(Get-Random -Maximum $chars.Length)] })
+                        }
+                        [IO.File]::WriteAllText($wsCfg, $Json.Serialize($ws), (New-Object Text.UTF8Encoding $false))
+                        $dataDir = Join-Path $InstallDir 'detector\data'
+                        New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
+                        [IO.File]::WriteAllText((Join-Path $dataDir 'obs-ws.json'), $Json.Serialize(@{ port = $ws['server_port']; password = $ws['server_password'] }), (New-Object Text.UTF8Encoding $false))
+                        Say "OBS WebSocket włączony (port $($ws['server_port'])). Hasło zapisane dla nakładek." 'Green'
+                    }
+                }
                 $obsConfigured = $true
             } catch {
                 Say "Nie udało się skonfigurować OBS: $($_.Exception.Message)" 'Red'

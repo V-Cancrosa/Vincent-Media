@@ -15,6 +15,7 @@
 <script src="themes/voices.js"></script>
 <script src="themes/chat.js"></script>
 <script src="themes/client.js"></script>
+<script src="themes/obsws.js"></script>
 <style>
   /*
     Układy streamu (1920×1080):
@@ -231,6 +232,13 @@
     if (['follow', 'sub', 'resub', 'raid'].includes(ev.type)) setTimeout(pollSession, 500);
   }, { onSettings: render });
   try { const bc = new BroadcastChannel('obsGameOverlay'); bc.addEventListener('message', e => { if (e.data && e.data.type === 'voice') setTalking(e.data.talking); }); } catch (e) {}
+  // mikrofon z OBS (WebSocket) → avatar ożywa, gdy mówisz
+  (async () => {
+    const s = C.settings();
+    if (s.obsVoice === false || !window.OverlayOBS) return;
+    const cfg = await window.OverlayOBS.config(s);
+    window.OverlayOBS.connect({ ...cfg, mic: s.obsMic || '', threshold: s.micThreshold ?? -38, onTalking: setTalking });
+  })();
 })();
 </script>
 </body>

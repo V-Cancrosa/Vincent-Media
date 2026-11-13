@@ -957,6 +957,14 @@ function Invoke-Request($ctx) {
                 }
             }
             '/session' { Send-Json $ctx (Get-Session) }
+            '/obsws' {
+                # hasło do OBS WebSocket zapisane przez instalator – nakładki łączą się z OBS bez wpisywania czegokolwiek
+                $f = Join-Path $DataDir 'obs-ws.json'
+                if (Test-Path $f) {
+                    try { $o = (Get-Content $f -Raw -Encoding UTF8) | ConvertFrom-Json; Send-Json $ctx ([pscustomobject]@{ ok = $true; url = "ws://localhost:$($o.port)"; password = [string]$o.password }) }
+                    catch { Send-Json $ctx @{ ok = $false } }
+                } else { Send-Json $ctx @{ ok = $false } }
+            }
             '/remote/info' {
                 if (-not $req.IsLocal) { Send-Json $ctx @{ ok = $false } 403; return }
                 $urls = @(); if ($script:LanMode) { $urls = @(Get-LanAddresses | ForEach-Object { "http://${_}:$Port/ui/panel.html?key=$($script:RemoteKey)" }) }
