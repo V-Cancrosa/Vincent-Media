@@ -89,6 +89,7 @@
 <script src="themes/fusion.js"></script>
 <script src="themes/obsws.js"></script>
 <script src="themes/tiers.js"></script>
+<script src="themes/voices.js"></script>
 </head>
 <body>
 <main>
@@ -254,8 +255,10 @@
     <div class="checks">
       <label style="flex-basis:100%">Gdy gra ma własny motyw
         <select id="gameMode">
-          <option value="fuse">Fuzja: mój styl + kolory, cząsteczki i znak gry</option>
-          <option value="game">Motyw gry zastępuje mój styl</option>
+          <option value="fuse">Postać bazą, gra dodatkiem (66:33) – np. Ragnar w motywie gry</option>
+          <option value="fuse-half">Pół na pół (50:50) – wymieszane kolory i teksty</option>
+          <option value="fuse-game">Gra bazą, postać dodatkiem (33:66) – np. gra w motywie Ragnara</option>
+          <option value="game">Sam motyw gry</option>
           <option value="off">Ignoruj motywy gier</option>
         </select>
       </label>
@@ -795,13 +798,23 @@
     // wybrana wielkość: wartości jak w themes/tiers.js
     return base && tier && window.OverlayTiers ? { ...base, ...window.OverlayTiers.sample(type, tier) } : base;
   }
+  // przykładowa wiadomość widza w stylu aktywnej postaci i gry (w proporcji fuzji)
+  function fusionNow() {
+    const GTx = window.OverlayGameThemes;
+    let active = null; try { active = JSON.parse(localStorage.getItem('obsGameOverlay.activeTheme')); } catch {}
+    return GTx && GTx.fromActive ? GTx.fromActive(active, s, null) : null;
+  }
+  function sampleMsg() {
+    const f = fusionNow();
+    return window.OverlayVoices && window.OverlayVoices.sample && f ? window.OverlayVoices.sample(window.OverlayGameThemes.voiceInfo(f)) : 'dzięki za stream!';
+  }
   function fakeBase(type, user) {
     return ({
       follow: { type, user }, sub: { type, user, tier: 'Tier 1' },
-      resub: { type, user, tier: 'Tier 1', months: 7, message: 'Siódmy miesiąc, dalej najlepszy kanał!' },
-      gift: { type, user, tier: 'Tier 1', count: 5 }, cheer: { type, user, amount: 500, message: 'Na nowe ciasteczka' },
+      resub: { type, user, tier: 'Tier 1', months: 7, message: sampleMsg() },
+      gift: { type, user, tier: 'Tier 1', count: 5 }, cheer: { type, user, amount: 500, message: sampleMsg() },
       raid: { type, user, viewers: 42 }, redeem: { type, user, reward: 'Nawodnij się', cost: 500, message: '' },
-      chat: (() => { const t = ['cześć wszystkim!', 'ale akcja', 'GG', 'jak długo już grasz?', 'pozdro z Krakowa', 'to było mocne'][Math.floor(Math.random() * 6)];
+      chat: (() => { const t = sampleMsg();
         const st = ['', 'neon', 'pixel', 'komiks', 'terminal', 'papier', 'holo', 'sakura', 'ogien', 'lod', 'szklo'][Math.floor(Math.random() * 11)];
         return { type, user, text: t, fragments: [{ t: 'text', v: t }], style: st, badges: Math.random() < .3 ? ['subscriber'] : [] }; })(),
       effect: { type, user, effect: ['konfetti', 'serca', 'gwiazdy', 'fajerwerki', 'iskry', 'babelki'][Math.floor(Math.random() * 6)] }
@@ -815,7 +828,7 @@
     // najpierw przez wykrywacz (ta sama droga co prawdziwe alerty), a bez niego – bezpośrednio do nakładek
     try {
       if (!s.local) throw 0;
-      const r = await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/test?type=' + type + (tier ? '&tier=' + tier : ''), { cache: 'no-store' });
+      const r = await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/test?type=' + type + (tier ? '&tier=' + tier : '') + '&msg=' + encodeURIComponent(sampleMsg()), { cache: 'no-store' });
       if (!r.ok) throw 0;
     } catch { if (bc) bc.postMessage({ type: 'alert', event: fakeEvent(type, tier) }); }
   });

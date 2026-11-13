@@ -26,6 +26,17 @@ Kolory, czcionki i motywy pochodzą ze stron postaci. Każda postać ma swój na
 Gdy gra ma własny motyw i opcja *gra ma własny motyw → włącz go sam* jest zaznaczona, motyw gry wygrywa z motywem postaci.
 Portrety w `themes/fursona/` należą do autorów ilustracji (patrz `themes/fursona/CREDITS.md`) i nie są na licencji CC0.
 
+**Fuzja postaci z grą** (panel → Wygląd → Karta → „Gdy gra ma własny motyw”):
+
+| Tryb | Proporcja | Wygląd | Teksty |
+|---|---|---|---|
+| Postać bazą, gra dodatkiem | 66:33 | karta postaci + odznaka, pasek, kolory cząsteczek gry (np. *Ragnar w motywie gry*) | ⅔ postać, ⅓ gra |
+| Pół na pół | 50:50 | jak wyżej, ale wymieszane kolory, obwódka i większa odznaka gry | pół na pół |
+| Gra bazą, postać dodatkiem | 33:66 | karta w motywie gry + portret/emblemat postaci w odznace i pasek w jej kolorach (np. *gra w motywie Ragnara*) | ⅓ postać, ⅔ gra |
+| Sam motyw gry | – | tylko gra | tylko gra |
+
+Każda gra z motywem ma własne teksty alertów (i na duże zdarzenia). Przykładowe wiadomości w alertach testowych też są w stylu aktywnej postaci i gry.
+
 **Animacje** są zawsze włączone, niezależnie od ustawień systemu. Wyłącza je tylko opcja *ogranicz animacje* w panelu (albo `motion=reduced` w adresie).
 
 Kolor akcentu jest liczony z nazwy gry, więc każda gra ma swój stały kolor. Możesz też ustawić własny kolor w panelu.

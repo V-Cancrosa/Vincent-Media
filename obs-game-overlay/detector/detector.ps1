@@ -741,7 +741,7 @@ function Get-TwitchStatus {
 }
 
 # zdarzenia testowe (przyciski w panelu)
-function New-TestEvent([string]$type, [int]$tier = 0) {
+function New-TestEvent([string]$type, [int]$tier = 0, [string]$msg = '') {
     $names = @('LunaFox', 'Kuba_Gra', 'PixelWilk', 'Nocny_Smok', 'herbatka99', 'MrówkaPancerna')
     $u = $names[(Get-Random -Maximum $names.Count)]
     # poziom 1–5: wartości jak w themes/tiers.js (SAMPLE), żeby sprawdzić każdą wielkość reakcji
@@ -1008,7 +1008,10 @@ function Invoke-Request($ctx) {
             }
             '/test' {
                 $tl = 0; [void][int]::TryParse([string]$q['tier'], [ref]$tl)
-                $ev = New-TestEvent ([string]$q['type']) $tl
+                $ev = New-TestEvent ([string]$q['type']) $tl ([string]$q['msg'])
+                # wiadomość widza z panelu: w stylu aktywnej postaci i gry
+                if ($ev -and $q['msg'] -and ($ev.PSObject.Properties.Name -contains 'message')) { $ev.message = [string]$q['msg'] }
+                if ($ev -and $q['msg'] -and $ev.type -eq 'chat') { $ev.text = [string]$q['msg']; $ev.fragments = @([pscustomobject]@{ t = 'text'; v = [string]$q['msg'] }) }
                 if (-not $ev) { Send-Json $ctx @{ ok = $false; error = 'nieznany typ' } 400; return }
                 Add-Event $ev
                 Send-Json $ctx @{ ok = $true }

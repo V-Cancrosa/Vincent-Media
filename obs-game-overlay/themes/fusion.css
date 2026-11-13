@@ -18,6 +18,25 @@
 .fuse #card { filter: drop-shadow(0 0 14px color-mix(in srgb, var(--g1) 35%, transparent)); }
 .fuse #label .dot { background: var(--g1) !important; box-shadow: 0 0 10px var(--g1) !important; }
 
+/* 50:50 – gra mocniej obecna: większa odznaka, grubszy pasek, obwódka i poświata w kolorach gry */
+.fuse-half #gbadge { width: 76px; height: 76px; right: -30px; bottom: -32px; }
+.fuse-half #fusebar { height: 6px; }
+.fuse-half #card { outline: 2px solid color-mix(in srgb, var(--g1) 70%, transparent); outline-offset: 3px; filter: drop-shadow(0 0 22px color-mix(in srgb, var(--g1) 55%, transparent)); }
+
+/* gra bazą, postać dodatkiem (33:66): portret/emblemat postaci w odznace + pasek w jej kolorach */
+#pbadge { display: none; position: absolute; pointer-events: none; }
+.fuse-persona #pbadge { display: block; z-index: 4; width: 74px; height: 74px; left: -26px; bottom: -28px; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--g1) 40%, #0b0b10), #07070b 75%);
+  border: 3px solid var(--g1); box-shadow: 0 0 18px color-mix(in srgb, var(--g1) 70%, transparent), 0 0 0 3px rgba(0,0,0,.55); }
+.fuse-persona #pbadge img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 15%; }
+.fuse-persona #pbadge > svg, .fuse-persona #pbadge > div { position: absolute !important; inset: 12% !important; width: 76% !important; height: 76% !important; transform: none !important; overflow: visible; }
+.fuse-persona #pbadge .fz-fan { display: none; }
+.fuse-persona #wrap.show #pbadge { animation: gb-in .7s .35s both cubic-bezier(.2,.9,.3,1.4); }
+.fuse-persona #fusebar { display: block; z-index: 3; left: 52px; right: 14px; bottom: -6px; height: 4px; border-radius: 4px; position: absolute;
+  background: linear-gradient(90deg, var(--g1), var(--accent), var(--g2), var(--g1)); background-size: 300% 100%; animation: fb-flow 5s linear infinite;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--g1) 80%, transparent); }
+.reduced-motion .fuse-persona #pbadge, .reduced-motion .fuse-persona #fusebar { animation: none !important; }
+
 /* Myr: Nanite Syndrome – karta szarpie się w pętli włącz–wyłącz (bez błysków jasności) */
 .syndrome #card { animation: syn-jump .9s steps(1) 2; }
 @keyframes syn-jump { 0% { transform: none; } 12% { transform: translate(3px, -1px) rotate(.4deg); } 24% { transform: translate(-4px, 1px); } 36% { transform: none; } 48% { transform: translate(2px, 2px) rotate(-.5deg); } 60% { transform: none; } 72% { transform: translate(-2px, -1px); } 84% { transform: none; } }

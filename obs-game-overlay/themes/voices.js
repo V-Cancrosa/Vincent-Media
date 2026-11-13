@@ -313,5 +313,131 @@
     return out;
   }
 
-  window.OverlayVoices = { pick, data: V };
+
+  // ---------------------------------------------------------------- głosy gier (motyw gry albo fuzja z grą)
+  // Mieszane z głosem postaci w proporcji fuzji: 66:33 (postać bazą), 50:50, 33:66 (gra bazą), sama gra.
+  const GAMEV = {
+    tal: {
+      follow: [['Nowy poszukiwacz Korony', '{user} rzuca kośćmi i wchodzi na planszę.'], ['Nowa postać w grze', '{user} losuje kartę przygody.']],
+      sub: [['Talizman zdobyty', '{user} – droga do Korony Władzy stoi otworem.'], ['Złota moneta', 'Sub od {user}. Los sprzyja śmiałym.']],
+      resub: [['Kolejna tura', 'Miesiąc {n}. – {user} wciąż na szlaku.']], gift: [['Skarb dla drużyny', '{user} rozdaje karty: {n}× sub!']],
+      cheer: [['Złoto do sakwy', 'Bitsy: {n} – {user} kupuje coś w mieście.']], raid: [['Najazd na Krainę', 'Drużyna {user} wkracza na planszę!']],
+      redeem: [['Karta zdarzenia', '{user} odkrywa: {reward}']],
+      big: [['KORONA WŁADZY', '{user} dociera do środka planszy. Legendarne!'], ['WIELKIE ZAKLĘCIE', '{user} rzuca kośćmi – same szóstki!']]
+    },
+    pal: {
+      follow: [['Nowy Pal schwytany!', '{user} dołącza do bazy.'], ['Nowy towarzysz', '{user} – pierwszy kontakt udany!']],
+      sub: [['Rzadki Pal!', '{user} wskakuje do drużyny!'], ['Złapany!', 'Sub od {user} – kula trafiła za pierwszym razem.']],
+      resub: [['Stały mieszkaniec bazy', 'Miesiąc {n}. – {user} pracuje na farmie od dawna.']], gift: [['Paczka dla bazy', '{user} rozdaje {n}× sub całej drużynie!']],
+      cheer: [['Zapasy!', 'Bitsy: {n} – baza ma co jeść.']], raid: [['Wataha w natarciu!', 'Ekipa {user} wbiega do bazy!']],
+      redeem: [['Zadanie dla Pala', '{user}: {reward}']],
+      big: [['LEGENDARNY PAL', '{user} – tego jeszcze nikt nie złapał!'], ['ALFA!', '{user} pokonuje bossa jednym ruchem!']]
+    },
+    me: {
+      follow: [['Nowy członek załogi', '{user} na pokładzie. Kurs ustalony.'], ['Rekrut', '{user} dołącza do misji.']],
+      sub: [['Wsparcie floty', '{user} – sygnał przyjęty, dziękuję.'], ['Paragon', '{user} wybiera dobrą ścieżkę: sub!']],
+      resub: [['Weteran misji', 'Miesiąc {n}. – {user} leciał z nami przez cały przekaźnik.']], gift: [['Zaopatrzenie floty', '{user} dostarcza {n}× sub dla załogi!']],
+      cheer: [['Kredyty', 'Bitsy: {n} – {user} finansuje modernizację.']], raid: [['Flota przybywa', 'Okręty {user} wychodzą z przekaźnika!']],
+      redeem: [['Rozkaz z mostka', '{user}: {reward}']],
+      big: [['GOTOWOŚĆ BOJOWA', '{user} – cała galaktyka to widziała.'], ['DECYZJA, KTÓRA ZMIENIA WSZYSTKO', '{user} – zapisane w kodeksie.']]
+    },
+    wf: {
+      follow: [['Nowy Tenno', '{user} budzi się z kriosnu.'], ['Operator dołącza', '{user} – witaj w orbiterze.']],
+      sub: [['Prime!', '{user} – sub rozpoznany. Złote zdobienia.'], ['Platyna', 'Dzięki, {user}!']],
+      resub: [['Mistrzostwo', 'Miesiąc {n}. – {user} awansuje rangę mistrzostwa.']], gift: [['Dar z Relay', '{user} rozdaje {n}× sub klanowi!']],
+      cheer: [['Endo i kredyty', 'Bitsy: {n} – {user} wbija mody do maksa.']], raid: [['Squad wchodzi', 'Drużyna {user} ląduje przez Rift!']],
+      redeem: [['Kontrakt', '{user} zleca: {reward}']],
+      big: [['DROP LEGENDARNY', '{user} – szansa jedna na tysiąc i trafiona!'], ['PRIME ACCESS', '{user} – złoto i energia na pełną moc!']]
+    },
+    dl: {
+      follow: [['Nowy agent Wydziału', '{user} wchodzi w mgłę miasta.'], ['Patron zauważył', '{user} – klucz przekręcony.']],
+      sub: [['Dusze zebrane', '{user} – Patron się uśmiecha.'], ['Pakt zawarty', 'Sub od {user}. Zamek ustąpił.']],
+      resub: [['Stary bywalec alei', 'Miesiąc {n}. – {user} zna każdą ulicę.']], gift: [['Dusze dla linii', '{user} rozdaje {n}× sub sojusznikom!']],
+      cheer: [['Dusze!', 'Bitsy: {n} – {user} kupuje przedmiot.']], raid: [['Fala na alei', 'Drużyna {user} pcha linię!']],
+      redeem: [['Rytuał', '{user} odprawia: {reward}']],
+      big: [['PATRON PRZEMÓWIŁ', '{user} – zamek otwarty na oścież.'], ['NIEŚMIERTELNY RYTUAŁ', '{user} – miasto drży.']]
+    },
+    dd: {
+      follow: [['Nowy śmiałek', '{user} schodzi do lochów. Pochodnia płonie.'], ['Rekrut w Hamlecie', '{user} dołącza do kompanii.']],
+      sub: [['Cnota!', '{user} – wola nie złamana. Dzięki.'], ['Złoto do rodowej kasy', 'Sub od {user} – Hamlet rośnie.']],
+      resub: [['Weteran lochów', 'Miesiąc {n}. – {user} przeżył więcej, niż powinien.']], gift: [['Zapasy dla kompanii', '{user} dzieli się: {n}× sub. Pochodnie dla wszystkich.']],
+      cheer: [['Pochodnia rozpalona', 'Bitsy: {n} – {user} odpędza ciemność.']], raid: [['Kompania przybywa', 'Śmiałkowie {user} wchodzą do Hamletu.']],
+      redeem: [['Zlecenie z tawerny', '{user}: {reward}']],
+      big: [['CNOTA!', '{user} – w obliczu ciemności… wytrwałość.'], ['ŚWIATŁO W CIEMNOŚCI', '{user} – pochodnia na sto procent!']]
+    },
+    hk: {
+      follow: [['Nowy wędrowiec', '{user} wkracza do królestwa.'], ['Czyjaś nić', '{user} – nowa nić w tkaninie.']],
+      sub: [['Odłamek maski', '{user} – dzięki, serce bije mocniej.'], ['Nić splątana', 'Sub od {user}.']],
+      resub: [['Stary wędrowiec', 'Miesiąc {n}. – {user} zna każdą ławkę.']], gift: [['Jedwab dla wszystkich', '{user} rozdaje {n}× sub!']],
+      cheer: [['Geo', 'Bitsy: {n} – {user} odwiedza kartografa.']], raid: [['Pielgrzymi', 'Pielgrzymka {user} wspina się do Cytadeli!']],
+      redeem: [['Prośba z ławki', '{user}: {reward}']],
+      big: [['PIEŚŃ JEDWABIU', '{user} – całe królestwo to słyszy.'], ['BOSS POKONANY', '{user} – bez jednego trafienia!']]
+    },
+    cp: {
+      follow: [['Nowy runner', '{user} wpina się do Sieci.'], ['Kontakt', '{user} – nowy numer w telefonie.']],
+      sub: [['Eddies!', '{user} – przelew dotarł. Dzięki, choom.'], ['Nowy wszczep', 'Sub od {user}.']],
+      resub: [['Legenda Afterlife', 'Miesiąc {n}. – {user}, twoje imię wisi na ścianie.']], gift: [['Paczka od fixera', '{user} rozdaje {n}× sub ekipie!']],
+      cheer: [['Eddies na koncie', 'Bitsy: {n} – {user} płaci za wszczep.']], raid: [['Ekipa z Night City', 'Ekipa {user} wjeżdża do miasta!']],
+      redeem: [['Zlecenie', '{user}: {reward}']],
+      big: [['LEGENDA NIGHT CITY', '{user} – zapamiętają to w każdym barze.'], ['PRZEJĘCIE SIECI', '{user} – system przejęty!']]
+    },
+    cs: {
+      follow: [['Nowy gracz w składzie', '{user} wchodzi na serwer.'], ['Kupuje broń', '{user} – gotowy na rundę.']],
+      sub: [['Ace!', '{user} – sub w pierwszej rundzie.'], ['Bomba rozbrojona', 'Sub od {user}.']],
+      resub: [['Weteran rang', 'Miesiąc {n}. – {user} gra od dawna.']], gift: [['Drop dla drużyny', '{user} rzuca {n}× sub całej drużynie!']],
+      cheer: [['Ekonomia', 'Bitsy: {n} – pełny buy dla drużyny.']], raid: [['Rush B!', 'Ekipa {user} wbiega na plant!']],
+      redeem: [['Taktyka', '{user} woła: {reward}']],
+      big: [['ACE!!!', '{user} – pięciu w jednej rundzie!'], ['CLUTCH 1v5', '{user} – nikt w to nie wierzył!']]
+    }
+  };
+
+  // przykładowe wiadomości widzów do alertów testowych – w stylu postaci albo gry
+  const SAMPLES = {
+    _: ['dzięki za stream!', 'dalej najlepszy kanał!', 'pozdro z Krakowa'],
+    vince: ['na kolejną kondygnację', 'mosty mają powód', 'za Dual Path'],
+    chip: ['na ciasteczka!', 'na nowy dzwonek dla Chipa', 'nie zjedz wszystkich naraz'],
+    ragnar: ['na nowy set!', 'za ten drop!', 'dalej najlepsza impreza na Twitchu!'],
+    toro: ['na herbatę pod mostem', 'za latarnię', 'panta rei!'],
+    myr: ['dla jednostki MYR-35', 'na zapasy do maszynowni', 'raport: wszystko w normie'],
+    zarin: ['na części do Patcha', 'na nowy wentylator', 'czy to jeszcze działa?'],
+    tal: ['za kolejną turę!', 'niech kości sprzyjają', 'po Koronę Władzy'],
+    pal: ['dla wszystkich Pali', 'na nową bazę', 'złap je wszystkie'],
+    me: ['dla załogi Normandii', 'na modernizację statku', 'za dobrą decyzję'],
+    wf: ['na nowe mody', 'za udany drop', 'dla klanu'],
+    dl: ['dla Patrona', 'na nowy przedmiot', 'trzymaj linię!'],
+    dd: ['na pochodnie', 'żeby stres spadł', 'wytrwałości!'],
+    hk: ['na geo dla kartografa', 'za każdą ławkę', 'nić się nie urwie'],
+    cp: ['na nowy wszczep', 'eddies dla ekipy', 'za Night City'],
+    cs: ['pełny buy!', 'rush B', 'GG WP']
+  };
+
+  // fuzja: kto mówi – postać czy gra – w proporcji wybranej w panelu
+  function mixInfo(f) {
+    f = f || {};
+    const personaId = f.personaId || f.themeId || '_';
+    const gameId = f.gameId || '';
+    const mix = gameId ? (f.mix != null ? f.mix : 0.33) : 0;
+    return { personaId, gameId, mix };
+  }
+  function pickGame(gameId, kind, ctx, tier) {
+    const g = GAMEV[gameId]; if (!g) return null;
+    const pool = (tier >= 3 && g.big) ? g.big : (g[kind] || (kind.startsWith('scene:') ? null : g.follow));
+    if (!pool || !pool.length) return null;
+    const [label, line] = rand(pool);
+    return { label: fill(label, ctx), line: fill(line, ctx), register: 'game' };
+  }
+  function pickMix(f, kind, ctx, tier) {
+    const m = mixInfo(f);
+    if (m.gameId && GAMEV[m.gameId] && !kind.startsWith('scene:') && Math.random() < m.mix) {
+      const g = pickGame(m.gameId, kind, ctx, tier); if (g) return g;
+    }
+    return pick(m.personaId, kind, ctx, tier);
+  }
+  function sample(f) {
+    const m = mixInfo(f);
+    const src = m.gameId && SAMPLES[m.gameId] && Math.random() < m.mix ? m.gameId : (SAMPLES[m.personaId] ? m.personaId : '_');
+    return rand(SAMPLES[src]);
+  }
+
+  window.OverlayVoices = { pick, pickMix, sample, data: V, games: GAMEV };
 })();

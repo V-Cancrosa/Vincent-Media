@@ -1,47 +1,98 @@
 /*
-  Fuzja stylu z grą. Wybrany styl (postać albo motyw bazowy) zostaje „ciałem” karty,
-  a gra z własnym motywem dokłada swoje: kolory, cząsteczki, znak gry (odznaka) i pasek energii.
-  Tryby (ustawienie gameMode): 'fuse' – fuzja (domyślnie), 'game' – motyw gry zastępuje styl, 'off' – bez motywów gier.
+  Fuzja stylu (postać albo motyw bazowy) z motywem gry. Tryby (ustawienie gameMode):
+    'fuse'      – postać bazą, gra dodatkiem (66:33): karta postaci + kolory, cząsteczki, odznaka i pasek gry
+    'fuse-half' – pół na pół (50:50): wymieszane kolory, mocniejsza obecność gry
+    'fuse-game' – gra bazą, postać dodatkiem (33:66): karta w motywie gry + portret/emblemat, kolor i głos postaci
+    'game'      – motyw gry zastępuje styl
+    'off'       – bez motywów gier
+  Proporcja decyduje też, jak często mówi postać, a jak często gra (themes/voices.js → pickMix).
 */
 (function () {
   const GT = window.OverlayGameThemes;
   if (!GT) return;
+  const MIX = { fuse: 0.33, 'fuse-half': 0.5, 'fuse-game': 0.66, game: 1 };
+  const PORTRAIT = { vince: 'themes/fursona/vince.webp', chip: 'themes/fursona/chip.webp', ragnar: 'themes/fursona/ragnar.webp', toro: 'themes/fursona/toro.webp' };
 
-  GT.resolve = function (settings, gameName, forcedCls) {
-    const mode = settings.gameThemes === false ? 'off' : (settings.gameMode || 'fuse');
-    const game = gameName && mode !== 'off' ? GT.find(gameName) : null;
-    let cls = String(forcedCls || settings.theme || 'neon');
+  function modeOf(settings) {
+    if (settings.gameThemes === false) return 'off';
+    const m = settings.gameMode || 'fuse';
+    return ['fuse', 'fuse-half', 'fuse-game', 'game', 'off'].includes(m) ? m : 'fuse';
+  }
+
+  // r = { cls, def (styl karty), game (gra jako dodatek), persona (postać jako dodatek), mode, mix (udział gry w tekstach) }
+  function build(cls, game, mode) {
     let def = cls.startsWith('g-') ? GT.byId(cls.slice(2)) : null;
     if (cls.startsWith('g-') && !def) { cls = 'neon'; def = null; }
-    // motyw gry wybrany ręcznie albo tryb „gra zastępuje” – bez fuzji
-    if (game && (mode === 'game' || (def && def.group !== 'fursona'))) return { cls: 'g-' + game.id, def: game, game: null };
-    return { cls, def, game: game && (!def || def.id !== game.id) ? game : null };
+    if (!game || mode === 'off' || (def && def.id === game.id)) return { cls, def, game: null, persona: null, mode, mix: def && def.group !== 'fursona' ? 1 : 0 };
+    const chosenIsGame = def && def.group !== 'fursona';
+    if (mode === 'game' || chosenIsGame) return { cls: 'g-' + game.id, def: game, game: null, persona: null, mode: 'game', mix: 1 };
+    if (mode === 'fuse-game') return { cls: 'g-' + game.id, def: game, game: null, persona: def, base: cls, mode, mix: MIX[mode] };
+    return { cls, def, game, persona: null, mode, mix: MIX[mode] };
+  }
+
+  GT.resolve = function (settings, gameName, forcedCls) {
+    const mode = modeOf(settings);
+    const game = gameName && mode !== 'off' ? GT.find(gameName) : null;
+    return build(String(forcedCls || settings.theme || 'neon'), game, mode);
   };
 
-  GT.bodyClasses = r => (r.def ? ' game-theme' : '') + (r.def && r.def.group === 'fursona' ? ' f-theme' : '') + (r.game ? ' fuse fuse-' + r.game.id : '');
+  // alerty, ekrany i układy odtwarzają to samo z tego, co opublikowała karta „Teraz gram”
+  GT.fromActive = function (active, settings, forcedCls) {
+    const mode = (active && active.mode) || modeOf(settings);
+    if (forcedCls) return build(forcedCls, null, mode);
+    if (!active) return build(String(settings.theme || 'neon'), null, mode);
+    const game = active.game ? GT.byId(active.game) : null;
+    return build(String(active.base || active.cls || settings.theme || 'neon'), game, mode);
+  };
+  GT.publishable = r => ({ cls: r.cls, base: r.persona ? r.base : r.cls, game: r.game ? r.game.id : (r.persona ? r.def.id : ''), persona: r.persona ? r.persona.id : '', mode: r.mode, at: Date.now() });
 
-  // cząsteczki: gry (z domieszką koloru postaci) albo samego stylu
+  // dla głosów: kto jest postacią, kto grą i w jakiej proporcji
+  GT.voiceInfo = function (r) {
+    const personaDef = r.persona || (r.def && r.def.group === 'fursona' ? r.def : null);
+    const gameDef = r.game || (r.def && r.def.group !== 'fursona' ? r.def : null);
+    return { personaId: personaDef ? personaDef.id : (r.def ? '_' : r.cls), gameId: gameDef ? gameDef.id : '', mix: gameDef ? (r.mix != null ? r.mix : 0.33) : 0 };
+  };
+
+  GT.bodyClasses = r => (r.def ? ' game-theme' : '') + (r.def && r.def.group === 'fursona' ? ' f-theme' : '') +
+    (r.game ? ' fuse fuse-' + r.game.id : '') + (r.mode === 'fuse-half' && r.game ? ' fuse-half' : '') +
+    (r.persona ? ' fuse-persona fusep-' + r.persona.id : '');
+
+  // cząsteczki: gra (z domieszką koloru postaci) albo sam styl; przy 50:50 więcej
   GT.fusionFx = function (r) {
-    if (r.game && r.game.fx) return { ...r.game.fx, colors: [...r.game.fx.colors, ...(r.def ? [r.def.accent[0]] : [])] };
-    return r.def ? r.def.fx : null;
+    const extra = r.persona ? [r.persona.accent[0]] : (r.def && r.game ? [r.def.accent[0]] : []);
+    const src = r.game ? r.game.fx : (r.def ? r.def.fx : null);
+    if (!src) return null;
+    const fx = { ...src, colors: [...src.colors, ...extra] };
+    if (r.mode === 'fuse-half' && r.game) fx.count = Math.round(fx.count * 1.3);
+    return fx;
   };
 
-  // akcenty: postać trzyma swoje, motyw bazowy przejmuje kolory gry
+  const hexMix = (a, b, t) => {
+    const p = h => { h = String(h).replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+    try { const A = p(a), B = p(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); } catch (e) { return a; }
+  };
+  // akcenty: postać trzyma swoje (66:33), przy 50:50 mieszane, motyw bazowy przejmuje kolory gry
   GT.fusionAccent = function (r, fallback) {
+    if (r.def && r.game && r.mode === 'fuse-half') return [hexMix(r.def.accent[0], r.game.accent[0], 0.5), hexMix(r.def.accent[1], r.game.accent[1], 0.5)];
     if (r.def) return r.def.accent;
     if (r.game) return r.game.accent;
     return fallback;
   };
 
-  // odznaka gry i pasek energii w #wrap
+  // dodatki w #wrap: odznaka gry + pasek energii (postać bazą) albo odznaka postaci (gra bazą)
   GT.applyFusion = function (wrap, r) {
     if (!wrap) return;
-    let badge = wrap.querySelector('#gbadge'), bar = wrap.querySelector('#fusebar');
-    if (!badge) { badge = document.createElement('div'); badge.id = 'gbadge'; badge.setAttribute('aria-hidden', 'true'); wrap.appendChild(badge); }
-    if (!bar) { bar = document.createElement('div'); bar.id = 'fusebar'; bar.setAttribute('aria-hidden', 'true'); wrap.appendChild(bar); }
-    const id = r.game ? r.game.id : '';
-    if (badge.dataset.id !== id) { badge.dataset.id = id; badge.innerHTML = r.game ? r.game.emblem || '' : ''; }
+    const el = id => { let e = wrap.querySelector('#' + id); if (!e) { e = document.createElement('div'); e.id = id; e.setAttribute('aria-hidden', 'true'); wrap.appendChild(e); } return e; };
+    const badge = el('gbadge'), bar = el('fusebar'), pbadge = el('pbadge');
+    const gid = r.game ? r.game.id : '';
+    if (badge.dataset.id !== gid) { badge.dataset.id = gid; badge.innerHTML = r.game ? r.game.emblem || '' : ''; }
+    const pid = r.persona ? r.persona.id : '';
+    if (pbadge.dataset.id !== pid) {
+      pbadge.dataset.id = pid;
+      pbadge.innerHTML = !r.persona ? '' : PORTRAIT[pid] ? `<img src="${PORTRAIT[pid]}" alt="">` : (r.persona.emblem || '');
+    }
     const root = document.documentElement.style;
     if (r.game) { root.setProperty('--g1', r.game.accent[0]); root.setProperty('--g2', r.game.accent[1]); }
+    if (r.persona) { root.setProperty('--g1', r.persona.accent[0]); root.setProperty('--g2', r.persona.accent[1]); }
   };
 })();

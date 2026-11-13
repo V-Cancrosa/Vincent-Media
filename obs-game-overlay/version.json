@@ -1,5 +1,5 @@
 {
-  "version": "1.13.1",
+  "version": "1.14.0",
   "date": "2026-11-13",
-  "notes": "Panel: podgląd i zakładki przyklejone u góry, podgląd można zwinąć"
+  "notes": "Fuzja w proporcjach 66:33, 50:50, 33:66 (co jest bazą), teksty gier, wiadomości testowe w stylu postaci, poprawiony art Ragnara i Toro"
 }

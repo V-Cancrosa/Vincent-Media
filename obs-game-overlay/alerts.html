@@ -155,6 +155,7 @@
   GT.FX.attach($('fx'));
   let emblemFor = null, themeId = 'neon';
   let fusion = { cls: 'neon', def: null, game: null };
+  const currentFusion = () => GT.fromActive ? GT.fromActive(read(ACTIVE_KEY, null), settings, p.has('theme') ? settings.theme : null) : { cls: settings.theme || 'neon', def: null, game: null };
   function themeIdPeek() {
     const active = read(ACTIVE_KEY, null);
     const cls = p.has('theme') ? settings.theme : (active && active.cls) || settings.theme || 'neon';
@@ -162,17 +163,13 @@
   }
   function applyStyle(extra = '') {
     // styl i gra z karty „Teraz gram” (overlay.html publikuje je w activeTheme) – ta sama fuzja
-    const active = read(ACTIVE_KEY, null);
-    let cls = p.has('theme') ? settings.theme : (active && active.cls) || settings.theme || 'neon';
-    const def = cls.startsWith('g-') ? GT.byId(cls.slice(2)) : null;
-    if (cls.startsWith('g-') && !def) cls = 'neon';
-    const game = !p.has('theme') && active && active.game && (!def || def.id !== active.game) ? GT.byId(active.game) : null;
-    fusion = { cls, def, game };
+    fusion = currentFusion();
+    const { cls, def, game } = fusion;
     themeId = def ? def.id : cls;
     const reduced = settings.motion === 'reduced';
     document.body.className = `theme-${cls} pos-${settings.alertPos}` + (GT.bodyClasses ? GT.bodyClasses(fusion) : '') +
       (reduced ? ' reduced-motion' : '') + extra;
-    const key = cls + '|' + (game ? game.id : '');
+    const key = cls + '|' + (game ? game.id : '') + '|' + (fusion.persona ? fusion.persona.id : '') + fusion.mode;
     if (emblemFor !== key) {
       emblemFor = key;
       $('emblem').innerHTML = def ? def.emblem || '' : '';
@@ -271,7 +268,9 @@
     // głos postaci (themes/voices.js); Myr losuje rejestr – syndrom szarpie kartą, terminal zmienia czcionkę
     const n = ev.count || ev.months || ev.amount || ev.viewers || '';
     const activeGame = fusion.game ? fusion.game.name : '';
-    const v = window.OverlayVoices ? window.OverlayVoices.pick(themeIdPeek(), ev.type, { user: ev.user || '', n, reward: ev.reward || '', game: activeGame }, tier) : null;
+    // głos: postać i gra w proporcji fuzji (66:33, 50:50, 33:66 albo sama gra)
+    const vi = GT.voiceInfo ? GT.voiceInfo(currentFusion()) : { personaId: themeIdPeek() };
+    const v = window.OverlayVoices ? (window.OverlayVoices.pickMix || window.OverlayVoices.pick)(window.OverlayVoices.pickMix ? vi : vi.personaId, ev.type, { user: ev.user || '', n, reward: ev.reward || '', game: activeGame }, tier) : null;
     const reg = v ? v.register : '';
     const { def, reduced } = applyStyle((reg === 'syndrome' ? ' syndrome' : reg === 'terminal' ? ' terminal-voice' : '') + ` tier-${tier}` + (R.shake ? ` shake-${R.shake}` : ''));
     document.documentElement.style.setProperty('--scale', (+settings.alertScale || 1.25) * R.scale);

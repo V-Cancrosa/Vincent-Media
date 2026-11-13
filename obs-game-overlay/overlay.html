@@ -268,11 +268,11 @@
     const reduced = settings.motion === 'reduced';
     document.body.className = `theme-${th.cls} pos-${settings.position}` + (GT.bodyClasses ? GT.bodyClasses(th) : '') +
       (reduced ? ' reduced-motion' : '') + (settings.icon ? '' : ' no-icon') + (settings.showLabel ? '' : ' no-label');
-    const key = th.cls + '|' + (th.game ? th.game.id : '');
+    const key = th.cls + '|' + (th.game ? th.game.id : '') + '|' + (th.persona ? th.persona.id : '') + '|' + th.mode;
     if (emblemFor !== key) {
       emblemFor = key;
-      // alerty i ekrany (alerts.html, scenes.html) używają tego samego stylu i tej samej gry
-      try { localStorage.setItem('obsGameOverlay.activeTheme', JSON.stringify({ cls: th.cls, game: th.game ? th.game.id : '', at: Date.now() })); } catch {}
+      // alerty, ekrany i układy używają tego samego stylu, gry i trybu fuzji
+      try { localStorage.setItem('obsGameOverlay.activeTheme', JSON.stringify(GT.publishable ? GT.publishable(th) : { cls: th.cls, game: th.game ? th.game.id : '' })); } catch {}
       emblemEl.innerHTML = def ? def.emblem || '' : '';
       backEl.innerHTML = def ? def.back || '' : '';
     }
@@ -289,7 +289,8 @@
     root.setProperty('--scale', settings.scale);
     root.setProperty('--margin', settings.margin + 'px');
     // motyw postaci ma własny napis, dopóki w panelu zostaje domyślny „Teraz gram”
-    labelText.textContent = th.game && th.game.label && settings.label === DEFAULTS.label ? th.game.label : settings.label;
+    const lab = th.persona || th.game;   // napis postaci także wtedy, gdy bazą jest gra
+    labelText.textContent = lab && lab.label && settings.label === DEFAULTS.label ? lab.label : settings.label;
   }
 
   function fill(g) {

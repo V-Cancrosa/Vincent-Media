@@ -62,9 +62,9 @@
   .l-game-full #avatar { left: 40px; bottom: 40px; width: 300px; height: 300px; }
   .l-talk #avatar { left: 110px; top: 150px; width: 780px; height: 780px; }
   .av-art { position: absolute; inset: 0; display: grid; place-items: end center; }
-  .av-art img { width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; transform-origin: 50% 100%; transition: transform .12s ease, filter .2s ease;
+  .av-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; transform-origin: 50% 100%; transition: transform .12s ease, filter .2s ease;
     filter: drop-shadow(0 0 24px color-mix(in srgb, var(--accent) 45%, transparent)); animation: av-idle 4.5s ease-in-out infinite; }
-  .av-art svg { width: 80%; height: 80%; overflow: visible; }
+  .av-art svg { position: absolute; left: 10%; top: 10%; width: 80%; height: 80%; overflow: visible; }
   @keyframes av-idle { 50% { transform: translateY(-6px) scale(1.01); } }
   .talking .av-art img, .talking .av-art svg { animation: av-talk .32s ease-in-out infinite alternate; filter: drop-shadow(0 0 34px var(--accent)) brightness(1.08); }
   @keyframes av-talk { from { transform: translateY(0) scale(1); } to { transform: translateY(-10px) scale(1.03); } }
@@ -109,6 +109,12 @@
   #bar .item b { font-size: 26px; }
   #bar .socials { margin-left: auto; display: flex; flex-direction: column; gap: 6px; text-align: right; opacity: .9; }
 
+  /* rozmowa: temat, pasek i czat w jednej kolumnie – długi temat przesuwa resztę w dół, nic nie nachodzi */
+  #col { display: none; }
+  .l-talk #col { display: flex; flex-direction: column; gap: 22px; position: absolute; left: 1000px; top: 90px; width: 840px; height: 950px; }
+  .l-talk #col > #topic, .l-talk #col > #bar, .l-talk #col > #chat { position: static; left: auto; top: auto; width: 100%; }
+  .l-talk #col > #chat { flex: 1; height: auto; min-height: 0; }
+
   /* motywy postaci: czcionki i tło */
   .theme-g-vince { --font: 'Space Mono', monospace; } .theme-g-vince #bg { background: #0a0a0b; }
   .theme-g-chip { --font: 'Nunito', sans-serif; } .theme-g-chip #bg { background: #3a2416; }
@@ -127,6 +133,7 @@
 <div id="topic"><div id="topicLabel"></div><div id="topicText"></div><div id="topicLine"></div></div>
 <div id="chat"></div>
 <div id="bar"></div>
+<div id="col"></div>
 <script>
 (() => {
   const C = window.VMClient, $ = id => document.getElementById(id);
@@ -139,6 +146,7 @@
 
   const BGFX = GT ? Object.assign(Object.create(Object.getPrototypeOf(GT.FX)), GT.FX, { canvas: null, ctx: null, cfg: null, parts: [], raf: 0 }) : null;
   if (BGFX) BGFX.attach($('bgfx'));
+  if (layout === 'talk') { const col = $('col'); col.append($('topic'), $('bar'), $('chat')); }
   const chat = window.OverlayChat.mount($('chat'), { mode: layout === 'game-full' ? 'bubbles' : 'panel', life: 14 });
 
   let th = null, avatarKey = '';
@@ -175,7 +183,8 @@
     if (mode !== 'none' && layout !== 'game-full') {
       const l = document.createElement('div'); l.className = 'av-label';
       const v = window.OverlayVoices ? window.OverlayVoices.pick(id, 'scene:talk', {}) : null;
-      l.textContent = (th && th.def && th.def.group === 'fursona') ? th.def.name : (s.avatarName || 'NA ŻYWO');
+      const pd = th && (th.persona || (th.def && th.def.group === 'fursona' ? th.def : null));
+      l.textContent = pd ? pd.name : (s.avatarName || 'NA ŻYWO');
       a.appendChild(l);
     }
   }

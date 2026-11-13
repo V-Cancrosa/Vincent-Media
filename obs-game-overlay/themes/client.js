@@ -14,19 +14,18 @@
   let lastKey = null;
   function applyTheme(base = '', hooks = {}) {
     const s = settings(), gt = GT();
-    const active = read(ACTIVE_KEY, null);
-    let cls = q.get('theme') || (active && active.cls) || s.theme || 'neon';
-    const def = cls.startsWith('g-') ? gt.byId(cls.slice(2)) : null;
-    if (cls.startsWith('g-') && !def) cls = 'neon';
-    const game = !q.get('theme') && active && active.game && (!def || def.id !== active.game) ? gt.byId(active.game) : null;
-    const r = { cls, def, game, id: def ? def.id : cls, reduced: (q.get('motion') || s.motion) === 'reduced' };
+    const f = gt.fromActive ? gt.fromActive(read(ACTIVE_KEY, null), s, q.get('theme')) : { cls: s.theme || 'neon', def: null, game: null };
+    const { cls, def, game } = f;
+    // id = postać (także gdy jest dodatkiem do gry) – avatar i głos
+    const r = { ...f, id: f.persona ? f.persona.id : (def ? def.id : cls), reduced: (q.get('motion') || s.motion) === 'reduced' };
     document.body.className = `theme-${cls} ${base}` + (gt.bodyClasses ? gt.bodyClasses(r) : '') + (r.reduced ? ' reduced-motion' : '');
     const acc = gt.fusionAccent ? gt.fusionAccent(r, ['#7c5cff', '#00e1ff']) : ['#7c5cff', '#00e1ff'];
     const root = document.documentElement.style;
     root.setProperty('--accent', s.accent || acc[0]); root.setProperty('--accent2', s.accent2 || acc[1]);
     if (game) { root.setProperty('--g1', game.accent[0]); root.setProperty('--g2', game.accent[1]); }
+    if (f.persona) { root.setProperty('--g1', f.persona.accent[0]); root.setProperty('--g2', f.persona.accent[1]); }
     root.setProperty('--tex', def ? gt.texture(def) : '');
-    const key = cls + '|' + (game ? game.id : '') + r.reduced;
+    const key = cls + '|' + (game ? game.id : '') + '|' + (f.persona ? f.persona.id : '') + r.reduced;
     if (key !== lastKey) { lastKey = key; if (hooks.changed) hooks.changed(r); }
     return r;
   }

@@ -220,25 +220,23 @@
   BGFX.attach($('bgfx'));
   let themeFor = null, themeId = 'neon', lastFx = null;
   function applyStyle(kind) {
-    const active = read(ACTIVE_KEY, null);
-    let cls = p.has('theme') ? settings.theme : (active && active.cls) || settings.theme || 'neon';
-    const def = cls.startsWith('g-') ? GT.byId(cls.slice(2)) : null;
-    if (cls.startsWith('g-') && !def) cls = 'neon';
-    const game = !p.has('theme') && active && active.game && (!def || def.id !== active.game) ? GT.byId(active.game) : null;
-    const fusion = { cls, def, game };
-    themeId = def ? def.id : cls;
+    const fusion = GT.fromActive ? GT.fromActive(read(ACTIVE_KEY, null), settings, p.has('theme') ? settings.theme : null) : { cls: settings.theme || 'neon', def: null, game: null };
+    const { cls, def, game } = fusion;
+    // głos i duża postać: postać (także gdy jest dodatkiem do gry), inaczej styl
+    const heroDef = fusion.persona || def;
+    themeId = heroDef ? heroDef.id : cls;
     const reduced = settings.motion === 'reduced';
-    const hero = settings.sceneHero && def && kind !== 'end' ? (HERO[def.id] || { cls: 'emblem' }) : null;
+    const hero = settings.sceneHero && heroDef && kind !== 'end' ? (HERO[heroDef.id] || { cls: 'emblem' }) : null;
     document.body.className = `theme-${cls} pos-mc k-${kind}` + (GT.bodyClasses ? GT.bodyClasses(fusion) : '') +
       (reduced ? ' reduced-motion' : '') + (hero ? ' has-hero' : '') + (window.__vmTalking ? ' talking' : '') + (window.__vmHype ? ' hype' : '');
-    const key = cls + '|' + (game ? game.id : '') + '|' + (hero ? 1 : 0);
+    const key = cls + '|' + (game ? game.id : '') + '|' + (fusion.persona ? fusion.persona.id : '') + fusion.mode + '|' + (hero ? 1 : 0);
     if (themeFor !== key) {
       themeFor = key;
       $('emblem').innerHTML = def ? def.emblem || '' : '';
       $('backdrop').innerHTML = def ? def.back || '' : '';
       const h = $('hero');
       h.className = hero ? 'on ' + hero.cls : '';
-      h.innerHTML = !hero ? '' : hero.img ? `<img src="${hero.img}" alt="">` : (def.emblem || '');
+      h.innerHTML = !hero ? '' : hero.img ? `<img src="${hero.img}" alt="">` : (heroDef.emblem || '');
       if (hero && hero.cls === 'full') $('backdrop').innerHTML = '';
       if (hero && hero.cls !== 'full') $('emblem').innerHTML = '';
     }
