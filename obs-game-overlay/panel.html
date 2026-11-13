@@ -10,6 +10,8 @@
     --accent: #7c5cff; --ok: #3ddc84; --warn: #ffb347;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  code { font-size: 11px; background: #14161b; padding: 1px 5px; border-radius: 4px; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif; }
   main { padding: 10px; display: flex; flex-direction: column; gap: 10px; max-width: 720px; margin: 0 auto; }
   section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
@@ -83,24 +85,47 @@
   </section>
 
   <section>
-    <h2>Discord – automatyczne wykrywanie <span id="dcPill" class="pill off">WYŁ.</span></h2>
-    <div class="row">
-      <label>Źródło gry
-        <select id="mode">
-          <option value="auto">Auto: Discord, a jak nic nie gra – ręcznie</option>
-          <option value="manual">Tylko ręcznie</option>
-          <option value="discord">Tylko Discord</option>
-        </select>
-      </label>
+    <h2>Wykrywanie gier</h2>
+    <label>Źródło gry
+      <select id="mode">
+        <option value="auto">Auto: wykryta gra, a jak nic nie gra – wpisana ręcznie</option>
+        <option value="manual">Tylko ręcznie</option>
+        <option value="discord">Tylko wykryta automatycznie</option>
+      </select>
+    </label>
+    <label>Ignoruj gry o nazwie (po przecinku)
+      <input id="ignore" type="text" placeholder="np. Wallpaper Engine, Visual Studio Code">
+    </label>
+  </section>
+
+  <section>
+    <h2>Lokalny wykrywacz <span id="lcPill" class="pill off">WYŁ.</span></h2>
+    <label class="check"><input id="local" type="checkbox"> używaj wykrywacza z tego komputera</label>
+    <div class="status" id="lcStatus"></div>
+    <div class="row" id="lcIgnoreRow" hidden>
+      <button id="lcIgnoreBtn" class="auto">To nie gra – ignoruj</button>
     </div>
+    <div id="lcAdd" hidden>
+      <p class="hint" style="margin:4px 0">Gra nie została wykryta? Wybierz jej okno z ostatnio używanych i nadaj nazwę:</p>
+      <select id="lcExe" style="margin-bottom:6px"></select>
+      <div class="row">
+        <input id="lcName" type="text" placeholder="Nazwa gry">
+        <button id="lcAddBtn" class="auto">Dodaj jako grę</button>
+      </div>
+    </div>
+    <details>
+      <summary>Adres wykrywacza</summary>
+      <input id="localUrl" type="text" placeholder="http://localhost:7777">
+    </details>
+  </section>
+
+  <section>
+    <h2>Discord (Lanyard) <span id="dcPill" class="pill off">WYŁ.</span></h2>
     <label>Twoje Discord User ID
       <input id="discordId" type="text" inputmode="numeric" placeholder="np. 123456789012345678">
     </label>
-    <label>Ignoruj (po przecinku)
-      <input id="ignore" type="text" placeholder="np. Visual Studio Code, Wallpaper Engine">
-    </label>
     <div class="status" id="dcStatus">Discord nie jest skonfigurowany.</div>
-    <p class="hint">Wymaga dołączenia do serwera <a href="https://discord.gg/lanyard" target="_blank">Lanyard</a> (jednorazowo) i włączonego w Discordzie „Wyświetlaj aktualną aktywność”. Szczegóły w README.</p>
+    <p class="hint">Opcjonalne. Wymaga dołączenia do serwera <a href="https://discord.gg/lanyard" target="_blank">Lanyard</a> i udostępniania aktywności w Discordzie. Lokalny wykrywacz ma pierwszeństwo.</p>
   </section>
 
   <section>
@@ -174,7 +199,8 @@
     game: '', subtitle: '', cover: '', since: 0,
     label: 'Teraz gram', theme: 'neon', position: 'bl',
     accent: '', accent2: '', mode: 'auto', discordId: '', ignore: '',
-    timer: true, icon: true, showLabel: true, visible: true, scale: 1, margin: 40
+    timer: true, icon: true, showLabel: true, visible: true, scale: 1, margin: 40,
+    local: true, localUrl: 'http://localhost:7777'
   };
   const $ = id => document.getElementById(id);
   const load = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
@@ -231,10 +257,10 @@
   $('clearBtn').onclick = () => { s.game = ''; s.subtitle = ''; s.cover = ''; $('game').value = ''; $('subtitle').value = ''; $('cover').value = ''; save(); };
 
   // pola ustawień zapisywane od razu
-  const textFields = ['label', 'discordId', 'ignore'];
+  const textFields = ['label', 'discordId', 'ignore', 'localUrl'];
   textFields.forEach(id => $(id).addEventListener('change', () => { s[id] = $(id).value.trim(); save(); }));
   ['mode', 'theme', 'position'].forEach(id => $(id).addEventListener('change', () => { s[id] = $(id).value; save(); }));
-  ['timer', 'icon', 'showLabel'].forEach(id => $(id).addEventListener('change', () => { s[id] = $(id).checked; save(); }));
+  ['timer', 'icon', 'showLabel', 'local'].forEach(id => $(id).addEventListener('change', () => { s[id] = $(id).checked; save(); }));
   $('scale').addEventListener('input', () => { s.scale = +$('scale').value; save(); });
   $('margin').addEventListener('input', () => { s.margin = +$('margin').value; save(); });
   $('accent').addEventListener('input', () => { s.accent = $('accent').value; $('autoColor').checked = false; save(); });
@@ -242,8 +268,9 @@
 
   function syncUi() {
     if (document.activeElement !== $('game') && !$('game').value) $('game').value = s.game;
-    for (const id of ['label', 'discordId', 'ignore']) if (document.activeElement !== $(id)) $(id).value = s[id];
+    for (const id of ['label', 'discordId', 'ignore', 'localUrl']) if (document.activeElement !== $(id)) $(id).value = s[id];
     $('mode').value = s.mode; $('theme').value = s.theme; $('position').value = s.position;
+    $('local').checked = s.local;
     $('timer').checked = s.timer; $('icon').checked = s.icon; $('showLabel').checked = s.showLabel;
     $('scale').value = s.scale; $('scaleVal').textContent = Math.round(s.scale * 100) + '%';
     $('margin').value = s.margin; $('marginVal').textContent = s.margin + ' px';
@@ -255,20 +282,87 @@
     renderStaticUrl();
   }
 
-  // --- status Discorda (zapisywany przez nakładkę w podglądzie) ---
+  // --- status wykrywania (zapisywany przez nakładkę w podglądzie) ---
+  const setStatus = (el, parts) => {
+    el.textContent = '';
+    for (const p of parts) {
+      if (typeof p === 'string') el.append(p);
+      else { const b = document.createElement('b'); b.textContent = p.b; el.append(b); }
+    }
+  };
+  const pill = (id, on, txtOn = 'WŁ.', txtOff = 'WYŁ.') => { $(id).textContent = on ? txtOn : txtOff; $(id).className = 'pill ' + (on ? 'on' : 'off'); };
+  const VIA = { steam: 'Steam', 'discord-db': 'baza gier Discorda', 'my-games': 'my-games.txt' };
+  let lastRecentSig = '';
+
   function renderDetected() {
-    const on = s.discordId && s.mode !== 'manual';
-    $('dcPill').textContent = on ? 'WŁ.' : 'WYŁ.';
-    $('dcPill').className = 'pill ' + (on ? 'on' : 'off');
-    if (!on) { $('dcStatus').textContent = s.mode === 'manual' ? 'Tryb ręczny – Discord pominięty.' : 'Podaj Discord User ID, żeby włączyć wykrywanie.'; return; }
-    const d = load(DETECTED_KEY, null);
-    if (!d) { $('dcStatus').textContent = 'Łączenie z Lanyard…'; return; }
-    const st = d.status ? ` (status: ${d.status})` : '';
-    $('dcStatus').innerHTML = '';
-    const b = document.createElement('b');
-    if (d.game) { $('dcStatus').append('Discord wykrył: '); b.textContent = d.game.name; $('dcStatus').append(b, st); }
-    else { $('dcStatus').append('Discord: brak gry w tej chwili' + st); }
+    const d = load(DETECTED_KEY, null) || {};
+    const manualOnly = s.mode === 'manual';
+
+    // lokalny
+    const lc = d.local || {};
+    const lcOn = s.local && !manualOnly;
+    pill('lcPill', lcOn && lc.online, 'DZIAŁA', lcOn ? 'NIE DZIAŁA' : 'WYŁ.');
+    $('lcIgnoreRow').hidden = true;
+    $('lcAdd').hidden = !(lcOn && lc.online);
+    if (manualOnly) setStatus($('lcStatus'), ['Tryb ręczny – wykrywanie pominięte.']);
+    else if (!s.local) setStatus($('lcStatus'), ['Wyłączony.']);
+    else if (!lc.online) setStatus($('lcStatus'), ['Nie widzę wykrywacza. Uruchom ', { b: 'detector\\start-detector.bat' }, ' (okno może być zminimalizowane).']);
+    else if (lc.game) {
+      setStatus($('lcStatus'), ['Wykryto: ', { b: lc.game.name }, ` (${VIA[lc.game.via] || lc.game.via}${lc.game.exe ? ', ' + lc.game.exe : ''})`]);
+      $('lcIgnoreRow').hidden = false;
+    } else setStatus($('lcStatus'), ['Działa – w tej chwili żadna gra nie jest uruchomiona.']);
+
+    const recent = (lc.recent || []).filter(r => r && r.exe);
+    const sig = recent.map(r => r.exe + r.title).join('|');
+    if (sig !== lastRecentSig) {
+      lastRecentSig = sig;
+      const keep = $('lcExe').value;
+      $('lcExe').innerHTML = '';
+      for (const r of recent) {
+        const o = document.createElement('option');
+        o.value = r.exe;
+        o.textContent = r.title ? `${r.exe} – ${r.title}`.slice(0, 70) : r.exe;
+        $('lcExe').appendChild(o);
+      }
+      if (recent.some(r => r.exe === keep)) $('lcExe').value = keep;
+      if (!recent.length) { const o = document.createElement('option'); o.textContent = '(przełącz się na okno gry i wróć)'; o.value = ''; $('lcExe').appendChild(o); }
+    }
+
+    // Discord
+    const dc = d.discord || {};
+    const dcOn = !!s.discordId && !manualOnly;
+    pill('dcPill', dcOn);
+    if (!dcOn) setStatus($('dcStatus'), [manualOnly ? 'Tryb ręczny – Discord pominięty.' : 'Podaj Discord User ID, żeby włączyć.']);
+    else if (!dc.status) setStatus($('dcStatus'), ['Łączenie z Lanyard…']);
+    else if (dc.game) setStatus($('dcStatus'), ['Discord wykrył: ', { b: dc.game.name }, ` (status: ${dc.status})`]);
+    else setStatus($('dcStatus'), [`Discord: brak gry w tej chwili (status: ${dc.status})`]);
   }
+
+  async function callDetector(path) {
+    const base = (s.localUrl || DEFAULTS.localUrl).replace(/\/+$/, '');
+    const r = await fetch(base + path, { cache: 'no-store' });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) throw new Error(j.error || r.status);
+  }
+  $('lcAddBtn').onclick = async () => {
+    const exe = $('lcExe').value, name = $('lcName').value.trim();
+    if (!exe || !name) { $('lcName').focus(); return; }
+    try {
+      await callDetector(`/add?exe=${encodeURIComponent(exe)}&name=${encodeURIComponent(name)}`);
+      $('lcName').value = '';
+      $('lcAddBtn').textContent = 'Dodano ✓'; setTimeout(() => $('lcAddBtn').textContent = 'Dodaj jako grę', 1500);
+    } catch (e) { alertInline('Nie udało się dodać: ' + e.message); }
+  };
+  $('lcIgnoreBtn').onclick = async () => {
+    const g = ((load(DETECTED_KEY, {}) || {}).local || {}).game;
+    if (!g) return;
+    const what = g.via === 'steam' && g.steam ? 'steam:' + g.steam : g.exe;
+    if (!what) return;
+    try { await callDetector(`/ignore?exe=${encodeURIComponent(what)}`); }
+    catch (e) { alertInline('Nie udało się: ' + e.message); }
+  };
+  function alertInline(msg) { setStatus($('lcStatus'), [msg]); }
+
   window.addEventListener('storage', e => {
     if (e.key === DETECTED_KEY) renderDetected();
     if (e.key === KEY) { s = { ...DEFAULTS, ...load(KEY, {}) }; syncUi(); }
@@ -294,6 +388,8 @@
     if (!s.timer) q.set('timer', '0');
     if (!s.icon) q.set('icon', '0');
     if (!s.showLabel) q.set('showLabel', '0');
+    if (!s.local) q.set('local', '0');
+    if (s.localUrl !== DEFAULTS.localUrl) q.set('localUrl', s.localUrl);
     $('staticUrl').value = u.href;
   }
   $('copyBtn').onclick = async () => {

@@ -181,6 +181,9 @@
     background: linear-gradient(90deg, var(--accent), var(--accent2)); background-size: 200% 100%; animation: sweep 3s linear infinite;
   }
 
+  /* szeroka okładka (np. header ze Steama) zamiast kwadratowej ikony */
+  body #icon.wide { width: auto !important; aspect-ratio: 460 / 215; }
+
   /* bez ikony */
   .no-icon #icon { display: none; }
   .no-label #label { display: none; }
@@ -207,7 +210,8 @@
     game: '', subtitle: '', cover: '', since: 0,
     label: 'Teraz gram', theme: 'neon', position: 'bl',
     accent: '', accent2: '', mode: 'auto', discordId: '', ignore: '',
-    timer: true, icon: true, showLabel: true, visible: true, scale: 1, margin: 40
+    timer: true, icon: true, showLabel: true, visible: true, scale: 1, margin: 40,
+    local: true, localUrl: 'http://localhost:7777'
   };
 
   // ---- ustawienia z URL (działa bez panelu) ----
@@ -216,9 +220,10 @@
   const fromUrl = {};
   const map = {
     game: 'game', sub: 'subtitle', cover: 'cover', label: 'label', theme: 'theme', pos: 'position',
-    accent: 'accent', accent2: 'accent2', mode: 'mode', discord: 'discordId', ignore: 'ignore'
+    accent: 'accent', accent2: 'accent2', mode: 'mode', discord: 'discordId', ignore: 'ignore', localUrl: 'localUrl'
   };
   for (const [k, v] of Object.entries(map)) if (p.has(k)) fromUrl[v] = p.get(k);
+  if (p.has('local')) fromUrl.local = bool(p.get('local'));
   if (p.has('timer')) fromUrl.timer = bool(p.get('timer'));
   if (p.has('icon')) fromUrl.icon = bool(p.get('icon'));
   if (p.has('showLabel')) fromUrl.showLabel = bool(p.get('showLabel'));
@@ -233,8 +238,12 @@
     try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; }
   };
 
-  let settings = { ...DEFAULTS, ...fromUrl, ...(readStore() || {}) };
-  if (!settings.since) settings.since = Date.now();
+  const normalize = st => {
+    if (st.mode === 'detect') st.mode = 'discord'; // 'discord' = tylko wykryta automatycznie
+    if (!st.since) st.since = Date.now();
+    return st;
+  };
+  let settings = normalize({ ...DEFAULTS, ...fromUrl, ...(readStore() || {}) });
 
   // ---- DOM ----
   const $ = id => document.getElementById(id);
@@ -259,7 +268,7 @@
   }
 
   // ---- Discord (Lanyard) ----
-  let discordGame = null;
+  let discordGame = null, discordStatus = '';
   let ws = null, hb = null, wsId = '', retry = null;
 
   function assetUrl(a) {
@@ -279,22 +288,23 @@
       name: a.name,
       sub: [a.details, a.state].filter(Boolean).join(' · '),
       start: a.timestamps && a.timestamps.start ? a.timestamps.start : 0,
-      image: assetUrl(a),
+      images: assetUrl(a) ? [assetUrl(a)] : [],
       source: 'discord'
     } : null;
-    try { localStorage.setItem(DETECTED_KEY, JSON.stringify({ game: discordGame, at: Date.now(), status: d && d.discord_status })); } catch {}
+    discordStatus = (d && d.discord_status) || 'connected';
+    publish();
     render();
   }
 
   function disconnect() {
     clearInterval(hb); clearTimeout(retry);
     if (ws) { ws.onclose = null; try { ws.close(); } catch {} }
-    ws = null; wsId = '';
+    ws = null; wsId = ''; discordStatus = '';
   }
 
   function connect(id) {
     disconnect();
-    if (!id || settings.mode === 'manual') { discordGame = null; return; }
+    if (!id || settings.mode === 'manual') { discordGame = null; publish(); return; }
     wsId = id;
     ws = new WebSocket('wss://api.lanyard.rest/socket');
     ws.onmessage = e => {
@@ -312,19 +322,67 @@
     };
   }
 
+  // ---- lokalny wykrywacz (detector/detector.ps1) ----
+  let localGame = null, localOnline = false, localRecent = [], localTimer = null;
+  const normImages = v => (Array.isArray(v) ? v : v ? [v] : []).filter(x => typeof x === 'string' && x);
+
+  async function pollLocal() {
+    clearTimeout(localTimer);
+    if (!settings.local || settings.mode === 'manual') {
+      if (localGame || localOnline) { localGame = null; localOnline = false; render(); }
+      publish();
+      localTimer = setTimeout(pollLocal, 3000);
+      return;
+    }
+    let delay = 2000;
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 1500);
+      const r = await fetch(settings.localUrl.replace(/\/+$/, '') + '/game', { signal: ctl.signal, cache: 'no-store' });
+      clearTimeout(t);
+      const j = await r.json();
+      localOnline = true;
+      localRecent = Array.isArray(j.recent) ? j.recent : j.recent ? [j.recent] : [];
+      const g = j.game;
+      const next = g && g.name ? {
+        name: String(g.name), sub: '', start: +g.start || 0, images: normImages(g.images),
+        source: 'local', exe: g.exe || '', via: g.via || '', steam: g.steam || ''
+      } : null;
+      if (JSON.stringify(next) !== JSON.stringify(localGame)) { localGame = next; render(); }
+    } catch {
+      if (localOnline || localGame) { localOnline = false; localGame = null; render(); }
+      delay = 10000; // wykrywacz nie działa – pytaj rzadziej
+    }
+    publish();
+    localTimer = setTimeout(pollLocal, delay);
+  }
+
+  // status dla panelu
+  function publish() {
+    try {
+      localStorage.setItem(DETECTED_KEY, JSON.stringify({
+        at: Date.now(),
+        local: { enabled: !!settings.local, online: localOnline, game: localGame, recent: localRecent, url: settings.localUrl },
+        discord: { enabled: !!settings.discordId, status: discordStatus, game: discordGame }
+      }));
+    } catch {}
+  }
+
   // ---- co pokazać ----
   function ignored(name) {
     return settings.ignore.split(',').map(s => s.trim().toLowerCase()).filter(Boolean).includes(name.toLowerCase());
   }
   function current() {
     const manual = settings.game.trim()
-      ? { name: settings.game.trim(), sub: settings.subtitle, start: settings.since, image: settings.cover, source: 'manual' }
+      ? { name: settings.game.trim(), sub: settings.subtitle, start: settings.since, images: settings.cover ? [settings.cover] : [], source: 'manual' }
       : null;
-    let d = discordGame && !ignored(discordGame.name) ? { ...discordGame } : null;
+    // kolejność: lokalny wykrywacz > Discord
+    const det = [localGame, discordGame].find(x => x && !ignored(x.name));
+    let d = det ? { ...det } : null;
     if (d) {
-      // ręczny podtytuł / okładka wygrywają, jeśli nazwa się zgadza albo podtytuł z Discorda jest pusty
+      // ręczny podtytuł / okładka wygrywają, jeśli nazwa się zgadza
       const same = manual && manual.name.toLowerCase() === d.name.toLowerCase();
-      if (same && manual.image) d.image = manual.image;
+      if (same && manual.images.length) d.images = manual.images;
       if (same && manual.sub) d.sub = manual.sub;
       if (!d.sub && settings.subtitle && settings.mode === 'discord') d.sub = settings.subtitle;
     }
@@ -355,16 +413,29 @@
     card.classList.toggle('xlong', g.name.length > 34);
     card.dataset.start = g.start || 0;
     mono.textContent = monogram(g.name);
-    const old = icon.querySelector('img');
-    if (old) old.remove();
-    mono.style.display = '';
-    if (g.image) {
-      const img = new Image();
-      img.alt = '';
-      img.onload = () => { mono.style.display = 'none'; };
-      img.onerror = () => { img.remove(); mono.style.display = ''; };
-      img.src = g.image;
-      icon.appendChild(img);
+    const imgs = g.images || [];
+    const sig = imgs.join('|');
+    if (icon.dataset.sig !== sig) {
+      icon.dataset.sig = sig;
+      const old = icon.querySelector('img');
+      if (old) old.remove();
+      icon.classList.remove('wide');
+      mono.style.display = '';
+      // próbuj obrazków po kolei, aż któryś się wczyta; inaczej zostaje monogram
+      const tryImg = i => {
+        if (i >= imgs.length || icon.dataset.sig !== sig) return;
+        const img = new Image();
+        img.alt = '';
+        img.onload = () => {
+          if (icon.dataset.sig !== sig) return;
+          icon.classList.toggle('wide', img.naturalWidth / img.naturalHeight > 1.4);
+          icon.appendChild(img);
+          mono.style.display = 'none';
+        };
+        img.onerror = () => tryImg(i + 1);
+        img.src = imgs[i];
+      };
+      tryImg(0);
     }
     tick();
   }
@@ -372,7 +443,7 @@
   function render() {
     const g = settings.visible ? current() : null;
     applyStyle(g);
-    const key = g ? `${g.name}|${g.image}` : null;
+    const key = g ? `${g.name}|${(g.images || [])[0] || ''}` : null;
     clearTimeout(swapTimer);
     if (!g) { card.classList.remove('show'); shownKey = null; return; }
     if (key === shownKey) { fill(g); card.classList.add('show'); return; }
@@ -400,8 +471,9 @@
   // ---- synchronizacja z panelem ----
   function reload() {
     const prevId = settings.discordId, prevMode = settings.mode;
-    settings = { ...DEFAULTS, ...fromUrl, ...(readStore() || {}) };
-    if (!settings.since) settings.since = Date.now();
+    const prevLocal = settings.local + settings.localUrl;
+    settings = normalize({ ...DEFAULTS, ...fromUrl, ...(readStore() || {}) });
+    if (settings.local + settings.localUrl !== prevLocal || settings.mode !== prevMode) pollLocal();
     if (settings.discordId !== prevId || (settings.mode === 'manual') !== (prevMode === 'manual')) connect(settings.discordId);
     render();
   }
@@ -412,6 +484,7 @@
   } catch {}
 
   connect(settings.discordId);
+  pollLocal();
   render();
 })();
 </script>
