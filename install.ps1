@@ -81,21 +81,27 @@ $Json.MaxJsonLength = [int]::MaxValue
 # na nich („odwołanie cykliczne … PSParameterizedProperty”). Przed zapisem zamieniamy wszystko na zwykłe słowniki i listy.
 function ConvertTo-Plain($o) {
     if ($null -eq $o) { return $null }
-    if ($o -is [Management.Automation.PSObject]) { $o = $o.PSObject.BaseObject }
-    if ($o -is [string] -or $o -is [ValueType]) { return $o }
-    if ($o -is [Collections.IDictionary]) {
+    $b = $o.PSObject.BaseObject
+    if ($b -is [string] -or $b -is [ValueType]) { return $b }
+    # Uwaga: wynik funkcji PowerShell opakowuje w PSObject – dlatego przy KAŻDYM wstawieniu bierzemy .PSObject.BaseObject
+    if ($b -is [Collections.IDictionary]) {
         $d = New-Object 'Collections.Generic.Dictionary[string,object]'
-        foreach ($k in @($o.Keys)) { $d[[string]$k] = ConvertTo-Plain $o[$k] }
+        foreach ($key in @($b.Keys)) { $v = ConvertTo-Plain $b[$key]; if ($null -eq $v) { $d[[string]$key] = $null } else { $d[[string]$key] = $v.PSObject.BaseObject } }
         return $d
     }
-    if ($o -is [Collections.IEnumerable]) {
+    if ($b -is [Management.Automation.PSCustomObject]) {
+        $d = New-Object 'Collections.Generic.Dictionary[string,object]'
+        foreach ($pp in $o.PSObject.Properties) { $v = ConvertTo-Plain $pp.Value; if ($null -eq $v) { $d[$pp.Name] = $null } else { $d[$pp.Name] = $v.PSObject.BaseObject } }
+        return $d
+    }
+    if ($b -is [Collections.IEnumerable]) {
         $l = New-Object 'Collections.Generic.List[object]'
-        foreach ($x in $o) { $l.Add((ConvertTo-Plain $x)) }
+        foreach ($x in $b) { $v = ConvertTo-Plain $x; if ($null -eq $v) { $l.Add($null) } else { $l.Add($v.PSObject.BaseObject) } }
         return , $l.ToArray()
     }
-    return $o
+    return $b
 }
-function To-Json($o) { return $Json.Serialize((ConvertTo-Plain $o)) }
+function To-Json($o) { $p = ConvertTo-Plain $o; if ($null -eq $p) { return 'null' }; return $Json.Serialize($p.PSObject.BaseObject) }
 $Json.MaxJsonLength = [int]::MaxValue
 $Json.RecursionLimit = 512
 
