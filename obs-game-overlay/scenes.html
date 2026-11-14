@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="themes/fusion.css">
 <script src="themes/fusion.js"></script>
 <script src="themes/voices.js"></script>
+<script src="themes/voices-games.js"></script>
 <script src="themes/obsws.js"></script>
 <link rel="stylesheet" href="themes/base.css">
 <style>
@@ -218,18 +219,19 @@
   const GT = window.OverlayGameThemes || { byId: () => null, FX: { attach() {}, set() {} }, texture: () => '' };
   const BGFX = Object.assign(Object.create(Object.getPrototypeOf(GT.FX)), GT.FX, { canvas: null, ctx: null, cfg: null, parts: [], raf: 0 });
   BGFX.attach($('bgfx'));
-  let themeFor = null, themeId = 'neon', lastFx = null;
+  let themeFor = null, themeId = 'neon', lastFx = null, voiceVI = null;
   function applyStyle(kind) {
     const fusion = GT.fromActive ? GT.fromActive(read(ACTIVE_KEY, null), settings, p.has('theme') ? settings.theme : null) : { cls: settings.theme || 'neon', def: null, game: null };
     const { cls, def, game } = fusion;
     // głos i duża postać: postać (także gdy jest dodatkiem do gry), inaczej styl
     const heroDef = fusion.persona || def;
     themeId = heroDef ? heroDef.id : cls;
+    voiceVI = GT.voiceInfo ? GT.voiceInfo(fusion) : null;
     const reduced = settings.motion === 'reduced';
     const hero = settings.sceneHero && heroDef && kind !== 'end' ? (HERO[heroDef.id] || { cls: 'emblem' }) : null;
     document.body.className = `theme-${cls} pos-mc k-${kind}` + (GT.bodyClasses ? GT.bodyClasses(fusion) : '') +
       (reduced ? ' reduced-motion' : '') + (hero ? ' has-hero' : '') + (window.__vmTalking ? ' talking' : '') + (window.__vmHype ? ' hype' : '');
-    const key = cls + '|' + (game ? game.id : '') + '|' + (fusion.persona ? fusion.persona.id : '') + fusion.mode + '|' + (hero ? 1 : 0);
+    const key = cls + '|' + (game ? game.id : '') + '|' + (fusion.persona ? fusion.persona.id : '') + fusion.mode + (fusion.variant || '') + '|' + (hero ? 1 : 0);
     if (themeFor !== key) {
       themeFor = key;
       $('emblem').innerHTML = def ? def.emblem || '' : '';
@@ -278,10 +280,11 @@
   // ---------------------------------------------------------------- głos postaci (zmienia się co 40 s)
   let voice = null, voiceKey = '', voiceAt = 0;
   function voiceFor(kind) {
-    const k = kind + '|' + themeId;
+    const k = kind + '|' + themeId + '|' + (voiceVI ? voiceVI.gameId + voiceVI.variant : '');
     if (k !== voiceKey || Date.now() - voiceAt > 40000) {
       voiceKey = k; voiceAt = Date.now();
-      voice = window.OverlayVoices ? window.OverlayVoices.pick(themeId, 'scene:' + kind, {}) : { label: '', line: '', register: '' };
+      const VO = window.OverlayVoices;
+      voice = !VO ? { label: '', line: '', register: '' } : (voiceVI && VO.pickMix ? VO.pickMix(voiceVI, 'scene:' + kind, {}) : VO.pick(themeId, 'scene:' + kind, {}));
       document.body.classList.toggle('terminal-voice', voice.register === 'terminal');
       if (voice.register === 'syndrome') { document.body.classList.add('syndrome'); setTimeout(() => document.body.classList.remove('syndrome'), 2000); }
     }
@@ -363,7 +366,7 @@
     x.textContent = '';
     const c = document.createElement('div'); c.className = 'credits';
     const add = (tag, text, small) => { const e = document.createElement(tag); e.textContent = text; if (small) { const sm = document.createElement('small'); sm.textContent = small; e.appendChild(sm); } c.appendChild(e); return e; };
-    const endVoice = window.OverlayVoices ? window.OverlayVoices.pick(themeId, 'scene:end', {}) : { line: '' };
+    const endVoice = voiceFor('end');
     add('p', endVoice.line || 'Dziękuję, że byliście!').className = 'thanks';
     const S = session || {};
     const sec = (title, list, fmt) => { if (!list || !list.length) return; add('h3', title); for (const it of list) add('p', it.user, fmt ? fmt(it) : ''); };

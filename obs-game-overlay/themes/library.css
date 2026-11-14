@@ -170,3 +170,98 @@
 .theme-g-hk { --scene-bg: #05070e; --scene-font: 'Cinzel', serif; }
 
 .reduced-motion .hk-thread { stroke-dashoffset: 0; animation: none !important; }
+
+/* ============================================================ MASS EFFECT – warianty części (wykrywacz podaje część po wyjściu z launchera) */
+.gv-me1 #card { border-color: rgba(79,183,255,.6); }
+.gv-me1 #label, .gv-me1 #mono { color: #9fd4ff; }
+.gv-me1 #label .dot { background: #4fb7ff; box-shadow: 0 0 10px #4fb7ff; }
+.gv-me1 #icon { border-color: #4fb7ff; box-shadow: 0 0 14px rgba(79,183,255,.45); background: rgba(79,183,255,.08); }
+.gv-me2 #card { background: linear-gradient(100deg, rgba(14,12,10,.95), rgba(34,26,16,.92)); border-color: rgba(255,154,28,.5); }
+.gv-me2 #card::after { background: repeating-linear-gradient(0deg, rgba(255,154,28,.05) 0 1px, transparent 1px 4px); }
+.gv-me2 #name { text-shadow: 0 0 14px rgba(255,154,28,.6); }
+.gv-me2 #label, .gv-me2 #mono, .gv-me2 #timer { color: #ffb347; }
+.gv-me2 #meta { color: #d6b88f; }
+.gv-me3 #card { background: linear-gradient(100deg, rgba(16,8,8,.95), rgba(34,12,12,.92)); border-color: rgba(255,59,48,.55); }
+.gv-me3 #card::after { background: repeating-linear-gradient(0deg, rgba(255,59,48,.06) 0 1px, transparent 1px 4px); }
+.gv-me3 #name { text-shadow: 0 0 14px rgba(255,59,48,.7); }
+.gv-me3 #label, .gv-me3 #mono, .gv-me3 #timer { color: #ff6a5e; }
+.gv-me3 #label .dot { background: #ff3b30; box-shadow: 0 0 10px #ff3b30; }
+.gv-me3 #meta { color: #d6a29c; }
+.me3-eye { animation: me3-eye 3.2s ease-in-out infinite; }
+@keyframes me3-eye { 0%, 70%, 100% { opacity: .35; } 80% { opacity: 1; filter: drop-shadow(0 0 6px #ff3b30); } }
+.gv-mea #card { background: linear-gradient(100deg, rgba(6,18,22,.94), rgba(18,16,34,.92)); border-color: rgba(42,212,196,.5); }
+.gv-mea #name { text-shadow: 0 0 14px rgba(42,212,196,.6); }
+.gv-mea #label, .gv-mea #mono, .gv-mea #timer { color: #2ad4c4; }
+.gv-mea #label .dot { background: #8a6cff; box-shadow: 0 0 10px #8a6cff; }
+.gv-mele #label, .gv-mele #mono { color: #e8eef5; }
+.theme-g-me.gv-me2 { --scene-bg: #0e0a06; } .theme-g-me.gv-me3 { --scene-bg: #120606; } .theme-g-me.gv-mea { --scene-bg: #04121a; }
+
+/* ============================================================ RED ALERT – czerwień, stal, wieża Tesli */
+.theme-g-ra #card {
+  font-family: 'Anton', 'Teko', sans-serif; color: #f2d7a8;
+  padding: 14px 42px 14px 14px; gap: 16px;
+  background: linear-gradient(180deg, #2a2a2e, #16161a);
+  border: 3px solid #0a0a0c; border-left: 10px solid #e0241b; border-radius: 2px;
+  box-shadow: inset 0 0 0 1px #4a4a50, 0 12px 30px rgba(0,0,0,.6);
+}
+.theme-g-ra #card::after { /* nity */
+  content: ""; position: absolute; inset: 6px; pointer-events: none;
+  background: radial-gradient(circle, #6a6a70 2px, transparent 3px) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle at 0 0, #6a6a70 2px, transparent 3px), radial-gradient(circle at 100% 0, #6a6a70 2px, transparent 3px),
+    radial-gradient(circle at 0 100%, #6a6a70 2px, transparent 3px), radial-gradient(circle at 100% 100%, #6a6a70 2px, transparent 3px);
+}
+.theme-g-ra #icon { border: 2px solid #e0241b; background: #1a0606; border-radius: 0; }
+.theme-g-ra #mono { font-family: 'Anton', sans-serif; color: #e0241b; }
+.theme-g-ra #name { font-size: 42px; letter-spacing: .04em; text-transform: uppercase; color: #f2d7a8; text-shadow: 3px 3px 0 #e0241b; }
+.theme-g-ra #label { font-family: 'Teko', sans-serif; font-size: 18px; letter-spacing: .2em; color: #e0241b; }
+.theme-g-ra #label .dot { background: #bfe9ff; box-shadow: 0 0 10px #9ed8ff; border-radius: 0; }
+.theme-g-ra #meta { font-family: 'Teko', sans-serif; color: #b8a888; font-size: 20px; letter-spacing: .06em; }
+.theme-g-ra #timer { color: #bfe9ff; }
+.theme-g-ra #emblem { width: 70px; height: 96px; right: -26px; top: -70px; }
+.ra-bolt { animation: ra-zap 1.6s steps(1) infinite; }
+@keyframes ra-zap { 0%, 100% { opacity: 0; } 10%, 18% { opacity: 1; } 22% { opacity: 0; } 26%, 30% { opacity: 1; } }
+
+/* ============================================================ TIBERIUM – zielone kryształy, interfejs EVA */
+.theme-g-cnc #card {
+  font-family: 'Chakra Petch', sans-serif; color: #dfffd8;
+  padding: 14px 42px 14px 14px; gap: 16px;
+  background: linear-gradient(110deg, rgba(8,20,8,.95), rgba(18,34,14,.92));
+  border: 1px solid #5be35b; border-radius: 0;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  box-shadow: inset 0 0 30px rgba(91,227,91,.15);
+}
+.theme-g-cnc #card::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(91,227,91,.06) 0 1px, transparent 1px 3px); }
+.theme-g-cnc #icon { border: 1px solid #e8c547; background: rgba(232,197,71,.08); }
+.theme-g-cnc #mono { color: #e8c547; }
+.theme-g-cnc #name { font-weight: 700; font-size: 38px; letter-spacing: .08em; text-transform: uppercase; color: #dfffd8; text-shadow: 0 0 12px rgba(91,227,91,.7); }
+.theme-g-cnc #label { font-weight: 700; font-size: 13px; letter-spacing: .3em; color: #e8c547; }
+.theme-g-cnc #label .dot { background: #5be35b; box-shadow: 0 0 10px #5be35b; border-radius: 0; }
+.theme-g-cnc #meta { color: #9fd49f; font-size: 15px; letter-spacing: .08em; }
+.theme-g-cnc #timer { color: #5be35b; }
+.theme-g-cnc #emblem { width: 92px; height: 84px; right: -30px; top: -58px; }
+
+/* ============================================================ GENERALS – pustynny wojskowy, szablon, radar */
+.theme-g-gen #card {
+  font-family: 'Saira Stencil One', 'Teko', sans-serif; color: #2a2412;
+  padding: 14px 44px 14px 14px; gap: 16px;
+  background: linear-gradient(180deg, #d9c8a0, #bfa878);
+  border: 3px solid #3a3420; border-radius: 4px;
+  box-shadow: inset 0 0 0 2px #6f7d4a, 0 12px 28px rgba(0,0,0,.5);
+}
+.theme-g-gen #card::before { /* taśma ostrzegawcza */
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px;
+  background: repeating-linear-gradient(-45deg, #2a2412 0 8px, #d9b56b 8px 16px);
+}
+.theme-g-gen #icon { border: 3px solid #3a3420; background: #6f7d4a; border-radius: 2px; }
+.theme-g-gen #mono { color: #d9c8a0; }
+.theme-g-gen #name { font-size: 40px; letter-spacing: .06em; text-transform: uppercase; color: #2a2412; }
+.theme-g-gen #label { font-family: 'Teko', sans-serif; font-size: 18px; letter-spacing: .2em; color: #4a5430; }
+.theme-g-gen #label .dot { background: #e0241b; box-shadow: none; }
+.theme-g-gen #meta { font-family: 'Teko', sans-serif; color: #4a4026; font-size: 20px; }
+.theme-g-gen #timer { color: #6f2a1a; }
+.theme-g-gen #emblem { width: 92px; height: 84px; right: -30px; top: -60px; }
+
+.theme-g-ra { --scene-bg: #120808; --scene-font: 'Anton', sans-serif; }
+.theme-g-cnc { --scene-bg: #050f05; --scene-font: 'Chakra Petch', sans-serif; }
+.theme-g-gen { --scene-bg: #2a2416; --scene-font: 'Saira Stencil One', sans-serif; --scene-ink: #efe4c8; }
+.reduced-motion .ra-bolt, .reduced-motion .me3-eye { animation: none !important; }

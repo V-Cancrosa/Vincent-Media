@@ -13,6 +13,7 @@
 <script src="themes/library.js"></script>
 <script src="themes/fusion.js"></script>
 <script src="themes/voices.js"></script>
+<script src="themes/voices-games.js"></script>
 <script src="themes/chat.js"></script>
 <script src="themes/client.js"></script>
 <script src="themes/obsws.js"></script>
@@ -88,6 +89,10 @@
   .l-game-frame #chat { left: 1510px; top: 440px; width: 370px; height: 600px; }
   .l-game-frame.no-avatar #chat { top: 40px; height: 1000px; }
   .l-game-full #chat { right: 40px; bottom: 40px; width: 560px; max-height: 700px; }
+  .l-game-full #chat.chat-ticker { left: 0; right: 0; bottom: 0; width: auto; max-height: none; }
+  .ticker-top.l-game-full #chat.chat-ticker { top: 0; bottom: auto; border-top: 0; border-bottom: 2px solid var(--accent); transform: translateY(-100%); }
+  .ticker-top.l-game-full #chat.chat-ticker.on { transform: none; }
+  .ticker-bottom #avatar { translate: 0 -70px; }
   .l-talk #chat { left: 1000px; top: 360px; width: 840px; height: 680px; }
   .l-game-frame .chat, .l-talk .chat { font-size: 18px; }
   .chat-panel .cmsg { background-color: rgba(10,10,16,.6); }
@@ -147,7 +152,28 @@
   const BGFX = GT ? Object.assign(Object.create(Object.getPrototypeOf(GT.FX)), GT.FX, { canvas: null, ctx: null, cfg: null, parts: [], raf: 0 }) : null;
   if (BGFX) BGFX.attach($('bgfx'));
   if (layout === 'talk') { const col = $('col'); col.append($('topic'), $('bar'), $('chat')); }
-  const chat = window.OverlayChat.mount($('chat'), { mode: layout === 'game-full' ? 'bubbles' : 'panel', life: 14 });
+  // czat: w ramce i w rozmowie na stałe; na pełnym ekranie gry pasek u dołu/góry (domyślnie), dymki albo nic
+  let chat = { add() {} }, chatMode = '';
+  // karta „Teraz gram” (overlay.html) robi miejsce, gdy pasek jest widoczny
+  // (tylko gdy ta scena jest na wizji – OBS zgłasza to zdarzeniem obsSourceActiveChanged)
+  let tickerOn = false, srcActive = true;
+  function tickerVisible(on) {
+    tickerOn = on;
+    try { new BroadcastChannel('obsGameOverlay').postMessage({ type: 'ticker', on: on && srcActive, pos: C.settings().tickerPos === 'top' ? 'top' : 'bottom' }); } catch (e) {}
+  }
+  window.addEventListener('obsSourceActiveChanged', e => { srcActive = !!(e.detail && e.detail.active); tickerVisible(tickerOn); });
+  function mountChat(s) {
+    const mode = layout === 'game-full' ? (['ticker', 'bubbles', 'off'].includes(s.gameChat) ? s.gameChat : 'ticker') : 'panel';
+    const pos = s.tickerPos === 'top' ? 'top' : 'bottom';
+    document.body.classList.toggle('ticker-top', mode === 'ticker' && pos === 'top');
+    document.body.classList.toggle('ticker-bottom', mode === 'ticker' && pos === 'bottom');
+    if (mode === chatMode) return;
+    chatMode = mode;
+    const box = $('chat'); box.className = ''; box.textContent = '';
+    if (chatMode !== 'ticker') tickerVisible(false);
+    chat = mode === 'off' ? { add() {} } : window.OverlayChat.mount(box, { mode, life: 14, speed: +s.tickerSpeed || 140, onVisible: tickerVisible });
+  }
+  mountChat(C.settings());
 
   let th = null, avatarKey = '';
   function holes(s) {
@@ -202,11 +228,12 @@
     const s = C.settings();
     th = C.applyTheme('l-' + layout + (document.body.classList.contains('talking') ? ' talking' : '') + (document.body.classList.contains('hype') ? ' hype' : ''));
     if (BGFX) {
-      const k = th.cls + (th.game ? th.game.id : '') + th.reduced;
+      const k = th.cls + (th.game ? th.game.id : '') + (th.variant || '') + th.reduced;
       if (k !== fxKey) { fxKey = k; const base = GT.fusionFx ? GT.fusionFx(th) : th.def && th.def.fx; BGFX.set(base && !th.reduced && layout !== 'game-full' ? { ...base, count: Math.round(base.count * 2) } : null); }
     }
     holes(s);
     renderAvatar(s);
+    mountChat(s);
     // gra
     const det = C.read('obsGameOverlay.detected', {}) || {};
     const game = (det.local && det.local.game && det.local.game.name) || (det.discord && det.discord.game && det.discord.game.name) || s.game || '';

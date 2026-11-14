@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Przejścia</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="themes/fonts.css">
+<link rel="stylesheet" href="themes/library.css">
+<script src="version.js"></script>
+<script src="themes/games.js"></script>
+<script src="themes/fursona.js"></script>
+<script src="themes/library.js"></script>
+<script src="themes/fusion.js"></script>
+<script src="themes/voices.js"></script>
+<script src="themes/voices-games.js"></script>
+<script src="themes/client.js"></script>
+<style>
+  /*
+    Przejścia między ekranami (źródło OBS na wierzchu każdej sceny VM).
+    Panel najpierw wysyła „transition”, ta strona zasłania obraz, panel przełącza scenę w OBS (cięciem),
+    a potem obraz się odsłania. Rodzaj przejścia pasuje do gry albo postaci (albo jest wybrany w panelu).
+    Test: transition.html?demo=1 (co 4 s), ?kind=ink&scene=brb
+  */
+  @property --r { syntax: '<percentage>'; inherits: false; initial-value: 160%; }
+  :root { --accent: #7c5cff; --accent2: #00e1ff; --dark: #07070c; --font: 'Inter', sans-serif; --cover: 700ms; --reveal: 700ms; }
+  html, body { margin: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent !important; }
+  #t { position: fixed; inset: 0; pointer-events: none; visibility: hidden; }
+  #t.on, #t.off { visibility: visible; }
+  #t > *, #t .fx > * { position: absolute; }
+  #t .fx.eq > *, #t .fx.pixel > * { position: relative; }
+  .full { inset: 0; }
+
+  /* napis na środku (pojawia się, gdy obraz jest zasłonięty) */
+  #txt { inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 50; opacity: 0;
+    font-family: var(--font); color: #fff; text-align: center; padding: 0 12vw; }
+  #txt .em { width: 120px; height: 120px; filter: drop-shadow(0 0 24px color-mix(in srgb, var(--accent) 60%, transparent)); }
+  #txt .em:empty { display: none; }
+  #txt .em svg, #txt .em img { width: 100%; height: 100%; object-fit: contain; }
+  #txt .lab { font-size: 92px; line-height: 1; letter-spacing: .04em; text-transform: uppercase; font-weight: 800;
+    text-shadow: 0 4px 30px color-mix(in srgb, var(--accent) 70%, transparent); }
+  #txt .line { font-size: 30px; max-width: 1200px; opacity: .88; line-height: 1.35; }
+  #t.hold #txt { animation: txt-in .45s cubic-bezier(.2,.9,.3,1.2) forwards; }
+  #t.off #txt { animation: txt-out .3s ease-in forwards; }
+  @keyframes txt-in { from { opacity: 0; transform: scale(.92); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+  @keyframes txt-out { from { opacity: 1; } to { opacity: 0; transform: scale(1.04); filter: blur(6px); } }
+
+  /* ---------- wipe: skośne pasy w kolorach motywu ---------- */
+  .wipe .bar { top: -10%; bottom: -10%; left: -20%; right: -20%; transform: translateX(-160%) skewX(-14deg); }
+  .wipe .b1 { background: var(--accent2); } .wipe .b2 { background: var(--accent); } .wipe .b3 { background: var(--dark); }
+  .wipe.bp .b3 { background: #0d2a4a; background-image: linear-gradient(rgba(160,210,255,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(160,210,255,.18) 1px, transparent 1px), linear-gradient(rgba(160,210,255,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(160,210,255,.08) 1px, transparent 1px);
+    background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px; }
+  #t.on .wipe .bar { animation: wipe-in var(--cover) cubic-bezier(.7,0,.3,1) forwards; }
+  #t.on .wipe .b2 { animation-delay: 70ms; } #t.on .wipe .b3 { animation-delay: 140ms; }
+  #t.off .wipe .bar { transform: translateX(0) skewX(-14deg); animation: wipe-out var(--reveal) cubic-bezier(.7,0,.3,1) forwards; }
+  #t.off .wipe .b2 { animation-delay: 70ms; } #t.off .wipe .b1 { animation-delay: 140ms; }
+  @keyframes wipe-in { to { transform: translateX(0) skewX(-14deg); } }
+  @keyframes wipe-out { to { transform: translateX(160%) skewX(-14deg); } }
+
+  /* ---------- glitch: plastry obrazu, przesunięcie RGB, linie skanowania ---------- */
+  .glitch .s { left: 0; right: 0; background: var(--dark); border-top: 2px solid color-mix(in srgb, var(--accent) 80%, transparent); transform: translateX(-105%); }
+  .glitch .s:nth-child(even) { transform: translateX(105%); border-color: color-mix(in srgb, var(--accent2) 80%, transparent); }
+  .glitch .scan { inset: 0; opacity: 0; background: repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 2px, transparent 2px 5px); z-index: 5; }
+  #t.on .glitch .s { animation: gl-in var(--cover) steps(6) forwards; animation-delay: var(--d); }
+  #t.on .glitch .scan, #t.hold .glitch .scan { opacity: 1; }
+  #t.off .glitch .s { transform: none; animation: gl-out var(--reveal) steps(5) forwards; animation-delay: var(--d); }
+  #t.off .glitch .s:nth-child(even) { animation-name: gl-out2; }
+  @keyframes gl-in { to { transform: none; } }
+  @keyframes gl-out { to { transform: translateX(110%); } }
+  @keyframes gl-out2 { to { transform: translateX(-110%); } }
+  .k-glitch #txt .lab { text-shadow: 3px 0 0 #ff2a6d, -3px 0 0 #05d9e8; }
+  .k-glitch.hold #txt .lab { animation: gl-text 1.2s steps(1) infinite; }
+  @keyframes gl-text { 0%, 100% { transform: none; } 20% { transform: translate(4px, -2px); clip-path: inset(10% 0 50% 0); } 22% { transform: none; clip-path: none; } 60% { transform: translate(-3px, 1px); } 62% { transform: none; } }
+
+  /* ---------- iris: koło zamyka się i otwiera ---------- */
+  .iris .c { inset: 0; background: radial-gradient(circle at 50% 50%, var(--accent) 0, color-mix(in srgb, var(--accent) 40%, var(--dark)) 45%, var(--dark) 75%); clip-path: circle(0% at 50% 50%); }
+  .iris .ring { left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px; border-radius: 50%; border: 6px solid var(--accent2); opacity: 0; }
+  #t.on .iris .c { animation: iris-in var(--cover) cubic-bezier(.6,0,.2,1) forwards; }
+  #t.on .iris .ring { animation: ring var(--cover) ease-out forwards; }
+  #t.off .iris .c { clip-path: circle(80% at 50% 50%); animation: iris-out var(--reveal) cubic-bezier(.6,0,.2,1) forwards; }
+  @keyframes iris-in { to { clip-path: circle(80% at 50% 50%); } }
+  @keyframes iris-out { to { clip-path: circle(0% at 50% 50%); } }
+  @keyframes ring { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(240); } }
+
+  /* ---------- shutter: wrota zatrzaskują się z góry i z dołu (Red Alert, Generals, Deadlock, Zarin) ---------- */
+  .shutter .h { left: 0; right: 0; height: 51%; background: linear-gradient(180deg, #3a3a40, #1a1a1e); box-shadow: inset 0 0 0 2px #0a0a0c; }
+  .shutter .h::after { content: ""; position: absolute; left: 0; right: 0; height: 26px; background: repeating-linear-gradient(-45deg, var(--accent) 0 26px, #111 26px 52px); }
+  .shutter .h::before { content: ""; position: absolute; inset: 30px 40px; background: radial-gradient(circle, #6a6a70 5px, transparent 6px) 0 0 / 160px 100%; opacity: .7; }
+  .shutter .top { top: 0; transform: translateY(-102%); } .shutter .top::after { bottom: 0; }
+  .shutter .bot { bottom: 0; transform: translateY(102%); } .shutter .bot::after { top: 0; }
+  #t.on .shutter .h { animation: sh-in var(--cover) cubic-bezier(.8,0,.6,1.25) forwards; }
+  #t.on.k-shutter { animation: slam .25s calc(var(--cover) - 60ms) both; }
+  #t.off .shutter .h { transform: none; animation: sh-out var(--reveal) cubic-bezier(.5,0,.4,1) forwards; }
+  #t.off .shutter .top { animation-name: sh-out-top; } #t.off .shutter .bot { animation-name: sh-out-bot; }
+  @keyframes sh-in { to { transform: none; } }
+  @keyframes sh-out-top { to { transform: translateY(-102%); } }
+  @keyframes sh-out-bot { to { transform: translateY(102%); } }
+  @keyframes slam { 0% { transform: none; } 30% { transform: translateY(6px); } 60% { transform: translateY(-3px); } 100% { transform: none; } }
+
+  /* ---------- doors / thread: zasuwane drzwi (Toro – shoji) albo jedwabne kotary z nicią (Hollow Knight) ---------- */
+  .doors .d { top: 0; bottom: 0; width: 51%; }
+  .doors .l { left: 0; transform: translateX(-102%); } .doors .r { right: 0; transform: translateX(102%); }
+  .doors.shoji .d { background-color: #efe6cf; background-image: linear-gradient(#5a3a22 6px, transparent 6px), linear-gradient(90deg, #5a3a22 6px, transparent 6px);
+    background-size: 160px 180px; box-shadow: inset 0 0 0 10px #4a2e1a, inset 0 0 120px rgba(255,200,100,.35); }
+  .doors.silk .d { background: linear-gradient(90deg, #0b1020, #182038 60%, #0b1020); }
+  .doors.silk .d::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(232,238,247,.05) 0 3px, transparent 3px 22px); }
+  .doors .needle { top: 50%; left: -10%; width: 22%; height: 3px; margin-top: -1px; background: linear-gradient(90deg, transparent, #e8eef7 40%, #fff); box-shadow: 0 0 18px #fff, 0 0 40px var(--accent2); opacity: 0; z-index: 4; }
+  #t.on .doors .d { animation: dr-in var(--cover) cubic-bezier(.65,0,.35,1) forwards; }
+  #t.on .doors .needle { animation: needle var(--cover) ease-in forwards; }
+  #t.off .doors .d { transform: none; animation: dr-out var(--reveal) cubic-bezier(.65,0,.35,1) forwards; }
+  #t.off .doors .l { animation-name: dr-out-l; } #t.off .doors .r { animation-name: dr-out-r; }
+  @keyframes dr-in { to { transform: none; } }
+  @keyframes dr-out-l { to { transform: translateX(-102%); } }
+  @keyframes dr-out-r { to { transform: translateX(102%); } }
+  @keyframes needle { 0% { opacity: 1; left: -25%; } 100% { opacity: 0; left: 110%; } }
+
+  /* ---------- ink: ciemność zaciska się od krawędzi, na środku drży pochodnia (Darkest Dungeon, Talisman) ---------- */
+  .ink .dark { inset: 0; background: radial-gradient(circle at 50% 50%, transparent calc(var(--r) - 25%), #050303 var(--r)); }
+  .ink .torch { left: 50%; top: 50%; width: 900px; height: 900px; margin: -450px; border-radius: 50%; opacity: 0;
+    background: radial-gradient(circle, rgba(255,170,70,.32), rgba(196,48,43,.12) 40%, transparent 70%); mix-blend-mode: screen; }
+  #t.on .ink .dark { animation: ink-in var(--cover) cubic-bezier(.5,0,.6,1) forwards; }
+  #t.hold .ink .torch { opacity: 1; animation: torch 1.1s steps(8) infinite; }
+  #t.off .ink .dark { --r: -30%; animation: ink-out var(--reveal) cubic-bezier(.4,0,.5,1) forwards; }
+  @keyframes ink-in { from { --r: 160%; } to { --r: -30%; } }
+  @keyframes ink-out { from { --r: -30%; } to { --r: 160%; } }
+  @keyframes torch { 0%, 100% { transform: scale(1); opacity: .9; } 30% { transform: scale(1.05); opacity: 1; } 55% { transform: scale(.97); opacity: .8; } 80% { transform: scale(1.03); } }
+  .k-ink #txt .lab { color: #e8dcc6; text-shadow: 0 0 30px rgba(232,163,61,.55), 0 3px 0 #000; font-weight: 400; }
+  .k-ink #txt .line { font-style: italic; color: #c9b89a; font-size: 34px; }
+
+  /* ---------- holo: skan hologramu z siatką heksów (Mass Effect, Warframe, Tiberium) ---------- */
+  .holo .p { inset: 0; background-color: color-mix(in srgb, var(--accent) 12%, #04070c);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='97'%3E%3Cpath d='M28 0 L56 16 L56 48 L28 64 L0 48 L0 16 Z M28 64 L28 97' fill='none' stroke='white' stroke-opacity='.10' stroke-width='1.5'/%3E%3C/svg%3E");
+    clip-path: inset(0 0 100% 0); }
+  .holo .scan { left: 0; right: 0; height: 6px; top: 0; background: var(--accent); box-shadow: 0 0 30px 8px color-mix(in srgb, var(--accent) 70%, transparent); opacity: 0; z-index: 3; }
+  #t.on .holo .p { animation: holo-in var(--cover) cubic-bezier(.5,0,.5,1) forwards; }
+  #t.on .holo .scan { animation: scan-in var(--cover) cubic-bezier(.5,0,.5,1) forwards; }
+  #t.hold .holo .p { clip-path: none; animation: flick 2.4s steps(1) infinite; }
+  #t.hold .holo .scan { animation: none; opacity: 0; }
+  #t.off .holo .p { clip-path: inset(0); animation: holo-out var(--reveal) cubic-bezier(.5,0,.5,1) forwards; }
+  #t.off .holo .scan { animation: scan-out var(--reveal) cubic-bezier(.5,0,.5,1) forwards; }
+  @keyframes holo-in { to { clip-path: inset(0); } }
+  @keyframes holo-out { to { clip-path: inset(100% 0 0 0); } }
+  @keyframes scan-in { 0% { opacity: 1; top: 0; } 100% { opacity: 1; top: 100%; } }
+  @keyframes scan-out { 0% { opacity: 1; top: 0; } 100% { opacity: 0; top: 100%; } }
+  @keyframes flick { 0%, 100% { filter: none; } 48% { filter: brightness(1.25); } 50% { filter: none; } }
+
+  /* ---------- flash: granat hukowy (Counter-Strike) ---------- */
+  .flash .w { inset: 0; background: #fff; opacity: 0; }
+  #t.on .flash .w { animation: fl-in 160ms ease-out forwards; animation-delay: calc(var(--cover) - 180ms); }
+  #t.off .flash .w { opacity: 1; animation: fl-out var(--reveal) ease-in forwards; }
+  @keyframes fl-in { to { opacity: 1; } }
+  @keyframes fl-out { 0% { opacity: 1; filter: blur(0); } 100% { opacity: 0; } }
+  .k-flash #txt { color: #1a1a1a; } .k-flash #txt .lab { text-shadow: none; }
+
+  /* ---------- eq: słupki korektora w rytm (Ragnar) ---------- */
+  .eq { inset: 0; display: flex; gap: 6px; padding: 0 3px; }
+  .eq .b { position: relative; flex: 1; height: 100%; background: linear-gradient(0deg, var(--accent), var(--accent2) 70%, #fff); transform: scaleY(0); transform-origin: bottom; }
+  #t.on .eq .b { animation: eq-in var(--cover) cubic-bezier(.3,1.4,.5,1) forwards; animation-delay: var(--d); }
+  #t.hold .eq .b { transform: none; }
+  #t.off .eq .b { transform: none; transform-origin: top; animation: eq-out var(--reveal) cubic-bezier(.6,0,.4,1) forwards; animation-delay: var(--d); }
+  @keyframes eq-in { 0% { transform: scaleY(0); } 60% { transform: scaleY(1.04); } 100% { transform: scaleY(1); } }
+  @keyframes eq-out { to { transform: scaleY(0); } }
+  .k-eq #txt .lab { text-shadow: 0 0 40px #000, 0 4px 0 rgba(0,0,0,.5); }
+
+  /* ---------- pixel: rozpad na piksele (Retro, Minecraft) ---------- */
+  .pixel { inset: 0; display: grid; grid-template-columns: repeat(16, 1fr); grid-template-rows: repeat(9, 1fr); }
+  .pixel .q { background: var(--dark); transform: scale(0); }
+  .pixel .q:nth-child(3n) { background: color-mix(in srgb, var(--accent) 35%, var(--dark)); }
+  #t.on .pixel .q { animation: px-in 140ms steps(2) forwards; animation-delay: var(--d); }
+  #t.off .pixel .q { transform: none; animation: px-out 140ms steps(2) forwards; animation-delay: var(--d); }
+  @keyframes px-in { to { transform: scale(1.02); } }
+  @keyframes px-out { to { transform: scale(0); } }
+  .k-pixel #txt { font-family: 'Press Start 2P', monospace; } .k-pixel #txt .lab { font-size: 54px; } .k-pixel #txt .line { font-size: 20px; }
+
+  /* ---------- ograniczone animacje: zwykłe przenikanie ---------- */
+  .fade .f { inset: 0; background: var(--dark); opacity: 0; }
+  #t.on .fade .f { animation: fl-in var(--cover) ease forwards; }
+  #t.off .fade .f { opacity: 1; animation: fl-out var(--reveal) ease forwards; }
+</style>
+</head>
+<body>
+<div id="t"><div id="txt"><div class="em"></div><div class="lab"></div><div class="line"></div></div></div>
+<script>
+(() => {
+  const C = window.VMClient, GT = window.OverlayGameThemes, VO = window.OverlayVoices;
+  const $t = document.getElementById('t'), $txt = document.getElementById('txt');
+
+  // rodzaj przejścia: gra > postać > styl bazowy
+  const BY_GAME = { cp: 'glitch', val: 'glitch', cs: 'flash', me: 'holo', wf: 'holo', cnc: 'holo', lol: 'holo', dd: 'ink', tal: 'ink', elden: 'ink',
+    hk: 'thread', pal: 'iris', fn: 'iris', dl: 'shutter', ra: 'shutter', gen: 'shutter', mc: 'pixel', gta: 'wipe' };
+  const BY_PERSONA = { vince: 'blueprint', chip: 'iris', ragnar: 'eq', toro: 'shoji', myr: 'glitch', zarin: 'shutter' };
+  const BY_BASE = { neon: 'wipe', glass: 'wipe', minimal: 'wipe', retro: 'pixel', esport: 'wipe' };
+  const FONT = { vince: "'Archivo', sans-serif", chip: "'Caveat', cursive", ragnar: "'Anton', sans-serif", toro: "'Cormorant Garamond', serif",
+    myr: "'JetBrains Mono', monospace", zarin: "'Saira Stencil One', sans-serif", neon: "'Orbitron', sans-serif", retro: "'Press Start 2P', monospace",
+    esport: "'Teko', sans-serif", glass: "'Inter', sans-serif", minimal: "'Inter', sans-serif" };
+  const SCENE_LABEL = { prep: 'Przygotowania', soon: 'Stream za chwilę', start: 'Zaczynamy', late: 'Mały poślizg', brb: 'Przerwa', brbLate: 'Przerwa', talk: 'Pogadajmy', end: 'Dzięki za dziś', game: 'Teraz gram' };
+  const PORTRAIT = { vince: 'themes/fursona/vince.webp', chip: 'themes/fursona/chip.webp', ragnar: 'themes/fursona/ragnar.webp', toro: 'themes/fursona/toro.webp' };
+
+  function chooseKind(r, forced) {
+    if (forced && forced !== 'auto') return forced;
+    const game = r.game || (r.def && r.def.group !== 'fursona' ? r.def : null);
+    const persona = r.persona || (r.def && r.def.group === 'fursona' ? r.def : null);
+    const gid = game ? (game.variantOf || game.id) : '';
+    if (gid && BY_GAME[gid]) return BY_GAME[gid];
+    if (persona && BY_PERSONA[persona.id]) return BY_PERSONA[persona.id];
+    return BY_BASE[r.cls] || 'wipe';
+  }
+
+  function build(kind) {
+    const old = $t.querySelector('.fx'); if (old) old.remove();
+    const box = document.createElement('div'); box.className = 'fx full';
+    const add = (cls, n = 1, fn) => { for (let i = 0; i < n; i++) { const d = document.createElement('div'); d.className = cls; if (fn) fn(d, i, n); box.appendChild(d); } };
+    switch (kind) {
+      case 'blueprint': box.classList.add('wipe', 'bp'); add('bar b1'); add('bar b2'); add('bar b3'); break;
+      case 'wipe': box.classList.add('wipe'); add('bar b1'); add('bar b2'); add('bar b3'); break;
+      case 'glitch': box.classList.add('glitch');
+        add('s', 14, (d, i, n) => { d.style.top = (i / n * 100) + '%'; d.style.height = (100 / n + 0.3) + '%'; d.style.setProperty('--d', Math.round(Math.random() * 220) + 'ms'); });
+        add('scan'); break;
+      case 'iris': box.classList.add('iris'); add('c'); add('ring'); break;
+      case 'shutter': box.classList.add('shutter'); add('h top'); add('h bot'); break;
+      case 'shoji': box.classList.add('doors', 'shoji'); add('d l'); add('d r'); break;
+      case 'thread': box.classList.add('doors', 'silk'); add('d l'); add('d r'); add('needle'); break;
+      case 'ink': box.classList.add('ink'); add('dark'); add('torch'); break;
+      case 'holo': box.classList.add('holo'); add('p'); add('scan'); break;
+      case 'flash': box.classList.add('flash'); add('w'); break;
+      case 'eq': box.classList.add('eq');
+        add('b', 32, (d, i) => d.style.setProperty('--d', Math.round((Math.sin(i * 0.55) * 0.5 + 0.5) * 260 + (i % 3) * 30) + 'ms')); break;
+      case 'pixel': box.classList.add('pixel');
+        add('q', 144, d => d.style.setProperty('--d', Math.round(Math.random() * 520) + 'ms')); break;
+      default: box.classList.add('fade'); add('f');
+    }
+    $t.insertBefore(box, $txt);
+  }
+
+  let timers = [];
+  const later = (ms, fn) => timers.push(setTimeout(fn, ms));
+
+  function play(ev) {
+    timers.forEach(clearTimeout); timers = [];
+    const s = C.settings();
+    if (s.transitions === false) return;
+    const r = C.applyTheme('');
+    let kind = chooseKind(r, ev.style || s.transitionStyle);
+    if (r.reduced) kind = 'fade';
+    const cover = Math.max(300, Math.min(2000, +ev.cover || 700)), hold = Math.max(300, Math.min(4000, +ev.hold || 900)), reveal = Math.max(300, Math.min(2000, +ev.reveal || 750));
+    document.documentElement.style.setProperty('--cover', cover + 'ms');
+    document.documentElement.style.setProperty('--reveal', reveal + 'ms');
+    // napis: tekst ekranu w głosie postaci / gry (narrator w Darkest Dungeon itd.)
+    const scene = ev.scene === 'brb-late' ? 'brbLate' : (ev.scene || 'start');
+    let label = SCENE_LABEL[scene] || '', line = '';
+    if (scene === 'game' || scene === 'frame') {
+      const det = C.read('obsGameOverlay.detected', {}) || {};
+      label = (det.local && det.local.game && det.local.game.name) || s.game || 'Teraz gram'; line = '';
+    } else if (VO && GT.voiceInfo) {
+      const v = VO.pickMix(GT.voiceInfo(r), 'scene:' + scene, {});
+      if (v && v.label) { label = v.label; line = v.line || ''; }
+    }
+    $txt.querySelector('.lab').textContent = ev.label || label;
+    $txt.querySelector('.line').textContent = ev.label ? (ev.line || '') : line;
+    const persona = r.persona || (r.def && r.def.group === 'fursona' ? r.def : null);
+    const emDef = r.game || r.def;
+    $txt.querySelector('.em').innerHTML = s.transitionText === false ? '' : (persona && PORTRAIT[persona.id] && !r.game ? `<img src="${PORTRAIT[persona.id]}" alt="">` : (emDef && emDef.emblem) || '');
+    $txt.style.display = s.transitionText === false ? 'none' : '';
+    const pid = persona ? persona.id : r.cls;
+    document.documentElement.style.setProperty('--font', getComputedStyle(document.body).getPropertyValue('--scene-font').trim() || FONT[pid] || "'Inter', sans-serif");
+    build(kind);
+    $t.className = 'k-' + (kind === 'shoji' || kind === 'thread' ? 'doors' : kind === 'blueprint' ? 'wipe' : kind);
+    void $t.offsetWidth;
+    $t.classList.add('on');
+    later(cover, () => $t.classList.add('hold'));
+    later(cover + hold, () => { $t.classList.remove('on', 'hold'); void $t.offsetWidth; $t.classList.add('off'); });
+    later(cover + hold + reveal + 400, () => { $t.classList.remove('off'); });
+    window.__vmLastTransition = { kind, label: $txt.querySelector('.lab').textContent, line: $txt.querySelector('.line').textContent };
+  }
+  window.vmTransition = play;
+
+  C.applyTheme('');
+  const done = new Set();
+  C.events(ev => {
+    if (!ev || ev.type !== 'transition' || (ev.at && Date.now() - ev.at > 8000)) return;
+    const k = ev.tid || ev.id; if (k) { if (done.has(k)) return; done.add(k); }
+    play(ev);
+  }, { onSettings: () => C.applyTheme('') });
+
+  // podgląd: ?demo=1 – przejście co 4 s; ?kind=… wymusza rodzaj
+  if (C.param('demo')) {
+    const scenes = ['start', 'brb', 'talk', 'end', 'game'];
+    let i = 0;
+    const go = () => play({ scene: C.param('scene') || scenes[i++ % scenes.length], style: C.param('kind') || 'auto' });
+    go(); setInterval(go, 4200);
+  }
+})();
+</script>
+</body>
+</html>

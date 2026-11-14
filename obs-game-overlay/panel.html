@@ -14,7 +14,7 @@
   /* podgląd i zakładki przyklejone u góry – przewijasz tylko ustawienia */
   .sticky-top { position: sticky; top: 0; z-index: 6; background: var(--bg); display: flex; flex-direction: column; gap: 6px; margin: -10px -10px 0; padding: 10px 10px 4px; box-shadow: 0 8px 12px -10px rgba(0,0,0,.8); }
   .sticky-top.mini .preview-sec { display: none; }
-  .tabs { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 4px; padding: 2px 0 0; background: var(--bg); }
+  .tabs { display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 4px; padding: 2px 0 0; background: var(--bg); }
   .pv-toggle { padding: 8px 10px; font-size: 12px; }
   .tabs button { padding: 8px 4px; font-size: 12px; }
   .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
@@ -33,6 +33,16 @@
   .meter b { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #fff; }
   .meter.talk { box-shadow: 0 0 0 2px var(--accent); }
   #obsScenes button[aria-pressed="true"] { background: #e91916; border-color: #e91916; color: #fff; font-weight: 700; }
+  .flag { border: 1px solid var(--line); border-left: 3px solid var(--warn); border-radius: 6px; padding: 7px 9px; display: flex; flex-direction: column; gap: 4px; background: #1d2027; }
+  .flag.suspect { border-left-color: #ff4d5e; }
+  .flag .fh { display: flex; gap: 8px; align-items: center; } .flag .fh b { color: #fff; } .flag .fh button { margin-left: auto; padding: 4px 9px; font-size: 11px; }
+  .flag .fr { color: var(--muted); font-size: 11px; } .flag q { color: var(--text); font-size: 12px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+  .stat { background: #14161b; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; } .stat b { display: block; font-size: 17px; color: #fff; } .stat span { font-size: 11px; color: var(--muted); }
+  .slist { display: flex; flex-direction: column; gap: 6px; }
+  .srow { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: #1d2027; cursor: pointer; }
+  .srow small { color: var(--muted); grid-column: 1 / -1; } .srow .dl { display: flex; gap: 4px; } .srow .dl a { font-size: 11px; color: var(--accent); }
+  .spark { width: 100%; height: 46px; display: block; }
   .tests { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
   .twcode { font: 700 26px/1.2 ui-monospace, 'Cascadia Mono', Consolas, monospace; letter-spacing: .14em; color: #fff; background: #14161b; border: 1px dashed var(--accent); border-radius: 8px; padding: 10px; text-align: center; user-select: all; }
   code { font-size: 11px; background: #14161b; padding: 1px 5px; border-radius: 4px; }
@@ -90,6 +100,7 @@
 <script src="themes/obsws.js"></script>
 <script src="themes/tiers.js"></script>
 <script src="themes/voices.js"></script>
+<script src="themes/voices-games.js"></script>
 </head>
 <body>
 <main>
@@ -102,6 +113,7 @@
   <nav class="tabs" role="tablist" aria-label="Sekcje panelu">
     <button role="tab" data-tab="live">Na żywo</button>
     <button role="tab" data-tab="look">Wygląd</button>
+    <button role="tab" data-tab="chat">Czat</button>
     <button role="tab" data-tab="conn">Połączenia</button>
     <button role="tab" data-tab="set">Ustawienia</button>
     <button class="pv-toggle" id="pvToggle" title="Zwiń / rozwiń podgląd" aria-pressed="true">▴</button>
@@ -164,6 +176,25 @@
       <input id="socials" type="text" placeholder="twitch.tv/…, @…bsky.social, tiktok: @…">
     </label>
     <label class="check"><input id="sceneHero" type="checkbox"> duża postać / emblemat obok odliczania</label>
+    <details>
+      <summary>Przejścia między ekranami</summary>
+      <label class="check"><input id="transitions" type="checkbox"> animowane przejście przy zmianie ekranu i sceny OBS</label>
+      <label>Rodzaj
+        <select id="transitionStyle">
+          <option value="auto">automatycznie – pasuje do gry albo postaci</option>
+          <option value="wipe">skośne pasy</option><option value="glitch">glitch / sieć</option><option value="iris">koło (przesłona)</option>
+          <option value="shutter">stalowe wrota</option><option value="shoji">drzwi shoji</option><option value="thread">jedwab i nić</option>
+          <option value="ink">ciemność i pochodnia</option><option value="holo">hologram</option><option value="flash">granat hukowy</option>
+          <option value="eq">korektor</option><option value="pixel">piksele</option><option value="blueprint">plan architekta</option>
+        </select>
+      </label>
+      <label class="check"><input id="transitionText" type="checkbox"> napis w trakcie przejścia (tekst postaci / gry – np. narrator)</label>
+      <div class="row">
+        <button id="transTest">Podgląd przejścia</button>
+        <button id="transAdd" data-feature="obs">Dodaj źródło przejść do scen OBS</button>
+      </div>
+      <div class="status" id="transStatus"></div>
+    </details>
   </section>
   <section data-feature="obs">
     <h2>Sceny OBS <span id="obsLive" class="pill off"></span></h2>
@@ -255,11 +286,13 @@
     <div class="checks">
       <label style="flex-basis:100%">Gdy gra ma własny motyw
         <select id="gameMode">
-          <option value="fuse">Postać bazą, gra dodatkiem (66:33) – np. Ragnar w motywie gry</option>
-          <option value="fuse-half">Pół na pół (50:50) – wymieszane kolory i teksty</option>
-          <option value="fuse-game">Gra bazą, postać dodatkiem (33:66) – np. gra w motywie Ragnara</option>
+          <option value="fuse-half">Fuzja pół na pół (50:50) – wymieszane kolory i teksty</option>
           <option value="game">Sam motyw gry</option>
           <option value="off">Ignoruj motywy gier</option>
+          <optgroup label="Eksperymentalne (do dopracowania)">
+            <option value="fuse">Postać bazą, gra dodatkiem (66:33)</option>
+            <option value="fuse-game">Gra bazą, postać dodatkiem (33:66)</option>
+          </optgroup>
         </select>
       </label>
       <label class="check"><input id="reducedMotion" type="checkbox"> ogranicz animacje</label>
@@ -280,6 +313,47 @@
       <label>Obrazek „cisza” (URL albo file:///…)<input id="avatarIdle" type="text" placeholder="puste = art aktywnej postaci"></label>
       <label>Obrazek „mówię”<input id="avatarTalk" type="text" placeholder="puste = ten sam z animacją"></label>
     </details>
+  </section>
+  </div>
+  <div class="tab" data-tab="chat">
+  <section>
+    <h2>Czat na ekranie</h2>
+    <label>Gra na pełnym ekranie – jak pokazać czat
+      <select id="gameChat">
+        <option value="ticker">pasek przewijany w bok (jak w wiadomościach) – nie zasłania gry</option>
+        <option value="bubbles">dymki w rogu (wyskakują i znikają)</option>
+        <option value="off">bez czatu</option>
+      </select>
+    </label>
+    <div class="row">
+      <label>Pasek
+        <select id="tickerPos"><option value="bottom">na dole</option><option value="top">na górze</option></select>
+      </label>
+      <label>Prędkość <span id="tickerSpeedVal"></span>
+        <input id="tickerSpeed" type="range" min="70" max="320" step="10">
+      </label>
+    </div>
+    <label class="check"><input id="botHide" type="checkbox"> nie pokazuj na ekranie wiadomości z flagą „podejrzane” (świeże konto, reklama widzów…)</label>
+    <div class="row"><button data-ct="chat">Test: wiadomość</button><button data-ct="chatbot">Test: podejrzana</button></div>
+    <p class="hint" style="margin:0">W ramce i w rozmowie czat jest zawsze widoczny obok. Osobne źródło: <code>chat.html?mode=ticker</code>.</p>
+  </section>
+  <section data-feature="local">
+    <h2>Podejrzane konta <span id="flagPill" class="pill off"></span></h2>
+    <p class="hint" style="margin:0">Flaga to podpowiedź, nie wyrok. Liczą się: wiek konta (z Twitcha), link albo reklama widzów na początku znajomości, ogólnikowe „fajnie grasz” na dzień dobry, pisanie o graniu, gdy kategoria to np. Art / Blender, i ten sam tekst od kilku kont. Subskrybenci, VIP-y i moderatorzy nie są oceniani.</p>
+    <div class="slist" id="flagList"></div>
+  </section>
+  <section data-feature="local">
+    <h2>Statystyki streamów <span id="livePill" class="pill off"></span></h2>
+    <div class="stats" id="curStats"></div>
+    <svg class="spark" id="curSpark" viewBox="0 0 300 46" preserveAspectRatio="none" aria-hidden="true"></svg>
+    <div class="slist" id="streamList"></div>
+    <p class="hint" style="margin:0">Zapis: <code>%LOCALAPPDATA%\Vincent-Media\obs-game-overlay\detector\data\archive</code>. SRT to napisy z czatem do nagrania (czas od startu streama).</p>
+  </section>
+  <section data-feature="obs">
+    <h2>Nagrywanie <span id="recPill" class="pill off"></span></h2>
+    <label class="check"><input id="autoRecord" type="checkbox"> nagrywaj lokalnie, gdy zaczynasz stream (OBS)</label>
+    <label class="check"><input id="autoRecordStop" type="checkbox"> zatrzymaj nagranie, gdy stream się kończy</label>
+    <p class="hint" style="margin:0">Twitch trzyma VOD-y tylko 7 dni (afilianci 14, partnerzy 60) – lokalne nagranie zostaje na zawsze. Włącz też na Twitchu „Zapisuj poprzednie transmisje”, a najlepsze fragmenty zapisuj jako Najciekawsze momenty (nie wygasają).</p>
   </section>
   </div>
   <div class="tab" data-tab="conn">
@@ -425,15 +499,19 @@
     accent: '', accent2: '', mode: 'auto', discordId: '', ignore: '',
     timer: true, icon: true, showLabel: true, visible: true, scale: 1, margin: 40,
     local: true, localUrl: 'http://localhost:7777',
-    gameThemes: true, gameMode: 'fuse', motion: 'full',
+    gameThemes: true, gameMode: 'fuse-half', fuseV: 2, motion: 'full', transitions: true, transitionStyle: 'auto', transitionText: true,
     features: { discord: false, twitch: true, obs: true },
     scene: 'start', sceneUntil: 0, sceneSub: '', socials: '', sceneHero: true,
     alertPos: 'tc', alertScale: 1.25, alertDuration: 6, alertVolume: 0.5,
-    alertTypes: { follow: true, sub: true, resub: true, gift: true, cheer: true, raid: true, redeem: true }
+    alertTypes: { follow: true, sub: true, resub: true, gift: true, cheer: true, raid: true, redeem: true },
+    gameChat: 'ticker', tickerPos: 'bottom', tickerSpeed: 140, botHide: true, autoRecord: false, autoRecordStop: true
   };
   const $ = id => document.getElementById(id);
   const load = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
-  let s = { ...DEFAULTS, ...load(KEY, {}) };
+  // v1.15: domyślna fuzja to 50:50; proporcje 66:33 / 33:66 są eksperymentalne (zostają tylko, jeśli ktoś wybrał je świadomie)
+  const migrate = st => { if (st.fuseV !== 2) { if (!st.gameMode || st.gameMode === 'fuse') st.gameMode = 'fuse-half'; st.fuseV = 2; } return st; };
+  let s = { ...DEFAULTS, ...migrate(load(KEY, {})) };
+  try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {}
   let history = load(HISTORY_KEY, []);
   let bc = null; try { bc = new BroadcastChannel('obsGameOverlay'); } catch {}
 
@@ -465,7 +543,7 @@
       if (!j.settings && hubRev === null) { hubRev = 0; pushHub(); }          // pierwszy raz: wyślij ustawienia z OBS
       else if (j.settings && j.rev !== hubRev && j.from !== CLIENT) {
         hubRev = j.rev;
-        s = { ...DEFAULTS, ...j.settings };
+        s = { ...DEFAULTS, ...migrate(j.settings) };
         try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {}
         if (bc) bc.postMessage('update');
         syncUi();
@@ -540,11 +618,12 @@
   $('autoColor').addEventListener('change', () => { s.accent = $('autoColor').checked ? '' : $('accent').value; save(); });
 
   function syncUi() {
+    if (typeof syncChatUi === 'function') syncChatUi();
     if (document.activeElement !== $('game') && !$('game').value) $('game').value = s.game;
     for (const id of ['label', 'discordId', 'ignore', 'localUrl']) if (document.activeElement !== $(id)) $(id).value = s[id];
     $('mode').value = s.mode; $('theme').value = s.theme; $('position').value = s.position;
     $('local').checked = s.local;
-    $('gameMode').value = s.gameThemes === false ? 'off' : (s.gameMode || 'fuse');
+    $('gameMode').value = s.gameThemes === false ? 'off' : (s.gameMode || 'fuse-half');
     $('reducedMotion').checked = s.motion === 'reduced';
     $('timer').checked = s.timer; $('icon').checked = s.icon; $('showLabel').checked = s.showLabel;
     $('scale').value = s.scale; $('scaleVal').textContent = Math.round(s.scale * 100) + '%';
@@ -677,7 +756,7 @@
     if (!s.showLabel) q.set('showLabel', '0');
     if (!s.local) q.set('local', '0');
     if (s.gameThemes === false) q.set('gameThemes', '0');
-    if (s.gameMode && s.gameMode !== 'fuse') q.set('gameMode', s.gameMode);
+    if (s.gameMode && s.gameMode !== 'fuse-half') q.set('gameMode', s.gameMode);
     if (s.motion === 'reduced') q.set('motion', 'reduced');
     if (s.localUrl !== DEFAULTS.localUrl) q.set('localUrl', s.localUrl);
     $('staticUrl').value = u.href;
@@ -694,10 +773,26 @@
     const b = e.target.closest('button'); if (!b) return;
     s.scene = b.dataset.s;
     if (s.scene === 'late' || s.scene === 'brb-late') s.sceneLateAt = s.sceneUntil && s.sceneUntil < Date.now() ? s.sceneUntil : Date.now();
-    save();
     const target = OBS_SCENE_FOR[s.scene];
-    if (obs && s.obsAutoScene !== false && obsSceneList.includes(target)) obs.setScene(target).catch(() => {});
+    const toObs = obs && s.obsAutoScene !== false && obsSceneList.includes(target);
+    // przejście: najpierw zasłona, potem zmiana ekranu (i sceny OBS), na końcu odsłonięcie
+    goScene(s.scene, () => { save(); if (toObs) obs.setSceneCut(target).catch(() => {}); });
   });
+
+  // --- przejścia ---
+  const KIND_FOR_OBS = { 'VM · Gra – pełny ekran': 'game', 'VM · Gra – w ramce': 'game', 'VM · Rozmowa': 'talk', 'VM · Nakładki': 'game' };
+  for (const [k, v] of Object.entries(OBS_SCENE_FOR)) if (!KIND_FOR_OBS[v]) KIND_FOR_OBS[v] = k;
+  const isRemote = /^https?:$/.test(location.protocol) && location.pathname.indexOf('/ui/') === 0;
+  function sendTransition(scene) {
+    const ev = { type: 'transition', scene, style: s.transitionStyle || 'auto', at: Date.now(), tid: Math.random().toString(36).slice(2) };
+    if (isRemote) fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/transition?scene=' + encodeURIComponent(scene) + '&style=' + encodeURIComponent(ev.style), { cache: 'no-store' }).catch(() => {});
+    else if (bc) bc.postMessage({ type: 'alert', event: ev });
+    return isRemote ? 1900 : 760;     // telefon: zdarzenie idzie przez wykrywacz (do 1 s opóźnienia)
+  }
+  function goScene(scene, apply) {
+    if (s.transitions === false) { apply(); return; }
+    setTimeout(apply, sendTransition(scene));
+  }
 
   // --- OBS: sceny, mikrofon, próg głosu ---
   let obs = null, obsSceneList = [], obsMics = new Set(), obsLevel = -100, obsTalk = false;
@@ -707,7 +802,7 @@
     for (const name of list) {
       const b = document.createElement('button'); b.textContent = name.replace(/^VM · /, ''); b.title = name;
       b.setAttribute('aria-pressed', name === current);
-      b.onclick = () => obs && obs.setScene(name).catch(() => {});
+      b.onclick = () => obs && goScene(KIND_FOR_OBS[name] || 'game', () => obs.setSceneCut(name).catch(() => {}));
       box.appendChild(b);
     }
     pill('obsLive', !!current, current ? 'NA ŻYWO: ' + current.replace(/^VM · /, '') : '');
@@ -724,9 +819,24 @@
         if (!obsMics.has(name)) { obsMics.add(name); const o = document.createElement('option'); o.value = o.textContent = name; $('obsMic').appendChild(o); $('obsMic').value = s.obsMic || ''; }
         if (!s.obsMic || name === s.obsMic) obsLevel = db;
       },
-      onTalking: t => { obsTalk = t; }
+      onTalking: t => { obsTalk = t; },
+      onReady: () => obsRecStatus(),
+      // nagrywanie razem ze streamem: start po starcie streama, stop po końcu (jeśli włączone)
+      onOutput: async (t, d) => {
+        if (t === 'RecordStateChanged') { obsRecStatus(); return; }
+        if (!s.autoRecord || !obs) return;
+        try {
+          const rec = await obs.call('GetRecordStatus');
+          if (d.outputState === 'OBS_WEBSOCKET_OUTPUT_STARTED' && !rec.outputActive) await obs.call('StartRecord');
+          if (d.outputState === 'OBS_WEBSOCKET_OUTPUT_STOPPED' && rec.outputActive && s.autoRecordStop !== false) await obs.call('StopRecord');
+        } catch {}
+      }
     });
   }
+  async function obsRecStatus() {
+    try { const r = await obs.call('GetRecordStatus'); pill('recPill', r.outputActive, 'NAGRYWA ' + (r.outputTimecode || '').slice(0, 8), 'NIE NAGRYWA'); } catch {}
+  }
+  setInterval(() => { if (obs && !document.querySelector('.tab[data-tab="chat"]').hidden) obsRecStatus(); }, 5000);
   // wskaźnik poziomu: -60…-10 dB
   setInterval(() => {
     const pct = v => Math.max(0, Math.min(100, (v + 60) / 50 * 100));
@@ -739,6 +849,41 @@
   $('micThreshold').oninput = () => { s.micThreshold = +$('micThreshold').value; $('thrVal').textContent = s.micThreshold + ' dB'; save(); };
   $('micThreshold').onchange = () => obsStart();
   $('obsAutoScene').onchange = () => { s.obsAutoScene = $('obsAutoScene').checked; save(); };
+  $('transitions').onchange = () => { s.transitions = $('transitions').checked; save(); };
+  $('transitionText').onchange = () => { s.transitionText = $('transitionText').checked; save(); };
+  $('transitionStyle').onchange = () => { s.transitionStyle = $('transitionStyle').value; save(); };
+  $('transTest').onclick = () => sendTransition(s.scene || 'start');
+  // dla starszych instalacji: źródło „VM · Przejścia” na wierzch każdej sceny VM przez OBS WebSocket
+  $('transAdd').onclick = async () => {
+    const st = $('transStatus');
+    if (!obs) { st.textContent = 'Brak połączenia z OBS.'; return; }
+    if (!/^file:/.test(location.protocol)) { st.textContent = 'To działa z doku w OBS (panel otwarty z dysku).'; return; }
+    const NAME = 'VM · Przejścia', url = new URL('transition.html', location.href).href;
+    try {
+      const inputs = (await obs.call('GetInputList')).inputs || [];
+      let made = !inputs.some(i => i.inputName === NAME);
+      const scenes = obsSceneList.filter(n => n.indexOf('VM · ') === 0);
+      if (!scenes.length) { st.textContent = 'Nie widzę scen „VM · …” – uruchom instalator.'; return; }
+      let added = 0;
+      for (const sc of scenes) {
+        const items = (await obs.call('GetSceneItemList', { sceneName: sc })).sceneItems || [];
+        if (items.some(i => i.sourceName === NAME)) continue;
+        let id;
+        if (made) {
+          id = (await obs.call('CreateInput', { sceneName: sc, inputName: NAME, inputKind: 'browser_source', inputSettings: { url, width: 1920, height: 1080, is_local_file: false, css: 'body { background-color: rgba(0, 0, 0, 0); margin: 0px auto; overflow: hidden; }' } })).sceneItemId;
+          made = false;
+        } else id = (await obs.call('CreateSceneItem', { sceneName: sc, sourceName: NAME })).sceneItemId;
+        try {
+          const vs = await obs.call('GetVideoSettings');
+          await obs.call('SetSceneItemTransform', { sceneName: sc, sceneItemId: id, sceneItemTransform: { boundsType: 'OBS_BOUNDS_STRETCH', boundsWidth: vs.baseWidth, boundsHeight: vs.baseHeight, positionX: 0, positionY: 0 } });
+          const n = (await obs.call('GetSceneItemList', { sceneName: sc })).sceneItems.length;
+          await obs.call('SetSceneItemIndex', { sceneName: sc, sceneItemId: id, sceneItemIndex: n - 1 });
+        } catch (e) {}
+        added++;
+      }
+      st.textContent = added ? `Dodano do ${added} scen ✓` : 'Źródło przejść już jest we wszystkich scenach VM ✓';
+    } catch (e) { st.textContent = 'OBS odmówił: ' + e.message; }
+  };
   for (const id of ['obsUrl', 'obsPassword']) $(id).addEventListener('change', () => { s[id] = $(id).value.trim(); save(); obsStart(); });
   $('sceneAt').addEventListener('change', () => { const t = new Date($('sceneAt').value).getTime(); s.sceneAt = isNaN(t) ? 0 : t; save(); });
   $('autoLate').addEventListener('change', () => { s.autoLate = $('autoLate').checked; save(); });
@@ -758,6 +903,9 @@
     $('sceneHero').checked = s.sceneHero !== false;
     $('autoLate').checked = s.autoLate !== false;
     $('obsAutoScene').checked = s.obsAutoScene !== false;
+    $('transitions').checked = s.transitions !== false;
+    $('transitionText').checked = s.transitionText !== false;
+    $('transitionStyle').value = s.transitionStyle || 'auto';
     $('micThreshold').value = s.micThreshold ?? -38; $('thrVal').textContent = (s.micThreshold ?? -38) + ' dB';
     for (const id of ['obsUrl', 'obsPassword']) if (document.activeElement !== $(id)) $(id).value = s[id] || '';
     for (const id of ['talkTopic', 'avatarIdle', 'avatarTalk']) if (document.activeElement !== $(id)) $(id).value = s[id] || '';
@@ -817,7 +965,9 @@
       chat: (() => { const t = sampleMsg();
         const st = ['', 'neon', 'pixel', 'komiks', 'terminal', 'papier', 'holo', 'sakura', 'ogien', 'lod', 'szklo'][Math.floor(Math.random() * 11)];
         return { type, user, text: t, fragments: [{ t: 'text', v: t }], style: st, badges: Math.random() < .3 ? ['subscriber'] : [] }; })(),
-      effect: { type, user, effect: ['konfetti', 'serca', 'gwiazdy', 'fajerwerki', 'iskry', 'babelki'][Math.floor(Math.random() * 6)] }
+      effect: { type, user, effect: ['konfetti', 'serca', 'gwiazdy', 'fajerwerki', 'iskry', 'babelki'][Math.floor(Math.random() * 6)] },
+      chatbot: { type: 'chat', user: 'nowe_konto_2077', text: 'fajnie grasz! best viewers on streamboo .com', fragments: [{ t: 'text', v: 'fajnie grasz! best viewers on streamboo .com' }],
+        flag: { level: 'suspect', score: 9, reasons: ['konto ma 7 h', 'link na początku znajomości', 'tekst jak z reklamy widzów/followów', 'ogólnikowe „fajny stream” na dzień dobry'] } }
     })[type];
   }
   $('tests').addEventListener('click', async e => {
@@ -825,13 +975,76 @@
     const type = t.dataset.t;
     let tier = +$('testTier').value || 0;
     if (!tier && ['cheer', 'gift', 'resub', 'raid', 'redeem', 'sub'].includes(type)) tier = 1 + Math.floor(Math.random() * 5);
-    // najpierw przez wykrywacz (ta sama droga co prawdziwe alerty), a bez niego – bezpośrednio do nakładek
+    runTest(type, tier);
+  });
+  // najpierw przez wykrywacz (ta sama droga co prawdziwe alerty), a bez niego – bezpośrednio do nakładek
+  async function runTest(type, tier) {
     try {
       if (!s.local) throw 0;
-      const r = await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/test?type=' + type + (tier ? '&tier=' + tier : '') + '&msg=' + encodeURIComponent(sampleMsg()), { cache: 'no-store' });
+      const msg = type === 'chatbot' ? '' : '&msg=' + encodeURIComponent(sampleMsg());
+      const r = await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/test?type=' + type + (tier ? '&tier=' + tier : '') + msg, { cache: 'no-store' });
       if (!r.ok) throw 0;
     } catch { if (bc) bc.postMessage({ type: 'alert', event: fakeEvent(type, tier) }); }
+  }
+
+  // --- czat na ekranie, moderacja, statystyki, nagrywanie ---
+  document.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => runTest(b.dataset.ct, 0));
+  $('gameChat').onchange = () => { s.gameChat = $('gameChat').value; save(); };
+  $('tickerPos').onchange = () => { s.tickerPos = $('tickerPos').value; save(); };
+  $('tickerSpeed').oninput = () => { s.tickerSpeed = +$('tickerSpeed').value; $('tickerSpeedVal').textContent = s.tickerSpeed + ' px/s'; };
+  $('tickerSpeed').onchange = () => save();
+  $('botHide').onchange = () => { s.botHide = $('botHide').checked; save(); };
+  $('autoRecord').onchange = () => { s.autoRecord = $('autoRecord').checked; save(); };
+  $('autoRecordStop').onchange = () => { s.autoRecordStop = $('autoRecordStop').checked; save(); };
+  function syncChatUi() {
+    $('gameChat').value = s.gameChat || 'ticker'; $('tickerPos').value = s.tickerPos || 'bottom';
+    $('tickerSpeed').value = s.tickerSpeed || 140; $('tickerSpeedVal').textContent = (s.tickerSpeed || 140) + ' px/s';
+    $('botHide').checked = s.botHide !== false; $('autoRecord').checked = !!s.autoRecord; $('autoRecordStop').checked = s.autoRecordStop !== false;
+  }
+  const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const fmtMin = m => m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;
+  function spark(svg, pts) {
+    const v = (pts || []).map(p => +p.v || 0);
+    if (v.length < 2) { svg.innerHTML = ''; return; }
+    const mx = Math.max(1, ...v), step = 300 / (v.length - 1);
+    const d = v.map((y, i) => `${(i * step).toFixed(1)},${(44 - y / mx * 40).toFixed(1)}`).join(' ');
+    svg.innerHTML = `<polyline points="0,46 ${d} 300,46" fill="color-mix(in srgb, var(--accent) 25%, transparent)" stroke="none"/><polyline points="${d}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+  }
+  function statsHtml(c) {
+    const it = [['widzowie teraz', c.viewersNow], ['szczyt', c.peak], ['średnio', c.avgViewers], ['wiadomości', c.msgs], ['czatownicy', c.chatters], ['nowi na czacie', c.newChatters],
+      ['follow', c.follows], ['suby', c.subs], ['gifty', c.gifts], ['bitsy', c.bits], ['raidy', c.raids], ['czas', c.minutes != null ? fmtMin(c.minutes) : null]];
+    return it.filter(([, v]) => v != null && v !== '').map(([k, v]) => `<div class="stat"><b>${esc(v)}</b><span>${k}</span></div>`).join('');
+  }
+  async function loadArchive() {
+    if (!s.local || document.querySelector('.tab[data-tab="chat"]').hidden) return;
+    let j; try { j = await (await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/archive', { cache: 'no-store' })).json(); } catch { return; }
+    const cur = j.current;
+    pill('livePill', !!(j.channel && j.channel.live), j.channel && j.channel.live ? 'NA ŻYWO' : '', 'OFFLINE');
+    $('curStats').innerHTML = cur ? statsHtml({ ...cur, viewersNow: j.channel && j.channel.live ? j.channel.viewers : null }) : '<p class="hint" style="margin:0">Brak zapisu – zacznie się z pierwszą wiadomością albo startem streama.</p>';
+    spark($('curSpark'), cur && cur.viewers);
+    // podejrzane: z bieżącego streama
+    const fl = (cur && cur.flagged) || [];
+    pill('flagPill', !fl.length, fl.length ? '' : 'CZYSTO', fl.length + ' DO SPRAWDZENIA');
+    $('flagList').innerHTML = fl.length ? fl.slice().reverse().map(f => `<div class="flag ${f.level === 'suspect' ? 'suspect' : ''}">
+        <div class="fh"><b>${esc(f.name)}</b><span class="pill ${f.level === 'suspect' ? 'off' : ''}">${f.level === 'suspect' ? 'podejrzane' : 'do sprawdzenia'}</span>
+        <button data-trust="${esc(f.login)}">Zaufaj</button></div>
+        <q>${esc(f.text)}</q><div class="fr">${(f.reasons || []).map(esc).join(' · ')}</div></div>`).join('') : '<p class="hint" style="margin:0">Nic podejrzanego na tym streamie.</p>';
+    const hub = window.vmHub(s.localUrl || DEFAULTS.localUrl), key = isRemote ? '' : '';
+    $('streamList').innerHTML = (j.streams || []).map(st => {
+      const d = new Date(st.start), when = d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+      const what = [st.category, ...(st.games || [])].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ');
+      const ex = f => `<a href="${hub}/archive/export?id=${encodeURIComponent(st.id)}&fmt=${f}${key}" target="_blank">${f.toUpperCase()}</a>`;
+      return `<div class="srow"><b>${st.live ? when : 'Poza streamem ' + esc(st.id.replace('poza-streamem-', ''))}</b><span class="dl">${ex('txt')}${ex('srt')}${ex('json')}</span>
+        <small>${st.live ? fmtMin(st.minutes || 0) + ' · ' : ''}${st.live ? 'szczyt ' + (st.peak || 0) + ' · ' : ''}${st.msgs || 0} wiad. · ${st.chatters || 0} os. (nowych ${st.newChatters || 0})${(st.flagged || []).length ? ' · ⚑ ' + st.flagged.length : ''}${what ? ' · ' + esc(what) : ''}</small></div>`;
+    }).join('') || '<p class="hint" style="margin:0">Jeszcze nic nie zapisano.</p>';
+  }
+  $('flagList').addEventListener('click', async e => {
+    const b = e.target.closest('[data-trust]'); if (!b) return;
+    try { await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/archive/trust?on=1&login=' + encodeURIComponent(b.dataset.trust), { cache: 'no-store' }); } catch {}
+    loadArchive();
   });
+  setInterval(loadArchive, 15000);
+  document.querySelector('.tabs button[data-tab="chat"]').addEventListener('click', () => setTimeout(loadArchive, 50));
   // szybkie powiadomienia (dwa przełączniki: w sekcji Alerty i na podglądzie)
   const setFast = on => { s.alertFast = !!on; save(); };
   $('alertFast').onchange = () => setFast($('alertFast').checked);
@@ -903,6 +1116,7 @@
   const SUBS = {
     live: [['Gra', ['Gra']], ['Ekrany', ['Ekrany', 'Sceny OBS']], ['Alerty', ['Alerty']]],
     look: [['Karta', ['Wygląd']], ['Avatar', ['Avatar / kamerka']]],
+    chat: [['Na ekranie', ['Czat na ekranie']], ['Moderacja', ['Podejrzane konta']], ['Statystyki', ['Statystyki streamów']], ['Nagrywanie', ['Nagrywanie']]],
     conn: [['Gra', ['Wykrywanie gier', 'Lokalny wykrywacz']], ['OBS', ['OBS (WebSocket)']], ['Twitch', ['Twitch']], ['Discord', ['Discord (Lanyard)']]],
     set: [['Funkcje', ['Funkcje']], ['Telefon', ['Pilot z telefonu']], ['Wersja', ['Wersja']], ['Źródła', ['Źródła w OBS', '']]]
   };

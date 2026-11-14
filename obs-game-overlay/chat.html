@@ -14,7 +14,7 @@
 <script src="themes/chat.js"></script>
 <script src="themes/client.js"></script>
 <style>
-  /* Źródło czatu do OBS.  ?mode=bubbles (domyślnie) – dymki wyskakują i znikają;  ?mode=panel – czat na stałe.
+  /* Źródło czatu do OBS.  ?mode=bubbles (domyślnie) – dymki wyskakują i znikają;  ?mode=panel – czat na stałe;  ?mode=ticker – pasek przewijany w bok (?pos=top – u góry, ?speed=140).
      ?pos=br|bl|tr|tl (dymki), ?life=12 (sekundy), ?width=520 */
   html, body { margin: 0; background: transparent; overflow: hidden; width: 100vw; height: 100vh; }
   #chat { position: absolute; box-sizing: border-box; }
@@ -22,6 +22,8 @@
   .m-bubbles.p-bl #chat { right: auto; left: 40px; } .m-bubbles.p-bl .cmsg { align-self: flex-start; transform-origin: left bottom; }
   .m-bubbles.p-tr #chat { bottom: auto; top: 40px; } .m-bubbles.p-tl #chat { bottom: auto; top: 40px; right: auto; left: 40px; }
   .m-panel #chat { inset: 0; padding: 16px; }
+  .m-ticker #chat { left: 0; right: 0; bottom: 0; }
+  .m-ticker.p-top #chat { top: 0; bottom: auto; }
 </style>
 </head>
 <body>
@@ -29,10 +31,10 @@
 <script>
 (() => {
   const C = window.VMClient;
-  const mode = C.param('mode') === 'panel' ? 'panel' : 'bubbles';
+  const mode = ['panel', 'ticker'].includes(C.param('mode')) ? C.param('mode') : 'bubbles';
   const base = `m-${mode} p-${C.param('pos') || 'br'}`;
   if (C.param('width')) document.documentElement.style.setProperty('--w', parseInt(C.param('width'), 10) + 'px');
-  const chat = window.OverlayChat.mount(document.getElementById('chat'), { mode, life: parseFloat(C.param('life')) || 12 });
+  const chat = window.OverlayChat.mount(document.getElementById('chat'), { mode, life: parseFloat(C.param('life')) || 12, speed: parseFloat(C.param('speed')) || 140 });
   C.applyTheme(base);
   C.events(ev => { if (ev.type === 'chat') { C.applyTheme(base); chat.add(ev); } }, { onSettings: () => C.applyTheme(base) });
 })();

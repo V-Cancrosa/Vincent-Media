@@ -233,7 +233,8 @@ if (-not (Test-Path $ObsDir)) {
                     @{ key = 'end'; name = "${Prefix}Ekran koniec"; url = "$($Urls.scenes)?scene=end"; audio = $false },
                     @{ key = 'lfull'; name = "${Prefix}Układ gra pełny ekran"; url = "$layouts`?layout=game-full"; audio = $false },
                     @{ key = 'lframe'; name = "${Prefix}Układ gra w ramce"; url = "$layouts`?layout=game-frame"; audio = $false },
-                    @{ key = 'ltalk'; name = "${Prefix}Układ rozmowa"; url = "$layouts`?layout=talk"; audio = $false }
+                    @{ key = 'ltalk'; name = "${Prefix}Układ rozmowa"; url = "$layouts`?layout=talk"; audio = $false },
+                    @{ key = 'trans'; name = "${Prefix}Przejścia"; url = (To-Url (Join-Path $InstallDir 'transition.html')); audio = $false }
                 )
                 $S = @{}
                 foreach ($w in $want) {
@@ -245,16 +246,16 @@ if (-not (Test-Path $ObsDir)) {
                 # nasze sceny (zawartość nadpisujemy, żeby były zawsze aktualne)
                 # kolejność elementów: od dołu do góry; w scenach z grą dodaj przechwytywanie gry i przesuń je na sam dół
                 $sceneDefs = @(
-                    @{ name = "${Prefix}Nakładki"; items = @('overlay', 'alerts') },
-                    @{ name = "${Prefix}Przygotowania"; items = @('prep', 'alerts') },
-                    @{ name = "${Prefix}Stream za…"; items = @('soon', 'alerts') },
-                    @{ name = "${Prefix}Zaraz zaczynamy"; items = @('start', 'alerts') },
-                    @{ name = "${Prefix}Spóźnienie"; items = @('late', 'alerts') },
-                    @{ name = "${Prefix}Gra – pełny ekran"; items = @('lfull', 'overlay', 'alerts') },
-                    @{ name = "${Prefix}Gra – w ramce"; items = @('lframe', 'alerts') },
-                    @{ name = "${Prefix}Przerwa"; items = @('brb', 'alerts') },
-                    @{ name = "${Prefix}Rozmowa"; items = @('ltalk', 'alerts') },
-                    @{ name = "${Prefix}Koniec"; items = @('end', 'alerts') }
+                    @{ name = "${Prefix}Nakładki"; items = @('overlay', 'alerts', 'trans') },
+                    @{ name = "${Prefix}Przygotowania"; items = @('prep', 'alerts', 'trans') },
+                    @{ name = "${Prefix}Stream za…"; items = @('soon', 'alerts', 'trans') },
+                    @{ name = "${Prefix}Zaraz zaczynamy"; items = @('start', 'alerts', 'trans') },
+                    @{ name = "${Prefix}Spóźnienie"; items = @('late', 'alerts', 'trans') },
+                    @{ name = "${Prefix}Gra – pełny ekran"; items = @('lfull', 'overlay', 'alerts', 'trans') },
+                    @{ name = "${Prefix}Gra – w ramce"; items = @('lframe', 'alerts', 'trans') },
+                    @{ name = "${Prefix}Przerwa"; items = @('brb', 'alerts', 'trans') },
+                    @{ name = "${Prefix}Rozmowa"; items = @('ltalk', 'alerts', 'trans') },
+                    @{ name = "${Prefix}Koniec"; items = @('end', 'alerts', 'trans') }
                 )
                 $overlayScene = $null
                 foreach ($sd in $sceneDefs) {

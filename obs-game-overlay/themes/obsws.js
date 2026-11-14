@@ -64,7 +64,7 @@
       ws.onmessage = async e => {
         const m = JSON.parse(e.data);
         if (m.op === 0) {
-          const d = { rpcVersion: 1, eventSubscriptions: (opts.onScenes ? 4 : 0) | (opts.onTalking || opts.onLevel ? 65536 : 0) };
+          const d = { rpcVersion: 1, eventSubscriptions: (opts.onScenes ? 4 : 0) | (opts.onOutput ? 64 : 0) | (opts.onTalking || opts.onLevel ? 65536 : 0) };
           if (m.d.authentication) {
             if (!opts.password) { status('OBS wymaga hasła WebSocket', false); ws.close(); return; }
             d.authentication = authString(opts.password, m.d.authentication.salt, m.d.authentication.challenge);
@@ -74,6 +74,7 @@
           retry = 2000; status('połączono z OBS', true);
           if (opts.onTalking || opts.onLevel) pickMic();
           if (opts.onScenes) refreshScenes();
+          if (opts.onReady) opts.onReady();
         } else if (m.op === 5) {
           const t = m.d.eventType, data = m.d.eventData;
           if (t === 'InputVolumeMeters') {
@@ -88,6 +89,8 @@
               const next = now - lastLoud < 280;
               if (next !== talking) { talking = next; opts.onTalking && opts.onTalking(talking); }
             }
+          } else if (t === 'StreamStateChanged' || t === 'RecordStateChanged') {
+            if (opts.onOutput) opts.onOutput(t, data);
           } else if (t === 'CurrentProgramSceneChanged' || t === 'SceneListChanged' || t === 'SceneCreated' || t === 'SceneRemoved' || t === 'SceneNameChanged') refreshScenes();
         } else if (m.op === 7) {
           const p = pending[m.d.requestId]; if (!p) return; delete pending[m.d.requestId];
@@ -104,6 +107,21 @@
     open();
     return {
       setScene: name => request('SetCurrentProgramScene', { sceneName: name }),
+      // przełączenie cięciem (nasze przejście zasłania obraz), potem przywrócenie przejścia użytkownika
+      async setSceneCut(name) {
+        let prev = null;
+        try {
+          const cur = await request('GetCurrentSceneTransition');
+          if (cur.transitionKind !== 'cut_transition') {
+            const list = await request('GetSceneTransitionList');
+            const cut = (list.transitions || []).find(t => t.transitionKind === 'cut_transition');
+            if (cut) { prev = cur.transitionName; await request('SetCurrentSceneTransition', { transitionName: cut.transitionName }); }
+          }
+        } catch (e) {}
+        try { await request('SetCurrentProgramScene', { sceneName: name }); }
+        finally { if (prev) setTimeout(() => request('SetCurrentSceneTransition', { transitionName: prev }).catch(() => {}), 400); }
+      },
+      call: request,
       setMic: name => { mic = name; },
       close: () => { closed = true; try { ws.close(); } catch (e) {} }
     };

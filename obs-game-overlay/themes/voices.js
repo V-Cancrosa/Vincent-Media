@@ -300,6 +300,7 @@
     const who = V[themeId];
     let pool = null, register = 'normal';
     if (who) pool = scene ? who.scenes && who.scenes[scene] : who[kind];
+    else if (scene && GAMEV[themeId] && GAMEV[themeId].scenes) pool = GAMEV[themeId].scenes[scene];   // motyw gry jako styl ekranu
     if (!scene && tier >= 3) { const tp = tierPool(themeId, kind, tier); if (tp) pool = tp; }
     if (pool && !Array.isArray(pool)) {          // postać z rejestrami (Myr)
       register = pickRegister(myrWeights(who && who.weights || { protocol: 1 }, scene ? 0 : tier));
@@ -416,28 +417,35 @@
     f = f || {};
     const personaId = f.personaId || f.themeId || '_';
     const gameId = f.gameId || '';
-    const mix = gameId ? (f.mix != null ? f.mix : 0.33) : 0;
-    return { personaId, gameId, mix };
+    const mix = gameId ? (f.mix != null ? f.mix : 0.5) : 0;
+    return { personaId, gameId, mix, variant: f.variant || '' };
   }
-  function pickGame(gameId, kind, ctx, tier) {
-    const g = GAMEV[gameId]; if (!g) return null;
-    const pool = (tier >= 3 && g.big) ? g.big : (g[kind] || (kind.startsWith('scene:') ? null : g.follow));
+  // wariant (np. me2) ma własne teksty; czego nie ma, bierze z gry
+  function pickGame(gameId, kind, ctx, tier, variant) {
+    const base = GAMEV[gameId]; if (!base) return null;
+    const vg = variant && GAMEV[variant] ? GAMEV[variant] : null;
+    const scene = kind.startsWith('scene:') ? kind.slice(6) : null;
+    const get = k => (vg && vg[k]) || base[k];
+    let pool;
+    if (scene) { const sc = (vg && vg.scenes && vg.scenes[scene]) || (base.scenes && base.scenes[scene]); pool = sc; }
+    else pool = (tier >= 3 && get('big')) ? get('big') : (get(kind) || get('follow'));
     if (!pool || !pool.length) return null;
     const [label, line] = rand(pool);
     return { label: fill(label, ctx), line: fill(line, ctx), register: 'game' };
   }
   function pickMix(f, kind, ctx, tier) {
     const m = mixInfo(f);
-    if (m.gameId && GAMEV[m.gameId] && !kind.startsWith('scene:') && Math.random() < m.mix) {
-      const g = pickGame(m.gameId, kind, ctx, tier); if (g) return g;
+    if (m.gameId && GAMEV[m.gameId] && Math.random() < m.mix) {
+      const g = pickGame(m.gameId, kind, ctx, tier, m.variant); if (g) return g;
     }
     return pick(m.personaId, kind, ctx, tier);
   }
   function sample(f) {
     const m = mixInfo(f);
-    const src = m.gameId && SAMPLES[m.gameId] && Math.random() < m.mix ? m.gameId : (SAMPLES[m.personaId] ? m.personaId : '_');
+    const gsrc = m.variant && SAMPLES[m.variant] ? m.variant : m.gameId;
+    const src = m.gameId && SAMPLES[gsrc] && Math.random() < m.mix ? gsrc : (SAMPLES[m.personaId] ? m.personaId : '_');
     return rand(SAMPLES[src]);
   }
 
-  window.OverlayVoices = { pick, pickMix, sample, data: V, games: GAMEV };
+  window.OverlayVoices = { pick, pickMix, sample, data: V, games: GAMEV, samples: SAMPLES, fill };
 })();

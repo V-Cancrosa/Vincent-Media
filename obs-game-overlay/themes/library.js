@@ -51,7 +51,31 @@
         <g class="em-spin-me"><ellipse cx="55" cy="55" rx="46" ry="16" fill="none" stroke="#9fd4ff" stroke-width="3"/><ellipse cx="55" cy="55" rx="40" ry="12" fill="none" stroke="#4fb7ff" stroke-width="1.5" stroke-dasharray="6 6"/></g>
         <path d="M30 98 L50 40 L56 40 L44 98 Z M80 98 L60 40 L54 40 L66 98 Z" fill="#3a4250" stroke="#11151c" stroke-width="2"/>
         <path d="M24 100 H86" stroke="#ff8a1c" stroke-width="3"/>`),
-      fx: { shape: 'dot', dir: 'float', count: 18, colors: ['#4fb7ff', '#bfe6ff', '#ff8a1c'], size: [1, 2.4], speed: [4, 10], glow: true }
+      fx: { shape: 'dot', dir: 'float', count: 18, colors: ['#4fb7ff', '#bfe6ff', '#ff8a1c'], size: [1, 2.4], speed: [4, 10], glow: true },
+      // Legendary Edition startuje launcherem, potem przechodzi w jedną z części – wykrywacz podaje, która to
+      variant(n) {
+        if (n.includes('andromeda')) return 'mea';
+        const m = n.match(/mass effect[^0-9a-z]*([123])\b/);
+        if (m) return 'me' + m[1];
+        if (n.includes('legendary')) return 'mele';
+        return /^mass effect\W*$/.test(n.trim()) ? 'me1' : '';
+      },
+      variants: {
+        mele: { label: 'WYBÓR MISJI', accent: ['#e8eef5', '#4fb7ff'] },
+        me1: { label: 'SR-1 // SOJUSZ', accent: ['#4fb7ff', '#e8f4ff'], fx: { colors: ['#4fb7ff', '#bfe6ff', '#ffffff'] } },
+        me2: { label: 'SR-2 // CERBER', accent: ['#ff9a1c', '#ffd27a'], fx: { colors: ['#ff9a1c', '#ffd27a', '#fff1d6'], count: 22 },
+          emblem: svg(110, 110, `
+            <g class="em-spin-me" fill="none" stroke="#ffb347" stroke-width="3">
+              <path d="M55 8 L95 31 L95 79 L55 102 L15 79 L15 31 Z"/>
+              <path d="M55 22 L83 38 L83 72 L55 88 L27 72 L27 38 Z" stroke-width="1.5" stroke-dasharray="5 4" opacity=".8"/>
+            </g>
+            <circle cx="55" cy="55" r="18" fill="#ff9a1c" class="em-pulse"/><circle cx="55" cy="55" r="8" fill="#fff1d6"/>`) },
+        me3: { label: 'GOTOWOŚĆ GALAKTYKI', accent: ['#ff3b30', '#ffb0a8'], fx: { colors: ['#ff3b30', '#ff8a7a', '#ffd0c8'], dir: 'up', speed: [8, 20] },
+          emblem: svg(110, 110, `
+            <g class="em-pulse"><path d="M55 14 C70 14 80 26 80 40 L92 98 L74 70 L66 102 L55 74 L44 102 L36 70 L18 98 L30 40 C30 26 40 14 55 14 Z" fill="#1a0c0c" stroke="#ff3b30" stroke-width="2.5"/></g>
+            <path d="M44 40 H66" stroke="#ff3b30" stroke-width="4" stroke-linecap="round" class="me3-eye"/>`) },
+        mea: { label: 'INICJATYWA // PIONIER', accent: ['#2ad4c4', '#8a6cff'], fx: { colors: ['#2ad4c4', '#8a6cff', '#e6fffb'] } }
+      }
     },
     {
       id: 'wf', name: 'Warframe', match: ['warframe'],
@@ -107,6 +131,45 @@
           <ellipse cx="18" cy="45" rx="6" ry="3" fill="none" stroke="#1a2236" stroke-width="2"/>
         </g>`, 'hk-needle'),
       fx: { shape: 'dot', dir: 'float', count: 20, colors: ['#e8eef7', '#b9c8e6', '#ffffff'], size: [1, 2.4], speed: [3, 8], glow: true, twinkle: true }
+    },
+    // ---------------------------------------------------------------- Command & Conquer
+    {
+      id: 'ra', name: 'C&C: Red Alert', match: ['red alert'],
+      accent: ['#e0241b', '#f2d7a8'], label: 'RAPORT Z FRONTU',
+      // wieża Tesli z wyładowaniem
+      emblem: svg(90, 120, `
+        <path class="ra-bolt" d="M45 18 L36 6 M45 18 L56 4 M45 18 L28 14 M45 18 L64 12" stroke="#bfe9ff" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="45" cy="20" r="11" fill="#9ed8ff" class="em-pulse"/><circle cx="45" cy="20" r="6" fill="#ffffff"/>
+        ${[0, 1, 2, 3].map(i => `<ellipse cx="45" cy="${40 + i * 14}" rx="${12 + i * 3}" ry="4" fill="#5a1410" stroke="#1a0606" stroke-width="2"/>`).join('')}
+        <path d="M34 34 L28 108 H62 L56 34 Z" fill="#2a2a2e" stroke="#0a0a0c" stroke-width="2" opacity=".85"/>
+        <path d="M20 108 H70 L74 116 H16 Z" fill="#e0241b" stroke="#1a0606" stroke-width="2"/>`),
+      fx: { shape: 'rect', dir: 'left', count: 20, colors: ['#bfe9ff', '#ffffff', '#e0241b'], size: [6, 14], speed: [40, 90], glow: true }
+    },
+    {
+      id: 'cnc', name: 'C&C: Tiberium', match: ['tiberian', 'tiberium', 'command & conquer', 'command and conquer'],
+      accent: ['#5be35b', '#e8c547'], label: 'EVA // RAPORT',
+      // kryształy tyberium
+      emblem: svg(110, 100, `
+        <g class="em-pulse">
+          <path d="M30 96 L22 46 L36 22 L46 52 L40 96 Z" fill="#3ccf3c" stroke="#0d3a0d" stroke-width="2"/>
+          <path d="M44 96 L48 30 L60 6 L72 34 L66 96 Z" fill="#5be35b" stroke="#0d3a0d" stroke-width="2"/>
+          <path d="M66 96 L74 52 L88 36 L92 70 L82 96 Z" fill="#2fb52f" stroke="#0d3a0d" stroke-width="2"/>
+          <path d="M52 28 L60 10 L64 32 Z M28 44 L36 26 L38 46 Z" fill="#c9ffc9" opacity=".8"/>
+        </g>
+        <path d="M10 96 H100" stroke="#e8c547" stroke-width="3"/>`),
+      fx: { shape: 'tri', dir: 'up', count: 22, colors: ['#5be35b', '#a8ff8a', '#e8c547'], size: [3, 6], speed: [8, 20], glow: true, twinkle: true }
+    },
+    {
+      id: 'gen', name: 'C&C: Generals', match: ['generals', 'zero hour'],
+      accent: ['#d9b56b', '#6f7d4a'], label: 'SZTAB // NA ŻYWO',
+      // obrotowy radar + gwiazdki stopnia
+      emblem: svg(110, 100, `
+        <circle cx="55" cy="55" r="40" fill="#1d2414" stroke="#6f7d4a" stroke-width="3"/>
+        <circle cx="55" cy="55" r="26" fill="none" stroke="#6f7d4a" stroke-width="1.5" stroke-dasharray="3 4"/>
+        <g class="em-spin"><path d="M55 55 L55 15 A40 40 0 0 1 90 35 Z" fill="#9fd06b" opacity=".45"/></g>
+        <circle cx="70" cy="40" r="3" fill="#e0241b" class="em-pulse"/>
+        ${[0, 1, 2].map(i => `<path transform="translate(${34 + i * 21} 4) scale(.5)" d="M10 0 L13 7 L20 7 L14 12 L16 20 L10 15 L4 20 L6 12 L0 7 L7 7 Z" fill="#d9b56b"/>`).join('')}`),
+      fx: { shape: 'dot', dir: 'left', count: 26, colors: ['#d9b56b', '#c8a878', '#9a8a6a'], size: [0.8, 2.2], speed: [30, 70] }
     }
   ];
 

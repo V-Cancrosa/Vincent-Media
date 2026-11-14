@@ -17,9 +17,11 @@
   /* ---------- pozycja ---------- */
   #stage {
     position: absolute;
-    inset: var(--margin);
+    /* --tt / --tb: miejsce na pasek czatu (layouts.html → game-full), gdy jest widoczny */
+    inset: calc(var(--margin) + var(--tt, 0px)) var(--margin) calc(var(--margin) + var(--tb, 0px));
     display: flex;
     pointer-events: none;
+    transition: inset .6s cubic-bezier(.2,.9,.3,1);
   }
   .pos-tl #stage { align-items: flex-start; justify-content: flex-start; }
   .pos-tc #stage { align-items: flex-start; justify-content: center; }

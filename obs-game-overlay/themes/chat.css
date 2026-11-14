@@ -54,3 +54,30 @@
 .cs-lod .cname { color: #0a5c8a; }
 
 .reduced-motion .cmsg, .reduced-motion .cs-holo::before, .reduced-motion .cs-ogien, .reduced-motion .cs-sakura::after, .reduced-motion .cs-terminal .ctext::after { animation: none !important; transition: opacity .3s ease !important; transform: none !important; }
+
+/* --- pasek (ticker): wiadomości przewijają się poziomo, jak w serwisie informacyjnym --- */
+.chat-ticker { position: relative; flex-direction: row; align-items: stretch; gap: 0; height: 58px; font-size: 21px; overflow: hidden;
+  background: linear-gradient(180deg, rgba(10,10,16,.86), rgba(16,14,26,.82)); border-top: 2px solid var(--accent, #7c5cff);
+  box-shadow: 0 -6px 28px rgba(0,0,0,.35); opacity: 0; transform: translateY(100%); transition: opacity .5s ease, transform .6s cubic-bezier(.2,.9,.3,1.1); }
+.chat-ticker.on { opacity: 1; transform: none; }
+.fuse .chat-ticker { border-image: linear-gradient(90deg, var(--accent), var(--g1)) 1; }
+.ticker-tag { flex: none; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 0 22px 0 18px; font: 800 18px/1 'Inter', sans-serif; letter-spacing: .16em;
+  color: #fff; background: var(--accent, #7c5cff); clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%); padding-right: 34px; }
+.ticker-tag .tdot { width: 9px; height: 9px; border-radius: 50%; background: #fff; animation: blink-c 1.4s steps(1) infinite; }
+.ticker-lane { position: relative; flex: 1; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
+.chat-ticker .cmsg { position: absolute; left: 0; top: 0; bottom: 0; display: inline-flex; align-items: center; gap: 10px; padding: 0; max-width: none; white-space: nowrap;
+  opacity: 1; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0; transition: none; will-change: transform; }
+.chat-ticker .cmsg::after { content: none !important; }
+.chat-ticker .cav { display: none; }
+.chat-ticker .cbody { display: inline-flex; align-items: center; gap: 10px; }
+.chat-ticker .cname { font-size: 20px; }
+.chat-ticker .cname::after { content: "›"; color: var(--accent, #7c5cff); margin-left: 4px; }
+.chat-ticker .ctext { word-break: normal; }
+.chat-ticker .ctext::after { content: none; }
+.chat-ticker .cemote { height: 1.5em; }
+.chat-ticker .cmsg-sys { border: 0; }
+/* styl widza zostaje w kolorze imienia i kroju pisma, bez dymka */
+.chat-ticker .cs-pixel { font-size: 13px; } .chat-ticker .cs-papier { font-size: 26px; } .chat-ticker .cs-komiks .cname { color: var(--uc); }
+.chat-ticker .cs-komiks, .chat-ticker .cs-papier, .chat-ticker .cs-terminal { color: #f4f4f8; }
+.chat-ticker .cs-terminal { color: #7dff9a; }
+.reduced-motion .chat-ticker { transition: opacity .4s ease; transform: none; }

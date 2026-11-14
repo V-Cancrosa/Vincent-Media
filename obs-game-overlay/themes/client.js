@@ -25,7 +25,7 @@
     if (game) { root.setProperty('--g1', game.accent[0]); root.setProperty('--g2', game.accent[1]); }
     if (f.persona) { root.setProperty('--g1', f.persona.accent[0]); root.setProperty('--g2', f.persona.accent[1]); }
     root.setProperty('--tex', def ? gt.texture(def) : '');
-    const key = cls + '|' + (game ? game.id : '') + '|' + (f.persona ? f.persona.id : '') + r.reduced;
+    const key = cls + '|' + (game ? game.id : '') + '|' + (f.persona ? f.persona.id : '') + (f.variant || '') + r.reduced;
     if (key !== lastKey) { lastKey = key; if (hooks.changed) hooks.changed(r); }
     return r;
   }

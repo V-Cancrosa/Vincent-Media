@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="themes/fusion.css">
 <script src="themes/fusion.js"></script>
 <script src="themes/voices.js"></script>
+<script src="themes/voices-games.js"></script>
 <link rel="stylesheet" href="themes/base.css">
 </head>
 <body class="theme-neon pos-bl">
@@ -268,7 +269,7 @@
     const reduced = settings.motion === 'reduced';
     document.body.className = `theme-${th.cls} pos-${settings.position}` + (GT.bodyClasses ? GT.bodyClasses(th) : '') +
       (reduced ? ' reduced-motion' : '') + (settings.icon ? '' : ' no-icon') + (settings.showLabel ? '' : ' no-label');
-    const key = th.cls + '|' + (th.game ? th.game.id : '') + '|' + (th.persona ? th.persona.id : '') + '|' + th.mode;
+    const key = th.cls + '|' + (th.game ? th.game.id : '') + '|' + (th.persona ? th.persona.id : '') + '|' + th.mode + '|' + (th.variant || '');
     if (emblemFor !== key) {
       emblemFor = key;
       // alerty, ekrany i układy używają tego samego stylu, gry i trybu fuzji
@@ -369,7 +370,15 @@
   window.addEventListener('storage', e => { if (e.key === KEY) reload(); if (e.key === SIM_KEY) pollLocal(); });
   try {
     const bc = new BroadcastChannel('obsGameOverlay');
-    bc.onmessage = e => (e.data === 'sim' ? pollLocal() : reload());
+    bc.onmessage = e => {
+      const d = e.data;
+      if (d && typeof d === 'object') {
+        // pasek czatu w grze: karta odsuwa się, żeby się nie nakładały
+        if (d.type === 'ticker') { const r = document.documentElement.style; r.setProperty('--tb', d.on && d.pos !== 'top' ? '62px' : '0px'); r.setProperty('--tt', d.on && d.pos === 'top' ? '62px' : '0px'); }
+        return;
+      }
+      d === 'sim' ? pollLocal() : reload();
+    };
   } catch {}
 
   connect(dcId());

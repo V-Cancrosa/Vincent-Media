@@ -17,7 +17,11 @@ Do wpisywania gry ręcznie wystarczą dwa pliki HTML.
 `neon` · `glass` · `minimal` · `retro` (pixel art) · `esport` (pasek)
 
 **Motywy gier** (włączają się same, gdy gra ma swój motyw; można to wyłączyć w panelu):
-Talisman (obie edycje) · Palworld · Mass Effect · Warframe · Deadlock · Darkest Dungeon · Hollow Knight (też Silksong) · Cyberpunk 2077 · Counter-Strike 2.
+Talisman (obie edycje) · Palworld · Mass Effect · Warframe · Deadlock · Darkest Dungeon · Hollow Knight (też Silksong) · Cyberpunk 2077 · Counter-Strike 2 · C&C: Red Alert · C&C: Tiberium · C&C: Generals.
+
+**Mass Effect Legendary Edition** startuje launcherem, a potem uruchamia jedną z części jako osobny program. Wykrywacz to widzi i podaje część: *Mass Effect 1/2/3 (Legendary Edition)*. Każda ma własny wygląd i teksty – ME1 niebieski Sojusz i SR-1, ME2 pomarańczowy Cerber i misja samobójcza, ME3 czerwień Żniwiarzy i zasoby wojenne, Andromeda turkus pionierów. Sam launcher ma neutralny „wybór misji”.
+
+**Darkest Dungeon** mówi głosem narratora: podniośle, mrocznie i z gorzkim humorem – w alertach, na ekranach przerw i w przejściach (teksty napisane od zera, w duchu gry).
 W plikach są też Elden Ring, Minecraft, Fortnite, League of Legends, VALORANT i GTA V – działają przy wykryciu gry, ale nie ma ich na liście w panelu (nie ma ich w bibliotece). Listę ukrytych zmienisz w `themes/library.js`.
 Mają animowane ozdobniki wystające nad panel i cząsteczki wokół niego. Cała grafika jest narysowana od zera (SVG i canvas), bez logotypów i grafik z gier – licencja CC0. Definicje są w `themes/games.js` i `themes/games.css`.
 
@@ -30,10 +34,11 @@ Portrety w `themes/fursona/` należą do autorów ilustracji (patrz `themes/furs
 
 | Tryb | Proporcja | Wygląd | Teksty |
 |---|---|---|---|
-| Postać bazą, gra dodatkiem | 66:33 | karta postaci + odznaka, pasek, kolory cząsteczek gry (np. *Ragnar w motywie gry*) | ⅔ postać, ⅓ gra |
-| Pół na pół | 50:50 | jak wyżej, ale wymieszane kolory, obwódka i większa odznaka gry | pół na pół |
-| Gra bazą, postać dodatkiem | 33:66 | karta w motywie gry + portret/emblemat postaci w odznace i pasek w jej kolorach (np. *gra w motywie Ragnara*) | ⅓ postać, ⅔ gra |
+| **Pół na pół** (domyślny) | 50:50 | karta postaci z wymieszanymi kolorami, obwódką i odznaką gry | pół na pół |
 | Sam motyw gry | – | tylko gra | tylko gra |
+| Ignoruj motywy gier | – | tylko postać / styl | tylko postać |
+| 🧪 Postać bazą, gra dodatkiem | 66:33 | eksperymentalny – do dopracowania | ⅔ postać, ⅓ gra |
+| 🧪 Gra bazą, postać dodatkiem | 33:66 | eksperymentalny – do dopracowania | ⅓ postać, ⅔ gra |
 
 Każda gra z motywem ma własne teksty alertów (i na duże zdarzenia). Przykładowe wiadomości w alertach testowych też są w stylu aktywnej postaci i gry.
 
@@ -179,7 +184,7 @@ Instalator dodaje wszystko jako sceny OBS `VM · …`. Każdy ekran ma motyw akt
 
 | Układ | `layout=` | Co jest na ekranie |
 |---|---|---|
-| Gra na pełny ekran | `game-full` | przezroczysty; czat w dymkach, które wyskakują i znikają; avatar w rogu |
+| Gra na pełny ekran | `game-full` | przezroczysty; czat jako **pasek przewijany w bok** (jak w wiadomościach – nie zasłania gry), dymki albo bez czatu; avatar w rogu |
 | Gra w ramce | `game-frame` | gra w animowanej ramce 1440×810 (lewy górny róg 40,40), obok avatar i czat na stałe, pod grą ostatnie zdarzenia i linki |
 | Rozmowa | `talk` | duży avatar, temat rozmowy, czat |
 
@@ -187,6 +192,27 @@ Instalator dodaje wszystko jako sceny OBS `VM · …`. Każdy ekran ma motyw akt
 Możesz też podać własne obrazki „cisza” i „mówię” (PNGtuber).
 
 W panelu (Na żywo → Ekrany) wybierasz ekran, odliczanie, termin dla „Stream za…”, temat rozmowy, podpis i linki w stopce.
+
+### Przejścia między ekranami
+
+Źródło `VM · Przejścia` (`transition.html`) leży na wierzchu każdej sceny VM. Gdy zmieniasz ekran albo scenę z panelu (także z telefonu), obraz najpierw zasłania animacja, potem OBS przełącza scenę cięciem, a na końcu obraz się odsłania. W środku pojawia się napis w głosie postaci albo gry, np. narratora Darkest Dungeon.
+
+| Rodzaj | Kiedy (automatycznie) |
+|---|---|
+| mrok i pochodnia | Darkest Dungeon, Talisman, Elden Ring |
+| hologram (heksy, skan) | Mass Effect, Warframe, Tiberium |
+| glitch | Cyberpunk 2077, Myr-35 |
+| stalowe wrota | Red Alert, Generals, Deadlock, Zarin |
+| jedwab i nić | Hollow Knight |
+| koło (przesłona) | Palworld, Chip |
+| granat hukowy | Counter-Strike 2 |
+| korektor (słupki w rytm) | Ragnar |
+| drzwi shoji | Toro |
+| plan architekta | Vince |
+| piksele | Retro, Minecraft |
+| skośne pasy | pozostałe style |
+
+Rodzaj możesz też wybrać na stałe (Na żywo → Ekrany → Przejścia), wyłączyć napis albo całe przejścia. Po aktualizacji ze starszej wersji kliknij tam *Dodaj źródło przejść do scen OBS* – panel doda je przez WebSocket (bez ponownej instalacji). Przełączanie scen bezpośrednio w OBS działa jak dotąd, bez tej animacji.
 
 ## Połączenie z OBS: avatar reagujący na głos i przełączanie scen
 
@@ -202,6 +228,7 @@ Ręcznie: OBS → *Narzędzia → Ustawienia serwera WebSocket* → włącz, ust
 `chat.html` pokazuje czat z Twitcha na nakładce (wymaga połączenia z Twitchem – patrz niżej):
 - `chat.html` – **dymki**: wiadomości wyskakują i po chwili znikają (do gry na pełnym ekranie). `?pos=br|bl|tr|tl`, `?life=12` (sekundy), `?width=560`.
 - `chat.html?mode=panel` – **czat na stałe** (do układu z grą w ramce).
+- `chat.html?mode=ticker` – **pasek** u dołu ekranu, wiadomości jadą od prawej do lewej; przy większym ruchu pasek przyspiesza. `?pos=top`, `?speed=140`.
 
 Emotki, kolory nicków i odznaki (HOST, MOD, VIP, SUB) są pokazywane. Wygląd czatu łączy się z aktywnym motywem (i grą przy fuzji).
 
@@ -217,6 +244,26 @@ Emotki, kolory nicków i odznaki (HOST, MOD, VIP, SUB) są pokazywane. Wygląd c
 Komenda nie pojawia się w czacie na ekranie – zamiast niej widać krótkie potwierdzenie („LunaFox → styl: pixel ✓”).
 Efekty można też dać jako **nagrody za punkty kanału**: nagroda o nazwie zawierającej np. „Efekt: konfetti” uruchamia efekt bez limitu.
 Efekty pokazuje źródło `alerts.html`, więc musi być w scenie.
+
+## Archiwum, statystyki i podejrzane konta
+
+Wykrywacz zapisuje każdy stream (od startu do końca na Twitchu) w `detector\data\archive\streams\`:
+- `<data_godzina>.jsonl` – cały czat i wszystkie alerty z godziną,
+- `<data_godzina>.json` – podsumowanie: czas, kategoria i gry, widzowie co minutę (szczyt, średnia), wiadomości, czatownicy (w tym nowi), follow, suby, gifty, bitsy, raidy, najaktywniejsi na czacie, oflagowani.
+
+`detector\data\archive\chatters.json` pamięta każdego czatownika: pierwszą i ostatnią wizytę, liczbę wiadomości i streamów, wiek konta.
+
+W panelu, w zakładce **Czat**:
+- **Statystyki** – bieżący stream (z wykresem widzów) i lista poprzednich. Każdy możesz pobrać jako **TXT** (czat z czasem od startu), **SRT** (napisy z czatem do nagrania) albo **JSON**.
+- **Moderacja** – wiadomości z flagą. Flaga to podpowiedź, nie wyrok. Liczą się:
+  - wiek konta z Twitcha (godziny / dni),
+  - link albo reklama widzów i followów na początku znajomości,
+  - ogólnikowe „fajnie grasz / nice stream” jako pierwsza wiadomość,
+  - pisanie o graniu, gdy kategoria to np. *Art*, *Software and Game Development*, *Just Chatting* i nic nie jest uruchomione (np. modelujesz w Blenderze, a ktoś pisze „fajnie grasz”),
+  - ten sam tekst od kilku kont w ciągu minuty.
+
+  Suby, VIP-y i moderatorzy nie są oceniani. *Zaufaj* zdejmuje flagę na stałe. Wiadomości z flagą „podejrzane” domyślnie nie trafiają na ekran (do wyłączenia w *Czat → Na ekranie*).
+- **Nagrywanie** – OBS może sam zacząć nagrywać lokalnie, gdy zaczynasz stream (i zatrzymać po końcu). Twitch trzyma VOD-y tylko 7 dni (afilianci 14, partnerzy 60), a lokalne nagranie zostaje na zawsze. Plik SRT z czatem pasuje do takiego nagrania.
 
 ## Alerty z Twitcha
 

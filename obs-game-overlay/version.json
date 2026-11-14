@@ -1,5 +1,5 @@
 {
-  "version": "1.14.0",
-  "date": "2026-11-13",
-  "notes": "Fuzja w proporcjach 66:33, 50:50, 33:66 (co jest bazą), teksty gier, wiadomości testowe w stylu postaci, poprawiony art Ragnara i Toro"
+  "version": "1.15.0",
+  "date": "2026-11-14",
+  "notes": "Przejścia między ekranami w stylu gry/postaci, narrator Darkest Dungeon, części Mass Effect, motywy Red Alert/Tiberium/Generals, czat jako pasek, archiwum streamów ze statystykami i flagowaniem botów, nagrywanie razem ze streamem, fuzja 50:50 domyślnie"
 }
