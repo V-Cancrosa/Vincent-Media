@@ -818,17 +818,17 @@
 
     // lokalny
     const lc = d.local || {};
-    const lcOn = s.local && !manualOnly;
+    const lcOn = !!s.local;   // wykrywacz działa także wtedy, gdy gra jest wybrana z listy
     pill('lcPill', lcOn && lc.online, 'DZIAŁA', lcOn ? 'NIE DZIAŁA' : 'WYŁ.');
     $('lcIgnoreRow').hidden = true;
     $('lcAdd').hidden = !(lcOn && lc.online);
-    if (manualOnly) setStatus($('lcStatus'), ['Tryb ręczny – wykrywanie pominięte.']);
-    else if (!s.local) setStatus($('lcStatus'), ['Wyłączony.']);
+    if (!s.local) setStatus($('lcStatus'), ['Wyłączony.']);
     else if (!lc.online) setStatus($('lcStatus'), ['Nie widzę wykrywacza. Uruchom ', { b: 'detector\\start-detector.bat' }, ' (okno może być zminimalizowane).']);
     else if (lc.game) {
       setStatus($('lcStatus'), ['Wykryto: ', { b: lc.game.name }, ` (${VIA[lc.game.via] || lc.game.via}${lc.game.exe ? ', ' + lc.game.exe : ''})`]);
       $('lcIgnoreRow').hidden = false;
     } else setStatus($('lcStatus'), ['Działa – w tej chwili żadna gra nie jest uruchomiona.']);
+    if (manualOnly && s.local && lc.online) $('lcStatus').append(' Na nakładce jest gra wybrana z listy: ' + (s.game || '') + '.');
 
     const recent = (lc.recent || []).filter(r => r && r.exe);
     const sig = recent.map(r => r.exe + r.title).join('|');

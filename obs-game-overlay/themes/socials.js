@@ -50,8 +50,13 @@
       net = ALIAS[net] || net;
       if (!I[net]) { handle = x; net = guess(x); }
       handle = handle.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+      let url = /^[\w.-]+\.[a-z]{2,}\//i.test(handle) ? 'https://' + handle : '';
+      // wpisany link → na ekranie sama nazwa konta (t.me/x → @x, reddit.com/user/x → u/x), link zostaje w url
+      const SHORT = [[/^t\.me\/([^/?#]+)/i, '@'], [/^bsky\.app\/profile\/([^/?#]+)/i, '@'], [/^instagram\.com\/([^/?#]+)/i, '@'], [/^(?:x|twitter)\.com\/([^/?#]+)/i, '@'],
+        [/^reddit\.com\/u(?:ser)?\/([^/?#]+)/i, 'u/'], [/^github\.com\/([^/?#]+)/i, ''], [/^twitch\.tv\/([^/?#]+)/i, ''], [/^tiktok\.com\/(@[^/?#]+)/i, ''], [/^youtube\.com\/(@[^/?#]+)/i, '']];
+      for (const [re, pre] of SHORT) { const mm = handle.match(re); if (mm) { handle = pre + mm[1]; break; } }
       const bare = handle.replace(/^@/, '');
-      const url = /^[\w.-]+\.[a-z]{2,}\//i.test(handle) ? 'https://' + handle : URLS[net] ? URLS[net](bare) : '';
+      if (!url && URLS[net]) url = URLS[net](bare);
       return { net, name: NAMES[net] || '', handle, url, icon: icon(net) };
     });
   }

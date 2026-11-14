@@ -188,7 +188,8 @@
 
   async function pollLocal() {
     clearTimeout(localTimer);
-    if (!settings.local || settings.mode === 'manual') {
+    // tryb ręczny (gra wybrana z listy) też odpytuje wykrywacz: stan, grafiki, synchronizacja ustawień – karta i tak pokazuje wybraną grę
+    if (!settings.local) {
       if (localGame || localOnline) { localGame = null; localOnline = false; render(); }
       publish();
       localTimer = setTimeout(pollLocal, 3000);

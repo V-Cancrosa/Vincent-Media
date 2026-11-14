@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
   Vincent-Media – wykrywacz gier dla nakładki OBS.
 
@@ -351,14 +351,15 @@ function Get-RenPyName([string]$path) {
 }
 # ---------------------------------------------------------------- biblioteka: każda wykryta gra / program, do uruchamiania z panelu
 $LibraryFile = Join-Path $DataDir 'library.json'
-$script:Library = @{}
-if (Test-Path $LibraryFile) { try { $lj = (Get-Content $LibraryFile -Raw -Encoding UTF8) | ConvertFrom-Json; foreach ($pp in $lj.PSObject.Properties) { $script:Library[$pp.Name] = $pp.Value } } catch {} }
+# uwaga: nie «$Library» – wczytanie update.ps1 -Library (dot-source) nadpisałoby tę zmienną przełącznikiem
+$script:GameLib = @{}
+if (Test-Path $LibraryFile) { try { $lj = (Get-Content $LibraryFile -Raw -Encoding UTF8) | ConvertFrom-Json; foreach ($pp in $lj.PSObject.Properties) { $script:GameLib[$pp.Name] = $pp.Value } } catch {} }
 $script:LibDirty = $false; $script:LibSaved = Get-Date; $script:LibCurrent = ''; $script:LibTick = Get-Date
 function Save-Library([switch]$Force) {
     if (-not $script:LibDirty) { return }
     if (-not $Force -and ((Get-Date) - $script:LibSaved).TotalSeconds -lt 30) { return }
     $script:LibDirty = $false; $script:LibSaved = Get-Date
-    try { [IO.File]::WriteAllText($LibraryFile, ([pscustomobject]$script:Library | ConvertTo-Json -Depth 4 -Compress), $Utf8NoBom) } catch {}
+    try { [IO.File]::WriteAllText($LibraryFile, ([pscustomobject]$script:GameLib | ConvertTo-Json -Depth 4 -Compress), $Utf8NoBom) } catch {}
 }
 # ---------------------------------------------------------------- Steam: zainstalowane gry i grafiki z pamięci Steama
 # Grafiki (logo, tło, nagłówek) bierzemy z folderu, który Steam sam pobrał na ten komputer (appcache\librarycache),
@@ -430,10 +431,10 @@ function Update-Library($m, [string]$path) {
     $id = if ($m.Steam) { 'steam:' + $m.Steam } elseif ($path) { 'exe:' + $path.ToLowerInvariant() } else { '' }
     if (-not $id) { return }
     $now = Get-Date
-    $e = $script:Library[$id]
+    $e = $script:GameLib[$id]
     if (-not $e) {
         $e = [pscustomobject]@{ id = $id; name = $m.Name; path = $path; exe = $m.Exe; steam = [string]$m.Steam; kind = [string]$m.Kind; first = $now.ToString('o'); last = ''; plays = 0; minutes = 0; hidden = $false }
-        $script:Library[$id] = $e
+        $script:GameLib[$id] = $e
         Log "Biblioteka: zapisano $($m.Name)" 'DarkCyan'
     }
     if (-not $e.path -and $path) { $e.path = $path }
@@ -448,7 +449,7 @@ function Update-AppSeen([string]$path) {
     if (-not $path -or $path -match '\\steamapps\\common\\') { return }    # gry ze Steama zapisuje Update-Library
     $id = 'exe:' + $path.ToLowerInvariant()
     if ($script:LibCurrent -eq $id) { return }                                # to jest właśnie wykryta gra
-    $e = $script:Library[$id]
+    $e = $script:GameLib[$id]
     if (-not $e) {
         $script:AppSeen[$id] = [double]$script:AppSeen[$id] + $dt
         if ($script:AppSeen[$id] -lt 20) { return }
@@ -457,7 +458,7 @@ function Update-AppSeen([string]$path) {
         $name = ([string](Clean $name)).Trim()
         if (-not $name) { $name = [IO.Path]::GetFileNameWithoutExtension($path) }
         $e = [pscustomobject]@{ id = $id; name = $name; path = $path; exe = [IO.Path]::GetFileName($path).ToLowerInvariant(); steam = ''; kind = 'app'; first = $now.ToString('o'); last = ''; plays = 1; minutes = 0; hidden = $false }
-        $script:Library[$id] = $e
+        $script:GameLib[$id] = $e
         Log "Biblioteka: zapisano program $name" 'DarkCyan'
     }
     $e.minutes = [Math]::Round([double]$e.minutes + $dt / 60, 1)
@@ -465,7 +466,7 @@ function Update-AppSeen([string]$path) {
     Save-Library
 }
 function Start-LibraryItem([string]$id) {
-    $e = $script:Library[$id]
+    $e = $script:GameLib[$id]
     if (-not $e -and $id -match '^steam:(\d+)$') { Start-Process ("steam://rungameid/" + $Matches[1]); Log "Uruchamiam: $id (Steam)" 'Cyan'; return '' }
     if (-not $e) { return 'nie ma takiej pozycji w bibliotece' }
     if ($e.steam) { Start-Process ("steam://rungameid/" + $e.steam); Log "Uruchamiam: $($e.name) (Steam)" 'Cyan'; return '' }
@@ -1612,10 +1613,10 @@ function Invoke-Request($ctx) {
             '/library' {
               try {
                 $all = ([string]$q['all']) -eq '1'
-                $list = @($script:Library.Values | Where-Object { $all -or -not $_.hidden } | Sort-Object { [string]$_.last } -Descending)
+                $list = @($script:GameLib.Values | Where-Object { $all -or -not $_.hidden } | Sort-Object { [string]$_.last } -Descending)
                 # zainstalowane gry Steam, których jeszcze nie uruchamiałeś (do wyboru z listy)
                 $inst = @()
-                try { $inst = @(Get-SteamInstalled | Where-Object { -not $script:Library.ContainsKey($_.id) } | Sort-Object name | ForEach-Object { [pscustomobject]@{ id = $_.id; name = $_.name; steam = $_.steam; kind = ''; installed = $true } }) } catch {}
+                try { $inst = @(Get-SteamInstalled | Where-Object { -not $script:GameLib.ContainsKey($_.id) } | Sort-Object name | ForEach-Object { [pscustomobject]@{ id = $_.id; name = $_.name; steam = $_.steam; kind = ''; installed = $true } }) } catch {}
                 Send-Json $ctx ([pscustomobject]@{ items = $list; installed = $inst; current = $script:LibCurrent; error = $script:LibErr })
               } catch { Send-Json $ctx ([pscustomobject]@{ items = @(); installed = @(); current = ''; error = $_.Exception.Message }) }
             }
@@ -1649,7 +1650,7 @@ function Invoke-Request($ctx) {
                 Send-Json $ctx @{ ok = -not $err; error = $err }
             }
             '/library/edit' {
-                $e = $script:Library[[string]$q['id']]
+                $e = $script:GameLib[[string]$q['id']]
                 if (-not $e) { Send-Json $ctx @{ ok = $false } 404; return }
                 if ($q.ContainsKey('name') -and ([string]$q['name']).Trim()) { $e.name = ([string]$q['name']).Trim() }
                 if ($q.ContainsKey('hidden')) { $e.hidden = ([string]$q['hidden']) -eq '1' }
