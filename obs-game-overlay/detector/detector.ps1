@@ -26,7 +26,8 @@ try { $gotMutex = $script:Mutex.WaitOne([TimeSpan]::FromSeconds([Math]::Max(1, $
 # inna kopia trzyma blokadę: jeśli odpowiada – zostawiamy ją; jeśli nie (zawieszona po aktualizacji) – zamykamy ją i startujemy
 function Stop-StaleDetector {
     $alive = $false
-    try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 -Uri "http://localhost:$Port/game"; $alive = $r.StatusCode -eq 200 } catch {}
+    # dwie próby po 6 s: zajęty (np. skanuje bibliotekę Steama) to nie to samo co zawieszony
+    foreach ($try in 1, 2) { try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 6 -Uri "http://localhost:$Port/game"; if ($r.StatusCode -eq 200) { $alive = $true; break } } catch {} }
     if ($alive) { return $false }
     $n = 0
     try {

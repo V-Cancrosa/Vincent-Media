@@ -823,7 +823,7 @@
     $('lcIgnoreRow').hidden = true;
     $('lcAdd').hidden = !(lcOn && lc.online);
     if (!s.local) setStatus($('lcStatus'), ['Wyłączony.']);
-    else if (!lc.online) setStatus($('lcStatus'), ['Nie widzę wykrywacza. Uruchom ', { b: 'detector\\start-detector.bat' }, ' (okno może być zminimalizowane).']);
+    else if (!lc.online) setStatus($('lcStatus'), ['Nie widzę wykrywacza. Uruchom go: ', { b: 'Menu Start → Vincent-Media → Wykrywacz gier' }, ' (albo przycisk „Uruchom wykrywacz” na karcie Start).']);
     else if (lc.game) {
       setStatus($('lcStatus'), ['Wykryto: ', { b: lc.game.name }, ` (${VIA[lc.game.via] || lc.game.via}${lc.game.exe ? ', ' + lc.game.exe : ''})`]);
       $('lcIgnoreRow').hidden = false;
@@ -1560,11 +1560,20 @@
   const FIX = {
     det: () => $('detStart').click(),
     cap: () => { capLast = ''; startGame(); },
-    mic: () => ensureMic(),
+    mic: () => (checks.mic && checks.mic.fix === 'micdup' ? obs.call('RemoveInput', { inputName: MIC_NAME }).then(() => { s.autoMic = false; save(); $('autoMic').checked = false; }) : ensureMic()),
     censor: () => censorAddLayer(),
     scenes: () => { showTab('more'); },
     twitch: () => { showTab('more'); const tab = document.querySelector('.tab[data-tab="more"]'); showSub(tab, 'Twitch'); }
   };
+  // wykrywacz nie odpowiada: ostatnie linijki jego dziennika (detector\data\detector.log), jeśli OBS pozwala czytać pliki
+  async function detLogTail() {
+    if (!/^file:/.test(location.protocol)) return '';
+    try {
+      const txt = await new Promise((ok, no) => { const x = new XMLHttpRequest(); x.open('GET', new URL('detector/data/detector.log?t=' + Date.now(), location.href).href); x.onload = () => ok(x.responseText); x.onerror = no; x.send(); });
+      const lines = String(txt || '').trim().split(/\r?\n/).slice(-3);
+      return lines.length && lines[0] ? ' · ostatnio w dzienniku: ' + lines.join(' | ') : '';
+    } catch { return ''; }
+  }
   async function selfTest() {
     if (testBusy || isRemote) return; testBusy = true;
     const c = {};
@@ -1572,7 +1581,7 @@
     let g = null, ver = '';
     if (s.local) {
       try { const j = await (await fetch(hubUrl() + '/game', { cache: 'no-store' })).json(); g = j.game; ver = j.appVersion || ''; c.det = { ok: true }; }
-      catch { c.det = { ok: false, msg: 'nie odpowiada' }; }
+      catch { c.det = { ok: false, msg: 'nie odpowiada' + (await detLogTail()) }; }
       if (c.det.ok) c.ver = ver && window.VM_VERSION && ver !== window.VM_VERSION ? { ok: false, msg: `wykrywacz ${ver}, panel ${window.VM_VERSION} – zamknij wykrywacz i uruchom ponownie` } : { ok: true };
       if (c.det.ok) {
         try { const r = await fetch(hubUrl() + '/library', { cache: 'no-store' }); const j = r.ok ? await r.json() : null; c.lib = !j ? { ok: false, msg: 'HTTP ' + r.status } : j.error ? { ok: false, msg: j.error } : { ok: true, msg: arr(j.items).length + ' zapisanych, ' + arr(j.installed).length + ' ze Steama' }; }
@@ -1597,7 +1606,10 @@
           const sp = await obs.call('GetSpecialInputs');
           const inputs = (await obs.call('GetInputList')).inputs || [];
           const has = [sp.mic1, sp.mic2, sp.mic3, sp.mic4].some(Boolean) || inputs.some(i => /input_capture$/.test(i.inputKind));
-          c.mic = has ? { ok: true } : { ok: false, msg: 'OBS nie ma mikrofonu' };
+          const micInputs = inputs.filter(i => /input_capture$/.test(i.inputKind));
+          const dup = inputs.some(i => i.inputName === MIC_NAME) && (micInputs.length > 1 || [sp.mic1, sp.mic2, sp.mic3, sp.mic4].some(Boolean));
+          c.mic = dup ? { ok: false, msg: `mikrofon może być podwójnie: „${MIC_NAME}” i ${[sp.mic1, ...micInputs.map(i => i.inputName)].filter(n => n && n !== MIC_NAME).join(', ')} – Napraw usuwa „${MIC_NAME}”`, fix: 'micdup' }
+            : has ? { ok: true } : { ok: false, msg: 'OBS nie ma mikrofonu' };
         } catch { c.mic = { ok: false, msg: 'nie mogę sprawdzić' }; }
         if (s.censor) {
           try {
@@ -1716,7 +1728,7 @@
   function twRender() {
     const st = twState;
     $('twSetup').hidden = true; $('twCode').hidden = true; $('twOnline').hidden = true;
-    if (!st) { pill('twPill', false, '', 'BRAK'); setStatus($('twStatus'), ['Twitch działa przez wykrywacz. Uruchom ', { b: 'start-detector.bat' }, '.']); return; }
+    if (!st) { pill('twPill', false, '', 'BRAK'); setStatus($('twStatus'), ['Twitch działa przez wykrywacz, a ten teraz nie odpowiada. Uruchom go: ', { b: 'Menu Start → Vincent-Media → Wykrywacz gier' }, '.']); return; }
     switch (st.status) {
       case 'online': pill('twPill', true, 'POŁĄCZONO'); setStatus($('twStatus'), ['Połączono jako ', { b: st.user }, '. Alerty przychodzą na żywo.']); $('twOnline').hidden = false; break;
       case 'connecting': pill('twPill', false, '', 'ŁĄCZĘ'); setStatus($('twStatus'), ['Łączę z Twitchem', st.user ? ' jako ' : '', st.user ? { b: st.user } : '', '…']); $('twOnline').hidden = false; break;
@@ -1834,7 +1846,7 @@
     let info = null;
     try { const r = await fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/remote/info', { cache: 'no-store' }); info = await r.json(); } catch {}
     $('rmOn').hidden = !(info && info.lan && info.urls && info.urls.length);
-    if (!info) { pill('rmPill', false, '', 'BRAK'); setStatus($('rmStatus'), ['Pilot działa przez wykrywacz. Uruchom ', { b: 'start-detector.bat' }, '.']); }
+    if (!info) { pill('rmPill', false, '', 'BRAK'); setStatus($('rmStatus'), ['Pilot działa przez wykrywacz, a ten teraz nie odpowiada. Uruchom go: ', { b: 'Menu Start → Vincent-Media → Wykrywacz gier' }, '.']); }
     else if (!info.lan) { pill('rmPill', false, '', 'WYŁ.'); setStatus($('rmStatus'), ['Wymaga jednej zgody administratora: ', { b: 'Menu Start → Vincent-Media → Włącz pilota z telefonu' }, '. Wykrywacz sam uruchomi się ponownie.']); }
     else {
       pill('rmPill', true, 'DZIAŁA'); setStatus($('rmStatus'), [info.urls.length > 1 ? 'Komputer ma kilka adresów – użyj tego z Twojej sieci Wi‑Fi.' : '']);
