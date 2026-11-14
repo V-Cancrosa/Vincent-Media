@@ -163,12 +163,24 @@ Licznik czasu przy wykrytej grze liczy od uruchomienia gry, przy wpisanej ręczn
 ## Start: wszystko na co dzień w jednej zakładce
 
 Panel otwiera się na zakładce **Start**:
-- **stan** wykrywacza, OBS i Twitcha (kliknięcie prowadzi do ustawień),
-- **wykryta gra** i **automatyczne przechwytywanie**: panel sam dodaje źródło `VM · Gra (automatycznie)` do **wszystkich scen** (Twoich i scen gry VM; na samym dole, w ramce dopasowane do okna 1440×810) i przestawia je na okno właśnie wykrytej gry (dopasowanie po pliku .exe). Sceny, w których go nie chcesz, odznacz w *Start → Sceny z przechwytywaniem* – źródło zostanie z nich usunięte. Domyślnie *przechwytywanie okna* metodą Windows Graphics Capture (zwykła metoda dawała czarny obraz); *przechwytywanie gry* do wyboru,
-- **uruchom wykrywacz**: gdy wykrywacz nie działa, na karcie Start pojawia się przycisk *Uruchom wykrywacz*. Działa, jeśli przy instalacji zgodzisz się na „uruchamianie z OBS i strażnika” (instalator rejestruje adres `vincentmedia://start` i zadanie, które co 5 minut sprawdza, czy wykrywacz żyje – to samo pytanie wyłącza oba),
-- **sceny** jednym kliknięciem (z przejściem),
-- **Moje gry i programy** – każda wykryta gra i program (np. Blender) zapisuje się sama (`detector\data\library.json`, z czasem grania); ▶ uruchamia ją przez Steam albo z pliku, ✕ ukrywa na liście,
+- **stan** wykrywacza, OBS i Twitcha (kliknięcie prowadzi do ustawień). Gdy wykrywacz nie odpowiada, panel po kilku sekundach sam go uruchamia (raz), a przycisk *Uruchom wykrywacz* zostaje na wszelki wypadek. Działa, jeśli przy instalacji zgodzisz się na „uruchamianie z OBS i strażnika” (adres `vincentmedia://start` + zadanie, które co 5 minut sprawdza, czy wykrywacz żyje),
+- **Co dziś?** – główny sposób wyboru gry. Lista gier i programów, które już uruchamiałeś (dopisują się same), a pod nią **wszystkie zainstalowane gry ze Steama**. *Wybierz* = ta gra jest na nakładce bez względu na wykrywanie; pod każdą pozycją wybierasz **motyw gry** (automatycznie, dowolny motyw z listy albo „bez motywu – sama postać”). ▶ uruchamia grę, ✕ chowa ją z listy, *↺ auto* wraca do automatycznego wykrywania,
+- **automatyczne przechwytywanie**: panel dodaje źródło `VM · Gra (automatycznie)` do wszystkich scen (odznaczysz w *W których scenach*) i ustawia je na okno uruchomionej gry: Windows Graphics Capture, z kursorem, tylko zawartość okna,
+- **mikrofon**: jeśli OBS nie ma mikrofonu ani w *Ustawienia → Dźwięk*, ani jako źródła, panel dodaje `VM · Mikrofon` (domyślny mikrofon Windows) do scen,
+- **Sceny** – jedyne miejsce do zmiany scen: ekrany VM (przed streamem, przerwa, koniec), gra, rozmowa i Twoje własne sceny z OBS, zawsze z przejściem,
 - **szybki test** alertów, czatu i bota.
+
+Reszta jest w zakładkach **Sterowanie** (gra ręcznie, odliczanie i napisy ekranów, alerty), **Wygląd**, **Czat** i **Więcej** (Twitch, OBS, wykrywacz, funkcje, telefon, wersja).
+
+### Postać prowadzi, gra jest naszyta (tryb „Łatka”)
+
+Stream zawsze prowadzi jedna z postaci, więc domyślny tryb fuzji to **Łatka**: karta, czcionki, kolory i portret są postaci, a gra jest na nią naszyta – naszywka z **logo gry** (dla gier ze Steama) albo emblematem motywu, wstążka w kolorach gry przyszyta do dołu karty i cząsteczki gry. Pozostałe tryby (50:50, sam motyw gry, eksperymentalne) są w *Wygląd → Gdy gra ma własny motyw*.
+
+Portret postaci jest **wkomponowany w kartę**: dolna krawędź karty jest przed postacią, a górna – za nią (głowa wychodzi ponad kartę). W lewym rogu ekranu postać stoi z lewej i patrzy w prawo, w prawym – z prawej i patrzy w lewo (portret odbija się sam). Na pełnoekranowej grze nie ma już drugiego, dużego portretu w rogu – jest tylko ten w karcie.
+
+### Grafiki gier
+
+Logo, okładkę i tło gry ze Steama nakładka bierze **z pamięci Steama na Twoim komputerze** (`Steam\appcache\librarycache`, przez wykrywacz), a gdy ich tam nie ma – z publicznego CDN Steama. Repozytorium nie zawiera i nie rozpowszechnia tych grafik. Wszystkie logotypy, okładki i grafiki gier są własnością ich wydawców i twórców; używam ich z sympatii do tych gier, wyłącznie po to, żeby pokazać, w co gram. Jeśli właściciel praw ma zastrzeżenia – napisz (zgłoszenie w repozytorium), a grafika zostanie usunięta od razu. Wyłączenie: `gameLogo: false` w ustawieniach (wtedy zostaje emblemat motywu).
 
 Reszta jest w zakładkach **Sterowanie** (gra ręcznie, ekrany, alerty), **Wygląd**, **Czat** i **Więcej** (Twitch, OBS, wykrywacz, funkcje, telefon, wersja).
 

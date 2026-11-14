@@ -49,7 +49,12 @@
   .bigbtns button { padding: 12px 8px; font-size: 13px; font-weight: 600; white-space: normal; }
   .bigbtns.small button { padding: 8px 6px; font-weight: 500; }
   .bigbtns button[aria-pressed="true"] { background: #e91916; border-color: #e91916; color: #fff; }
-  .lib { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #1d2027; }
+  .lib select { grid-column: 1 / -1; font-size: 12px; padding: 4px 6px; }
+  .scgroup { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; margin-bottom: 8px; }
+  .scgroup button { padding: 10px 8px; font-size: 13px; font-weight: 600; white-space: normal; }
+  .scgroup button[aria-pressed="true"] { background: #e91916; border-color: #e91916; color: #fff; }
+  .sclabel { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 2px 0 4px; }
+  .lib { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #1d2027; }
   .lib.cur { border-color: var(--ok); } .lib small { display: block; color: var(--muted); font-size: 11px; } .lib b { color: #fff; }
   .lib button { padding: 6px 10px; }
   .tests { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
@@ -63,7 +68,7 @@
   .row { display: flex; gap: 8px; align-items: end; }
   .row > * { flex: 1; min-width: 0; }
   .row > .auto { flex: none; }
-  input[type=text], input[type=url], select {
+  input[type=text], input[type=url], input[type=search], select {
     width: 100%; background: #14161b; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; font: inherit;
   }
   input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
@@ -141,6 +146,8 @@
     <div class="status" id="detStartMsg" hidden></div>
     <div class="now"><b id="stGame">—</b><small id="stGameSub"></small></div>
     <label class="check"><input id="autoCapture" type="checkbox"> OBS sam łapie okno wykrytej gry</label>
+    <label class="check"><input id="autoMic" type="checkbox"> dodaj mikrofon do scen, jeśli OBS go nie ma</label>
+    <div class="status" id="micStatus"></div>
     <div class="row">
       <label>Sposób
         <select id="captureKind">
@@ -156,19 +163,17 @@
     </details>
     <div class="status" id="capStatus"></div>
   </section>
-  <section>
-    <h2>Scena</h2>
-    <div class="bigbtns" id="stScenes">
-      <button data-go="s:prep">Przygotowania</button><button data-go="s:start">Zaraz zaczynamy</button>
-      <button data-go="o:VM · Gra – pełny ekran">Gra</button><button data-go="o:VM · Gra – w ramce">Gra w ramce</button>
-      <button data-go="s:brb">Przerwa</button><button data-go="o:VM · Rozmowa">Rozmowa</button>
-      <button data-go="s:end">Koniec</button>
-    </div>
-  </section>
   <section data-feature="local">
-    <h2>Moje gry i programy</h2>
+    <h2>Co dziś? <span class="pill" id="pickPill"></span></h2>
+    <div class="row"><input id="libFilter" type="search" placeholder="Szukaj gry albo programu…" autocomplete="off"><button class="auto" id="libAuto" title="Wróć do automatycznego wykrywania">↺ auto</button></div>
     <div class="slist" id="libList"></div>
-    <p class="hint" style="margin:0">Każda wykryta gra i program (np. Blender) trafia tu sama. ▶ uruchamia ją – przez Steam albo z pliku.</p>
+    <details id="libInstBox"><summary id="libInstSum">Zainstalowane ze Steama</summary><div class="slist" id="libInst"></div></details>
+    <p class="hint" style="margin:0"><b>Wybierz</b> = ta gra jest na nakładce (niezależnie od wykrywania), a obok wybierasz jej motyw. ▶ uruchamia grę. Gry i programy, które uruchamiasz, dopisują się same.</p>
+  </section>
+  <section>
+    <h2>Sceny</h2>
+    <div id="stScenes"></div>
+    <p class="hint" style="margin:0">Jedyne miejsce do zmiany scen: ekrany VM i Twoje sceny z OBS (z przejściem). Odliczanie i napisy ekranów – Sterowanie → Ekrany.</p>
   </section>
   <section>
     <h2>Szybki test</h2>
@@ -202,8 +207,8 @@
     <div class="chips" id="chips"></div>
   </section>
   <section>
-    <h2>Ekrany</h2>
-    <div class="seg3" id="sceneBtns">
+    <h2>Ekrany – odliczanie i napisy</h2>
+    <div class="seg3" id="sceneBtns" hidden>
       <button data-s="prep">Przygotowania</button><button data-s="soon">Stream za…</button><button data-s="start">Zaraz zaczynamy</button>
       <button data-s="late">Spóźnienie</button><button data-s="brb">Przerwa</button><button data-s="brb-late">Przerwa się przedłuża</button>
       <button data-s="end">Koniec + napisy</button>
@@ -261,7 +266,8 @@
   </section>
   <section data-feature="obs">
     <h2>Sceny OBS <span id="obsLive" class="pill off"></span></h2>
-    <div class="tests" id="obsScenes"></div>
+    <div class="tests" id="obsScenes" hidden></div>
+    <p class="hint" style="margin:0">Sceny przełączasz na karcie Start.</p>
     <label class="check"><input id="obsAutoScene" type="checkbox"> wybór ekranu przełącza też scenę OBS („VM · …”)</label>
   </section>
 
@@ -365,6 +371,7 @@
     <div class="checks">
       <label style="flex-basis:100%">Gdy gra ma własny motyw
         <select id="gameMode">
+          <option value="patch">Łatka – postać prowadzi, gra naszyta na wierzch (logo, wstążka, cząsteczki)</option>
           <option value="fuse-half">Fuzja pół na pół (50:50) – wymieszane kolory i teksty</option>
           <option value="game">Sam motyw gry</option>
           <option value="off">Ignoruj motywy gier</option>
@@ -583,7 +590,7 @@
     accent: '', accent2: '', mode: 'auto', discordId: '', ignore: '',
     timer: true, icon: true, showLabel: true, visible: true, scale: 1, margin: 40,
     local: true, localUrl: 'http://localhost:7777',
-    gameThemes: true, gameMode: 'fuse-half', fuseV: 2, motion: 'full', transitions: true, transitionStyle: 'auto', transitionText: true,
+    gameThemes: true, gameMode: 'patch', fuseV: 3, motion: 'full', transitions: true, transitionStyle: 'auto', transitionText: true,
     features: { discord: false, twitch: true, obs: true },
     scene: 'start', sceneUntil: 0, sceneSub: '', socials: '', sceneHero: true,
     alertPos: 'tc', alertScale: 1.25, alertDuration: 6, alertVolume: 0.5,
@@ -593,7 +600,7 @@
   const $ = id => document.getElementById(id);
   const load = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
   // v1.15: domyślna fuzja to 50:50; proporcje 66:33 / 33:66 są eksperymentalne (zostają tylko, jeśli ktoś wybrał je świadomie)
-  const migrate = st => { if (st.fuseV !== 2) { if (!st.gameMode || st.gameMode === 'fuse') st.gameMode = 'fuse-half'; st.fuseV = 2; } return st; };
+  const migrate = st => { if (st.fuseV !== 3) { if (!st.gameMode || st.gameMode === 'fuse' || st.gameMode === 'fuse-half') st.gameMode = 'patch'; st.fuseV = 3; } return st; };
   let s = { ...DEFAULTS, ...migrate(load(KEY, {})) };
   try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {}
   let history = load(HISTORY_KEY, []);
@@ -718,7 +725,7 @@
     $('lang').value = s.lang === 'en' ? 'en' : 'pl'; $('myrRegister').value = s.myrRegister || 'auto';
     $('myrRow').hidden = pid !== 'myr';
     $('local').checked = s.local;
-    $('gameMode').value = s.gameThemes === false ? 'off' : (s.gameMode || 'fuse-half');
+    $('gameMode').value = s.gameThemes === false ? 'off' : (s.gameMode || 'patch');
     $('reducedMotion').checked = s.motion === 'reduced';
     $('timer').checked = s.timer; $('icon').checked = s.icon; $('showLabel').checked = s.showLabel;
     $('scale').value = s.scale; $('scaleVal').textContent = Math.round(s.scale * 100) + '%';
@@ -851,7 +858,7 @@
     if (!s.showLabel) q.set('showLabel', '0');
     if (!s.local) q.set('local', '0');
     if (s.gameThemes === false) q.set('gameThemes', '0');
-    if (s.gameMode && s.gameMode !== 'fuse-half') q.set('gameMode', s.gameMode);
+    if (s.gameMode && s.gameMode !== 'patch') q.set('gameMode', s.gameMode);
     if (s.motion === 'reduced') q.set('motion', 'reduced');
     if (s.localUrl !== DEFAULTS.localUrl) q.set('localUrl', s.localUrl);
     $('staticUrl').value = u.href;
@@ -907,6 +914,7 @@
       box.appendChild(b);
     }
     pill('obsLive', !!current, current ? 'NA ŻYWO: ' + current.replace(/^VM · /, '') : '');
+    if (typeof renderStartScenes === 'function') try { renderStartScenes(); } catch {}
   }
   async function obsStart() {
     if (obs) { obs.close(); obs = null; }
@@ -921,7 +929,7 @@
         if (!s.obsMic || name === s.obsMic) obsLevel = db;
       },
       onTalking: t => { obsTalk = t; },
-      onReady: () => obsRecStatus(),
+      onReady: () => { obsRecStatus(); setTimeout(ensureMic, 1500); },
       // nagrywanie razem ze streamem: start po starcie streama, stop po końcu (jeśli włączone)
       onOutput: async (t, d) => {
         if (t === 'RecordStateChanged') { obsRecStatus(); return; }
@@ -1102,6 +1110,9 @@
     }).join('');
   }
   // wykrywacz nie działa: uruchomienie przez adres vincentmedia:// (dodaje go instalator za zgodą)
+  // panel w OBS otwiera się razem z OBS: gdy wykrywacz nie odpowiada, raz uruchom go sam (adres vincentmedia://)
+  let detAuto = false;
+  setTimeout(() => { if (!detAuto && s.local && !isRemote && s.detAutoStart !== false && !$('lcPill').classList.contains('on')) { detAuto = true; $('detStart').click(); } }, 6000);
   $('detStart').onclick = () => {
     const f = document.createElement('iframe'); f.style.display = 'none'; f.src = 'vincentmedia://start'; document.body.appendChild(f);
     setTimeout(() => f.remove(), 3000);
@@ -1129,8 +1140,10 @@
   async function startGame() {
     let g = null;
     try { const j = await (await fetch(hubUrl() + '/game', { cache: 'no-store' })).json(); g = j && j.game; } catch {}
-    $('stGame').textContent = g ? g.name : (s.game || 'nic nie wykryto');
-    $('stGameSub').textContent = g ? [g.via === 'steam' ? 'Steam' : g.via === 'renpy' ? "Ren'Py" : g.via === 'app' ? 'program' : '', g.exe].filter(Boolean).join(' · ') : (s.game ? 'wpisana ręcznie' : 'uruchom grę albo wpisz ją w Sterowanie → Gra');
+    const picked = s.mode === 'manual' && s.game;
+    $('stGame').textContent = picked ? s.game : g ? g.name : (s.game || 'nic nie wykryto');
+    $('stGameSub').textContent = picked ? 'wybrana z listy' + (g && g.name !== s.game ? ' · uruchomione: ' + g.name : '') + ' · ↺ auto wraca do wykrywania'
+      : g ? [g.via === 'steam' ? 'Steam' : g.via === 'renpy' ? "Ren'Py" : g.via === 'app' ? 'program' : '', g.exe].filter(Boolean).join(' · ') : (s.game ? 'wpisana ręcznie' : 'wybierz grę z listy „Co dziś?”');
     if (!g || !g.window || !obs || s.autoCapture === false || isRemote || capBusy) {
       if (s.autoCapture !== false && g && !g.window) $('capStatus').textContent = 'Gra wykryta, ale nie widzę jej okna – może jest zminimalizowana.';
       return;
@@ -1144,7 +1157,7 @@
       if (ex && ex.inputKind !== kind) await obs.call('RemoveInput', { inputName: CAP_NAME });
       let made = !!(ex && ex.inputKind === kind);
       // okno: metoda Windows Graphics Capture (2) – BitBlt daje czarny obraz w nowych aplikacjach (np. Paint) i wielu grach
-      const settings = kind === 'game_capture' ? { capture_mode: 'window', window: g.window, priority: 2 } : { window: g.window, priority: 2, method: 2, cursor: false };
+      const settings = kind === 'game_capture' ? { capture_mode: 'window', window: g.window, priority: 2, capture_cursor: true } : { window: g.window, priority: 2, method: 2, cursor: true, client_area: true };
       const vs = await obs.call('GetVideoSettings');
       let placed = 0;
       // odznaczone sceny: zabierz źródło
@@ -1171,33 +1184,116 @@
     } catch (e) { $('capStatus').textContent = 'OBS odmówił: ' + e.message; }
     capBusy = false;
   }
+  // mikrofon: jeśli OBS nie ma mikrofonu w ustawieniach dźwięku ani żadnego źródła mikrofonu – dodaj «VM · Mikrofon» (domyślne urządzenie) do scen
+  const MIC_NAME = 'VM · Mikrofon';
+  async function ensureMic() {
+    if (!obs || s.autoMic === false || isRemote) return;
+    try {
+      const sp = await obs.call('GetSpecialInputs');
+      const inputs = (await obs.call('GetInputList')).inputs || [];
+      const global = [sp.mic1, sp.mic2, sp.mic3, sp.mic4].filter(Boolean);
+      const own = inputs.filter(i => i.inputKind === 'wasapi_input_capture' || i.inputKind === 'coreaudio_input_capture' || i.inputKind === 'pulse_input_capture');
+      if (global.length) { $('micStatus').textContent = 'Mikrofon: ' + global[0] + ' (ustawienia dźwięku OBS – działa we wszystkich scenach).'; return; }
+      let made = own.some(i => i.inputName === MIC_NAME);
+      if (own.length && !made) { $('micStatus').textContent = 'Mikrofon: ' + own[0].inputName + ' (źródło w scenach).'; return; }
+      let n = 0;
+      for (const sc of obsSceneList) {
+        const items = (await obs.call('GetSceneItemList', { sceneName: sc })).sceneItems || [];
+        if (items.some(i => i.sourceName === MIC_NAME)) { n++; continue; }
+        if (made) await obs.call('CreateSceneItem', { sceneName: sc, sourceName: MIC_NAME });
+        else { await obs.call('CreateInput', { sceneName: sc, inputName: MIC_NAME, inputKind: 'wasapi_input_capture', inputSettings: { device_id: 'default' } }); made = true; }
+        n++;
+      }
+      $('micStatus').textContent = n ? `Mikrofon: dodałem «${MIC_NAME}» (domyślny mikrofon Windows) w ${n} scenach. Zmienisz go w jego właściwościach w OBS.` : '';
+    } catch (e) { $('micStatus').textContent = 'Mikrofon: OBS odmówił – ' + e.message; }
+  }
+  $('autoMic').onchange = () => { s.autoMic = $('autoMic').checked; save(); ensureMic(); };
   $('autoCapture').onchange = () => { s.autoCapture = $('autoCapture').checked; capLast = ''; save(); };
   $('captureKind').onchange = () => { s.captureKind = $('captureKind').value; capLast = ''; save(); };
+  // --- jedna lista scen: ekrany VM i sceny z OBS ---
+  const SCENE_GROUPS = [
+    ['Przed streamem', [['s:prep', 'Przygotowania'], ['s:soon', 'Stream za…'], ['s:start', 'Zaraz zaczynamy'], ['s:late', 'Spóźnienie']]],
+    ['W trakcie', [['o:VM · Gra – pełny ekran', 'Gra'], ['o:VM · Gra – w ramce', 'Gra w ramce'], ['o:VM · Rozmowa', 'Rozmowa']]],
+    ['Przerwa i koniec', [['s:brb', 'Przerwa'], ['s:brb-late', 'Przerwa się przedłuża'], ['s:end', 'Koniec + napisy']]]
+  ];
+  let scenesKey = '';
+  function renderStartScenes() {
+    const own = obsSceneList.filter(n => n.indexOf('VM · ') !== 0);
+    const groups = SCENE_GROUPS.map(([t, l]) => [t, l.slice()]);
+    if (own.length) groups.splice(2, 0, ['Twoje sceny w OBS', own.map(n => ['o:' + n, n])]);
+    const key = JSON.stringify(groups); if (key === scenesKey) return markStartScenes(); scenesKey = key;
+    $('stScenes').innerHTML = groups.map(([t, l]) => `<div class="sclabel">${esc(t)}</div><div class="scgroup">${l.map(([go, n]) => `<button data-go="${esc(go)}">${esc(n)}</button>`).join('')}</div>`).join('');
+    markStartScenes();
+  }
   $('stScenes').addEventListener('click', e => {
     const b = e.target.closest('[data-go]'); if (!b) return;
     const [t, v] = [b.dataset.go.slice(0, 1), b.dataset.go.slice(2)];
-    if (t === 's') { const btn = document.querySelector(`#sceneBtns button[data-s="${v}"]`); if (btn) btn.click(); return; }
+    if (t === 's') { const btn = document.querySelector(`#sceneBtns button[data-s="${v}"]`); if (btn) btn.click(); setTimeout(markStartScenes, 900); return; }
     if (!obs) { $('capStatus').textContent = 'Brak połączenia z OBS.'; return; }
-    goScene(v.includes('Rozmowa') ? 'talk' : 'game', () => obs.setSceneCut(v).catch(() => {}));
+    goScene(KIND_FOR_OBS[v] || (v.includes('Rozmowa') ? 'talk' : 'game'), () => obs.setSceneCut(v).catch(() => {}));
   });
+
+  // --- Co dziś? lista gier i programów: wybór gry i jej motywu ---
+  const GT = window.OverlayGameThemes;
+  let libData = { items: [], installed: [], current: '' };
+  const themeOpts = (name) => {
+    const tf = (s.themeFor || {})[String(name).toLowerCase()] || '';
+    const auto = GT && GT.find ? GT.find(name) : null;
+    const games = (GT ? GT.list : []).filter(t => t.group !== 'fursona').slice().sort((a, b) => a.name.localeCompare(b.name));
+    return `<option value="">motyw: ${auto ? 'automatycznie – ' + esc(auto.name) : 'automatycznie (brak własnego)'}</option>` +
+      games.map(t => `<option value="${esc(t.id)}"${tf === t.id ? ' selected' : ''}>motyw: ${esc(t.name)}</option>`).join('') +
+      `<option value="none"${tf === 'none' ? ' selected' : ''}>bez motywu gry (sama postać)</option>`;
+  };
+  const isPicked = e => s.mode === 'manual' && s.game && s.game.toLowerCase() === String(e.name).toLowerCase();
+  function libRow(e, inst) {
+    const ago = t => { const m = Math.round((Date.now() - new Date(t)) / 60000); return !t ? '' : m < 2 ? 'teraz' : m < 60 ? m + ' min temu' : m < 1440 ? Math.round(m / 60) + ' h temu' : Math.round(m / 1440) + ' dni temu'; };
+    const meta = inst ? 'Steam · zainstalowana' : [e.steam ? 'Steam' : e.kind === 'make' ? 'program' : e.kind === 'vn' ? 'visual novel' : 'gra', ago(e.last), e.minutes >= 1 ? Math.round(e.minutes / 6) / 10 + ' h' : '', e.id === libData.current ? 'uruchomiona' : ''].filter(Boolean).join(' · ');
+    return `<div class="lib ${isPicked(e) ? 'cur' : ''}" data-id="${esc(e.id)}"><div><b>${esc(e.name)}</b><small>${esc(meta)}</small></div>
+      <button class="${isPicked(e) ? '' : 'primary'}" data-pick="${esc(e.id)}">${isPicked(e) ? '✓ Na nakładce' : 'Wybierz'}</button><button data-run="${esc(e.id)}" title="Uruchom">▶</button>${inst ? '<span></span>' : `<button data-hide="${esc(e.id)}" title="Ukryj na liście">✕</button>`}
+      <select data-theme="${esc(e.id)}">${themeOpts(e.name)}</select></div>`;
+  }
+  function renderLibrary() {
+    const f = ($('libFilter').value || '').trim().toLowerCase(), ok = e => !f || String(e.name).toLowerCase().includes(f);
+    const items = libData.items.filter(ok), inst = libData.installed.filter(ok);
+    $('libList').innerHTML = items.length ? items.slice(0, 40).map(e => libRow(e, false)).join('')
+      : `<p class="hint" style="margin:0">${f ? 'Nic nie pasuje.' : 'Jeszcze pusto – wybierz grę z zainstalowanych poniżej albo uruchom grę lub program, a dopisze się sama.'}</p>`;
+    $('libInstSum').textContent = `Zainstalowane ze Steama (${libData.installed.length})`;
+    $('libInstBox').hidden = !libData.installed.length;
+    $('libInst').innerHTML = inst.slice(0, 80).map(e => libRow(e, true)).join('');
+    if (f && inst.length && !items.length) $('libInstBox').open = true;
+    pill('pickPill', s.mode === 'manual' && !!s.game, s.mode === 'manual' && s.game ? 'WYBRANA RĘCZNIE' : '', 'AUTOMATYCZNIE');
+  }
   async function startLibrary() {
     if (!s.local || document.querySelector('.tab[data-tab="start"]').hidden) return;
-    let j; try { j = await (await fetch(hubUrl() + '/library', { cache: 'no-store' })).json(); } catch { $('libList').innerHTML = '<p class="hint" style="margin:0">Wykrywacz nie działa – uruchom go z menu Start.</p>'; return; }
-    const ago = t => { const m = Math.round((Date.now() - new Date(t)) / 60000); return !t ? '' : m < 2 ? 'teraz' : m < 60 ? m + ' min temu' : m < 1440 ? Math.round(m / 60) + ' h temu' : Math.round(m / 1440) + ' dni temu'; };
-    const items = (j.items || []).slice(0, 12);
-    $('libList').innerHTML = items.length ? items.map(e => `<div class="lib ${e.id === j.current ? 'cur' : ''}"><div><b>${esc(e.name)}</b><small>${esc([e.steam ? 'Steam' : e.kind === 'make' ? 'program' : e.kind === 'vn' ? 'visual novel' : 'gra', ago(e.last), e.minutes >= 1 ? Math.round(e.minutes / 6) / 10 + ' h' : ''].filter(Boolean).join(' · '))}</small></div>
-      <button data-run="${esc(e.id)}" title="Uruchom">▶</button><button data-hide="${esc(e.id)}" title="Ukryj na liście">✕</button></div>`).join('')
-      : '<p class="hint" style="margin:0">Jeszcze pusto – uruchom grę albo program, a pojawi się tutaj.</p>';
+    try { const j = await (await fetch(hubUrl() + '/library', { cache: 'no-store' })).json(); libData = { items: j.items || [], installed: j.installed || [], current: j.current || '' }; }
+    catch { $('libList').innerHTML = '<p class="hint" style="margin:0">Wykrywacz nie działa – kliknij „Uruchom wykrywacz” wyżej albo uruchom go z menu Start.</p>'; return; }
+    renderLibrary();
   }
-  $('libList').addEventListener('click', async e => {
-    const r = e.target.closest('[data-run]'), h = e.target.closest('[data-hide]');
+  const libFind = id => libData.items.find(e => e.id === id) || libData.installed.find(e => e.id === id);
+  $('libFilter').addEventListener('input', renderLibrary);
+  $('libAuto').onclick = () => { s.mode = 'auto'; save(); renderLibrary(); };
+  const libClick = async e => {
+    const r = e.target.closest('[data-run]'), h = e.target.closest('[data-hide]'), p = e.target.closest('[data-pick]');
+    if (p) {
+      const it = libFind(p.dataset.pick); if (!it) return;
+      if (!isPicked(it)) { s.game = it.name; s.gameSteam = it.steam || ''; s.since = Date.now(); s.subtitle = ''; s.cover = ''; }
+      s.mode = 'manual'; s.visible = true; remember(it.name); save(); renderLibrary();
+    }
     if (r) { r.textContent = '…'; try { const j = await (await fetch(hubUrl() + '/library/launch?id=' + encodeURIComponent(r.dataset.run), { cache: 'no-store' })).json(); r.textContent = j.ok ? '✓' : '!'; if (!j.ok) r.title = j.error; } catch { r.textContent = '!'; } }
     if (h) { try { await fetch(hubUrl() + '/library/edit?hidden=1&id=' + encodeURIComponent(h.dataset.hide), { cache: 'no-store' }); } catch {} startLibrary(); }
-  });
+  };
+  const libTheme = e => {
+    const sel = e.target.closest('[data-theme]'); if (!sel) return;
+    const it = libFind(sel.dataset.theme); if (!it) return;
+    s.themeFor = { ...(s.themeFor || {}) }; const k = String(it.name).toLowerCase();
+    if (sel.value) s.themeFor[k] = sel.value; else delete s.themeFor[k];
+    save();
+  };
+  for (const id of ['libList', 'libInst']) { $(id).addEventListener('click', libClick); $(id).addEventListener('change', libTheme); }
   document.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => (b.dataset.qt === 'bot' ? $('botTest').click() : runTest(b.dataset.qt, 0)));
   // aktywna scena podświetlona (scena OBS albo ekran przerwy)
-  const markStartScenes = () => { for (const b of document.querySelectorAll('#stScenes [data-go]')) { const v = b.dataset.go.slice(2); b.setAttribute('aria-pressed', b.dataset.go[0] === 'o' ? obsCurrent === v : s.scene === v && /^VM · (Przygotowania|Zaraz|Spóźnienie|Przerwa|Koniec)/.test(obsCurrent)); } };
-  const startTick = () => { if (document.querySelector('.tab[data-tab="start"]').hidden) return; startStatus(); renderCapScenes(); startGame(); markStartScenes(); };
+  function markStartScenes() { for (const b of document.querySelectorAll('#stScenes [data-go]')) { const v = b.dataset.go.slice(2); b.setAttribute('aria-pressed', b.dataset.go[0] === 'o' ? obsCurrent === v : s.scene === v && (!obsCurrent || obsCurrent === OBS_SCENE_FOR[v])); } }
+  const startTick = () => { if (document.querySelector('.tab[data-tab="start"]').hidden) return; startStatus(); renderCapScenes(); startGame(); renderStartScenes(); };
   setInterval(startTick, 3000); setInterval(startLibrary, 15000);
   document.querySelector('.tabs button[data-tab="start"]').addEventListener('click', () => setTimeout(() => { startTick(); startLibrary(); }, 50));
   setTimeout(() => { startTick(); startLibrary(); }, 800);
@@ -1237,7 +1333,7 @@
     $('tickerSpeed').value = s.tickerSpeed || 140; $('tickerSpeedVal').textContent = (s.tickerSpeed || 140) + ' px/s';
     $('botHide').checked = s.botHide !== false; $('alertsInChat').checked = s.alertsInChat !== false;
     $('botShow').setAttribute('aria-pressed', s.botHide === false);
-    $('autoCapture').checked = s.autoCapture !== false; $('captureKind').value = s.captureKind === 'game' ? 'game' : 'window'; $('autoRecord').checked = !!s.autoRecord; $('autoRecordStop').checked = s.autoRecordStop !== false;
+    $('autoCapture').checked = s.autoCapture !== false; $('autoMic').checked = s.autoMic !== false; $('captureKind').value = s.captureKind === 'game' ? 'game' : 'window'; $('autoRecord').checked = !!s.autoRecord; $('autoRecordStop').checked = s.autoRecordStop !== false;
   }
   const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const fmtMin = m => m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;

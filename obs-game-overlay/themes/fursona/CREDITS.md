@@ -18,3 +18,7 @@ Głowa Myr-35 (SVG, narysowana od zera) jest wzorowana na kształcie protogena z
 
 Myr-35 i Zarin nie mają jeszcze ilustracji – ich motywy używają symboli narysowanych od zera (wizjer, płyta z kadłuba „PATCH”), CC0.
 Protogeny to gatunek Zenith's Outer Reach, Avali to gatunek stworzony przez RyuujinZERO.
+
+## Grafiki gier
+
+Logo, okładki i tła gier (naszywka na karcie, ikona) nie są częścią repozytorium: nakładka wczytuje je z pamięci Steama na komputerze streamera albo z publicznego CDN Steama. Należą do wydawców i twórców gier. Używamy ich z uwielbieniem dla tych gier i w duchu współpracy – na prośbę właściciela praw zostaną natychmiast wyłączone/usunięte.

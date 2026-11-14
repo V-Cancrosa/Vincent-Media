@@ -202,3 +202,44 @@
 
 /* mniej ruchu */
 .reduced-motion #backdrop *, .reduced-motion #emblem * { animation: none !important; }
+
+/* ============================================================ postać wkomponowana w kartę
+   Dół karty jest przed postacią (portret ucięty na dolnej krawędzi), a górna krawędź – za nią (głowa wychodzi ponad kartę).
+   W lewym rogu postać stoi z lewej i patrzy w prawo, w prawym – odwrotnie (face-flip = odbicie lustrzane). */
+#pop { display: none; position: absolute; bottom: 0; width: 200px; height: calc(100% + 110px); z-index: 3; pointer-events: none;
+  clip-path: inset(-200px -200px 3px -200px); }
+.has-pop #pop { display: block; }
+.side-l #pop { left: 4px; } .side-r #pop { right: 4px; }
+#pop img { position: absolute; left: 0; bottom: -22px; width: 100%; height: auto; transform-origin: 50% 100%;
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 45%, transparent)) drop-shadow(0 6px 10px rgba(0,0,0,.5));
+  animation: pop-breathe 4s ease-in-out infinite; }
+.face-flip #pop img { scale: -1 1; }
+@keyframes pop-breathe { 50% { translate: 0 -3px; } }
+#wrap.show #pop img { animation: pop-in .7s .2s both cubic-bezier(.2,.9,.3,1.2), pop-breathe 4s 1s ease-in-out infinite; }
+@keyframes pop-in { from { translate: 0 60px; opacity: 0; } to { translate: 0 0; opacity: 1; } }
+.talking #pop img { animation: pop-talk .32s ease-in-out infinite alternate; }
+@keyframes pop-talk { to { translate: 0 -5px; scale: var(--fx-s, 1) 1.02; } }
+.face-flip.talking #pop img { --fx-s: -1; }
+.reduced-motion #pop img { animation: none !important; }
+.has-pop.side-l #card { padding-left: 206px !important; }
+.has-pop.side-r #card { padding-right: 206px !important; }
+/* Ragnar: korektor nad kartą, gdy postać zajmuje bok */
+.has-pop .fr-eq { right: auto; left: 50%; bottom: auto; top: -34px; height: 30px; transform: translateX(-50%); }
+/* Toro: latarnia po przeciwnej stronie niż postać */
+.side-r .ft-lantern { right: auto; left: -26px; }
+
+/* Vince (zdjęcie w ramce) – domyślnie z lewej */
+.theme-g-vince.side-r #card { padding: 18px 150px 26px 40px; }
+.side-r .fv-frame { left: auto; right: 14px; }
+.side-r .fv-dual { left: 20px; }
+.face-flip .fv-frame img { scale: -1 1; }
+/* Chip (polaroid) – domyślnie z prawej */
+.theme-g-chip.side-l #card { padding: 16px 16px 16px 150px; }
+.side-l .fc-polaroid { right: auto; left: 16px; transform: rotate(-7deg); animation-name: fc-sway-l; }
+@keyframes fc-sway-l { 50% { transform: rotate(-4deg) translateY(2px); } }
+.side-l .fc-bell { left: auto; right: -18px; }
+.face-flip .fc-polaroid img { scale: -1 1; }
+/* Myr – głowa domyślnie z lewej, wizjer w prawo */
+.theme-g-myr.side-r #card { padding: 16px 70px 16px 40px; }
+.side-r .fm-head { left: auto; right: -34px; }
+.face-flip .fm-head { scale: -1 1; }

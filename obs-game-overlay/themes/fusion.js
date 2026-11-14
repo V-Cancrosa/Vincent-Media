@@ -1,5 +1,7 @@
 /*
   Fuzja stylu (postać albo motyw bazowy) z motywem gry. Tryby (ustawienie gameMode):
+    'patch'     – łatka (domyślny): postać prowadzi – karta, czcionki, kolory i avatar są jej, a gra jest
+                  naszyta na wierzch jak łatki: emblemat/logo gry, wstążka w kolorach gry, cząsteczki gry
     'fuse-half' – pół na pół (50:50, domyślny): wymieszane kolory, teksty po równo
     'fuse'      – [eksperymentalny] postać bazą, gra dodatkiem (66:33)
     'fuse-game' – [eksperymentalny] gra bazą, postać dodatkiem (33:66): karta w motywie gry + portret/emblemat, kolor i głos postaci
@@ -10,13 +12,13 @@
 (function () {
   const GT = window.OverlayGameThemes;
   if (!GT) return;
-  const MIX = { fuse: 0.33, 'fuse-half': 0.5, 'fuse-game': 0.66, game: 1 };
+  const MIX = { patch: 0.4, fuse: 0.33, 'fuse-half': 0.5, 'fuse-game': 0.66, game: 1 };
   const PORTRAIT = { vince: 'themes/fursona/vince.webp', chip: 'themes/fursona/chip.webp', ragnar: 'themes/fursona/ragnar.webp', toro: 'themes/fursona/toro.webp' };
 
   function modeOf(settings) {
     if (settings.gameThemes === false) return 'off';
-    const m = settings.gameMode || 'fuse-half';
-    return ['fuse', 'fuse-half', 'fuse-game', 'game', 'off'].includes(m) ? m : 'fuse-half';
+    const m = settings.gameMode || 'patch';
+    return ['patch', 'fuse', 'fuse-half', 'fuse-game', 'game', 'off'].includes(m) ? m : 'patch';
   }
 
   // r = { cls, def (styl karty), game (gra jako dodatek), persona (postać jako dodatek), mode, mix (udział gry w tekstach) }
@@ -47,9 +49,15 @@
 
   // gra bez własnego motywu, ale znanego rodzaju (wykrywacz: Ren'Py → visual novel, Blender i inne programy → tworzenie)
   const KIND_THEME = { vn: 'vn', make: 'mk' };
+  // motyw wybrany ręcznie dla gry na liście „Moje gry i programy” (settings.themeFor: nazwa → id motywu albo 'none')
+  GT.themeFor = (settings, name) => {
+    const tf = settings.themeFor || {}, v = name ? tf[String(name).toLowerCase()] : null;
+    return v === 'none' ? 'none' : v ? GT.byId(v) : null;
+  };
   GT.resolve = function (settings, gameName, forcedCls, kind) {
     const mode = modeOf(settings);
-    const game = gameName && mode !== 'off' ? (GT.find(gameName) || (kind && KIND_THEME[kind] ? GT.byId(KIND_THEME[kind]) : null)) : null;
+    const ov = GT.themeFor(settings, gameName);
+    const game = gameName && mode !== 'off' && ov !== 'none' ? (ov || GT.find(gameName) || (kind && KIND_THEME[kind] ? GT.byId(KIND_THEME[kind]) : null)) : null;
     const fixed = forcedCls || settings.theme || 'neon';
     const own = String(fixed).startsWith('g-') ? GT.byId(String(fixed).slice(2)) : null;
     return build(String(fixed), game, mode, GT.variantOf(game || own, gameName));
@@ -73,7 +81,7 @@
   };
 
   GT.bodyClasses = r => (r.def ? ' game-theme' : '') + (r.def && r.def.group === 'fursona' ? ' f-theme' : '') +
-    (r.game ? ' fuse fuse-' + r.game.id : '') + (r.mode === 'fuse-half' && r.game ? ' fuse-half' : '') +
+    (r.game ? ' fuse fuse-' + r.game.id : '') + (r.mode === 'fuse-half' && r.game ? ' fuse-half' : '') + (r.mode === 'patch' && r.game ? ' fuse-patch' : '') +
     (r.persona ? ' fuse-persona fusep-' + r.persona.id : '') + (r.variant ? ' gv-' + r.variant : '');
 
   // cząsteczki: gra (z domieszką koloru postaci) albo sam styl; przy 50:50 więcej
@@ -122,8 +130,14 @@
     if (!wrap) return;
     const el = id => { let e = wrap.querySelector('#' + id); if (!e) { e = document.createElement('div'); e.id = id; e.setAttribute('aria-hidden', 'true'); wrap.appendChild(e); } return e; };
     const badge = el('gbadge'), bar = el('fusebar'), pbadge = el('pbadge');
-    const gid = r.game ? r.game.id + (r.variant || '') : '';
-    if (badge.dataset.id !== gid) { badge.dataset.id = gid; badge.innerHTML = r.game ? r.game.emblem || '' : ''; }
+    const logo = r.game && r.mode === 'patch' && r.logo ? r.logo : '';
+    const gid = r.game ? r.game.id + (r.variant || '') + '|' + logo : '';
+    if (badge.dataset.id !== gid) {
+      badge.dataset.id = gid; badge.classList.remove('logo');
+      badge.innerHTML = r.game ? r.game.emblem || '' : '';
+      // naszywka z prawdziwym logo gry; gdy się nie wczyta – zostaje emblemat motywu
+      if (logo) { const im = new Image(); im.alt = ''; im.onload = () => { if (badge.dataset.id === gid) { badge.textContent = ''; badge.appendChild(im); badge.classList.add('logo'); } }; im.src = logo; }
+    }
     const pid = r.persona ? r.persona.id : '';
     if (pbadge.dataset.id !== pid) {
       pbadge.dataset.id = pid;

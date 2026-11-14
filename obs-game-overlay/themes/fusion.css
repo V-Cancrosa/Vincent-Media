@@ -47,3 +47,30 @@
 #quote:empty { display: none; }
 
 .reduced-motion .fuse #gbadge, .reduced-motion .fuse #fusebar, .reduced-motion.syndrome #card { animation: none !important; }
+
+/* Łatka (patchwork, domyślnie): postać prowadzi, gra jest naszyta na wierzch.
+   Odznaka gry = naszywka z przeszyciem nicią w kolorze postaci, pasek = wstążka gry przyszyta do dołu karty. */
+.fuse-patch #gbadge {
+  width: 76px; height: 76px; right: -18px; top: -50px; bottom: auto; padding: 11px; border-radius: 14px;
+  background: radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--g1) 55%, #15151c), color-mix(in srgb, var(--g2) 45%, #07070b) 80%);
+  border: 0; outline: 2px dashed var(--accent); outline-offset: -6px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--g1) 80%, #000), 0 8px 18px rgba(0,0,0,.55);
+  transform: rotate(7deg);
+}
+.fuse-patch #wrap.show #gbadge { animation: gp-in .8s .35s both cubic-bezier(.2,.9,.3,1.3); }
+@keyframes gp-in { 0% { transform: translateY(-30px) rotate(-30deg) scale(.4); opacity: 0; } 70% { transform: rotate(calc(var(--rot, 7deg) * 1.4)) scale(1.06); opacity: 1; } 100% { transform: rotate(var(--rot, 7deg)); } }
+.fuse-patch #gbadge.logo { width: 150px; height: 70px; padding: 10px 14px; right: -26px; top: -48px; }
+/* naszywka po przeciwnej stronie niż postać */
+.side-r.fuse-patch #gbadge { right: auto; left: -18px; --rot: -7deg; transform: rotate(-7deg); }
+.side-r.fuse-patch #gbadge.logo { left: -26px; }
+.side-r.fuse-patch #fusebar { left: 70px; right: 22px; }
+.fuse-patch #gbadge img { width: 100%; height: 100%; object-fit: contain; display: block; filter: drop-shadow(0 2px 3px rgba(0,0,0,.7)); }
+.fuse-patch #fusebar {
+  left: 22px; right: 70px; bottom: -9px; height: 12px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--g1), var(--g2)); background-size: 100% 100%; animation: none;
+  border-top: 2px dashed color-mix(in srgb, var(--accent) 85%, #fff); border-bottom: 2px dashed color-mix(in srgb, var(--accent) 85%, #fff);
+  box-shadow: 0 3px 8px rgba(0,0,0,.45); transform: rotate(-.6deg);
+}
+.fuse-patch #card { filter: none; }
+.fuse-patch #label .dot { background: var(--accent) !important; box-shadow: 0 0 10px var(--accent) !important; }
+.reduced-motion .fuse-patch #gbadge { animation: none !important; }

@@ -47,6 +47,7 @@
       </div>
     </div>
     <div id="emblem" aria-hidden="true"></div>
+    <div id="pop" aria-hidden="true"></div>
   </div>
 </div>
 <div id="ticker"></div>
@@ -253,7 +254,7 @@
   }
   function current() {
     const manual = settings.game.trim()
-      ? { name: settings.game.trim(), sub: settings.subtitle, start: settings.since, images: settings.cover ? [settings.cover] : [], source: 'manual' }
+      ? { name: settings.game.trim(), sub: settings.subtitle, start: settings.since, images: settings.cover ? [settings.cover] : settings.gameSteam && settings.local !== false ? [window.vmHub(settings.localUrl) + '/art?id=' + encodeURIComponent(settings.gameSteam) + '&k=cover'] : [], source: 'manual', steam: settings.gameSteam || '' }
       : null;
     // kolejność: lokalny wykrywacz > Discord
     const det = [localGame, discordGame].find(x => x && !ignored(x.name));
@@ -284,7 +285,12 @@
     const making = (g && g.kind === 'make') || (gameDef && gameDef.kind === 'make');
     const def = th.def;
     const reduced = settings.motion === 'reduced';
-    document.body.className = `theme-${th.cls} pos-${settings.position}` + (GT.bodyClasses ? GT.bodyClasses(th) : '') +
+    // postać: po stronie rogu, w którym stoi karta, i patrzy do środka ekranu (themes/fursona.js → side, face)
+    const pd = th.persona || (def && def.group === 'fursona' ? def : null);
+    const pos = String(settings.position || 'bl'), side = pos[1] === 'l' ? 'l' : pos[1] === 'r' ? 'r' : (pd && pd.side) || 'l';
+    const flip = pd && pd.face && pd.face !== (side === 'l' ? 'right' : 'left');
+    const popSrc = pd && pd.pop && !th.persona ? pd.pop : '';
+    document.body.className = `theme-${th.cls} pos-${settings.position} side-${side}` + (flip ? ' face-flip' : '') + (popSrc ? ' has-pop' : '') + (GT.bodyClasses ? GT.bodyClasses(th) : '') +
       (reduced ? ' reduced-motion' : '') + (settings.icon ? '' : ' no-icon') + (settings.showLabel ? '' : ' no-label');
     const key = th.cls + '|' + (th.game ? th.game.id : '') + '|' + (th.persona ? th.persona.id : '') + '|' + th.mode + '|' + (th.variant || '');
     if (emblemFor !== key) {
@@ -294,6 +300,10 @@
       emblemEl.innerHTML = def ? def.emblem || '' : '';
       backEl.innerHTML = def ? def.back || '' : '';
     }
+    const popEl = $('pop');
+    if (popEl.dataset.src !== popSrc) { popEl.dataset.src = popSrc; popEl.innerHTML = popSrc ? `<img src="${popSrc}" alt="">` : ''; }
+    // logo gry (Steam – z pamięci Steama na tym komputerze przez wykrywacz, inaczej z CDN Steama) na naszywce
+    th.logo = g && g.steam && settings.local !== false && settings.gameLogo !== false ? window.vmHub(settings.localUrl) + '/art?id=' + encodeURIComponent(g.steam) + '&k=logo' : '';
     if (GT.applyFusion) GT.applyFusion(wrap, th);
     const fxKey = key + reduced;
     if (fxKey !== fxFor) { fxFor = fxKey; GT.FX.set(!reduced ? (GT.fusionFx ? GT.fusionFx(th) : def && def.fx) : null); }

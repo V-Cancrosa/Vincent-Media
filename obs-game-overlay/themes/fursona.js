@@ -8,7 +8,10 @@
   Pola jak w games.js, plus:
     group – 'fursona' (osobna grupa w panelu, nie włącza się automatycznie)
     label – domyślny napis nad nazwą gry, gdy w panelu jest zostawiony domyślny „Teraz gram”
-    back  – HTML za kartą (np. postać wyglądająca zza panelu)
+    back  – HTML za kartą
+    pop   – portret wkomponowany w kartę: dół karty go zasłania, a głowa wychodzi przed górną krawędź
+    side  – po której stronie karty jest postać przy pozycji „środek” (w rogach – po stronie rogu)
+    face  – w którą stronę patrzy portret; w lewym rogu postać patrzy w prawo, w prawym – w lewo (odbicie)
 */
 (function () {
   const GT = window.OverlayGameThemes;
@@ -87,7 +90,7 @@
 
   const THEMES = [
     {
-      id: 'vince', name: 'Vince', group: 'fursona', match: [],
+      id: 'vince', side: 'l', face: 'left', name: 'Vince', group: 'fursona', match: [],
       accent: ['#e3a43f', '#ece3cf'],
       label: 'Teraz gram',
       // portret w ramce jak z planu architekta + wymiar „6′4″”
@@ -103,7 +106,7 @@
       fx: { shape: 'dot', dir: 'float', count: 10, colors: ['#e3a43f', '#ece3cf'], size: [0.8, 1.8], speed: [3, 7], glow: true, twinkle: true }
     },
     {
-      id: 'chip', name: 'Chip', group: 'fursona', match: [],
+      id: 'chip', name: 'Chip', group: 'fursona', match: [], side: 'r', face: 'right',
       accent: ['#2f6bd8', '#4a2a17'],
       label: 'no co. gram',
       // polaroid z taśmą + pęknięty dzwonek, który się kołysze
@@ -123,7 +126,7 @@
       id: 'ragnar', name: 'Ragnar', group: 'fursona', match: [],
       accent: ['#ff2e88', '#26c6e0'],
       label: 'Teraz gram · 128 BPM',
-      back: `<img class="fr-peek" src="${IMG('ragnar')}" alt="">`,
+      side: 'r', face: 'left', pop: IMG('ragnar'),
       // korektor graficzny w rytmie 128 BPM
       emblem: `<div class="fr-eq">${Array.from({ length: 9 }, (_, i) => `<i style="--i:${i}"></i>`).join('')}</div>`,
       fx: { shape: 'rect', dir: 'float', count: 16, colors: ['#ff2e88', '#26c6e0', '#b4e03c', '#9b5cff'], size: [3, 9], speed: [6, 14], glow: true }
@@ -132,7 +135,7 @@
       id: 'toro', name: 'Toro', group: 'fursona', match: [],
       accent: ['#ffc864', '#5aa63f'],
       label: '灯籠 · teraz gram',
-      back: `<img class="ft-peek" src="${IMG('toro')}" alt="">`,
+      side: 'l', face: 'right', pop: IMG('toro'),
       // kamienna latarnia tōrō z migoczącym światłem
       emblem: svg(70, 110, `
         <defs><radialGradient id="ftg" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffe9a8"/><stop offset=".5" stop-color="#ffc864" stop-opacity=".55"/><stop offset="1" stop-color="#ffc864" stop-opacity="0"/></radialGradient></defs>
@@ -147,7 +150,7 @@
       fx: { shape: 'dot', dir: 'float', count: 16, colors: ['#e9ff8a', '#ffc864', '#c8f06a'], size: [1.4, 2.8], speed: [5, 11], glow: true, twinkle: true }
     },
     {
-      id: 'myr', name: 'Myr-35', group: 'fursona', match: [],
+      id: 'myr', name: 'Myr-35', group: 'fursona', match: [], side: 'l', face: 'right',
       accent: ['#d9823f', '#ede6d6'],
       label: 'MYR-35 // ZADANIE',
       // głowa protogena w ujęciu 3/4: kremowa skorupa, dwie pary okrągłych uszu, wizjer-pysk z gęstą matrycą LED (mimika)

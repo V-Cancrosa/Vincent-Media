@@ -360,7 +360,73 @@ function Save-Library([switch]$Force) {
     $script:LibDirty = $false; $script:LibSaved = Get-Date
     try { [IO.File]::WriteAllText($LibraryFile, ([pscustomobject]$script:Library | ConvertTo-Json -Depth 4 -Compress), $Utf8NoBom) } catch {}
 }
+# ---------------------------------------------------------------- Steam: zainstalowane gry i grafiki z pamięci Steama
+# Grafiki (logo, tło, nagłówek) bierzemy z folderu, który Steam sam pobrał na ten komputer (appcache\librarycache),
+# a gdy ich tam nie ma – z publicznego CDN Steama. Niczego nie kopiujemy do repozytorium; prawa do grafik
+# mają ich właściciele (patrz CREDITS.md → «Grafiki gier»).
+function Get-SteamRoot {
+    try { $p = [string](Get-ItemProperty 'HKCU:\Software\Valve\Steam' -Name SteamPath -ErrorAction Stop).SteamPath; if ($p) { return $p.Replace('/', '\') } } catch {}
+    return ''
+}
+function Get-SteamLibraries {
+    $root = Get-SteamRoot; if (-not $root) { return @() }
+    $libs = New-Object Collections.ArrayList; [void]$libs.Add((Join-Path $root 'steamapps'))
+    $vdf = Join-Path $root 'steamapps\libraryfolders.vdf'
+    if (Test-Path $vdf) {
+        foreach ($mm in [regex]::Matches([IO.File]::ReadAllText($vdf), '"path"\s+"([^"]+)"')) {
+            $sa = Join-Path ($mm.Groups[1].Value.Replace('\\', '\')) 'steamapps'
+            if ((Test-Path $sa) -and -not ($libs -contains $sa)) { [void]$libs.Add($sa) }
+        }
+    }
+    return @($libs)
+}
+$script:SteamInstalled = $null; $script:SteamInstalledAt = [DateTime]::MinValue
+function Get-SteamInstalled {
+    if ($script:SteamInstalled -and ((Get-Date) - $script:SteamInstalledAt).TotalMinutes -lt 10) { return $script:SteamInstalled }
+    $list = New-Object Collections.ArrayList
+    foreach ($lib in Get-SteamLibraries) {
+        foreach ($f in @(Get-ChildItem -LiteralPath $lib -Filter 'appmanifest_*.acf' -ErrorAction SilentlyContinue)) {
+            try {
+                $t = [IO.File]::ReadAllText($f.FullName)
+                $id = ([regex]::Match($t, '"appid"\s+"(\d+)"')).Groups[1].Value
+                $nm = ([regex]::Match($t, '"name"\s+"([^"]+)"')).Groups[1].Value
+                $dir = ([regex]::Match($t, '"installdir"\s+"([^"]+)"')).Groups[1].Value
+                if (-not $id -or $SteamNotGames -contains $id -or $nm -match '(?i)redistributable|steamworks|proton|runtime|dedicated server|sdk$') { continue }
+                [void]$list.Add([pscustomobject]@{ id = "steam:$id"; name = (Clean $nm); steam = $id; dir = (Join-Path $lib "common\$dir") })
+            } catch {}
+        }
+    }
+    $script:SteamInstalled = @($list); $script:SteamInstalledAt = Get-Date
+    return $script:SteamInstalled
+}
+# numer gry Steam z ścieżki programu (…\steamapps\common\<folder>\…)
+function Get-SteamIdFromPath([string]$path) {
+    if (-not $path) { return '' }
+    $mm = [regex]::Match($path, '\\steamapps\\common\\([^\\]+)', 'IgnoreCase'); if (-not $mm.Success) { return '' }
+    $dir = $mm.Groups[1].Value
+    $hit = @(Get-SteamInstalled | Where-Object { (Split-Path $_.dir -Leaf) -eq $dir }) | Select-Object -First 1
+    if ($hit) { return $hit.steam } else { return '' }
+}
+$ArtNames = @{ logo = @('logo.png'); hero = @('library_hero.jpg', 'library_hero.png'); header = @('header.jpg'); cover = @('library_600x900.jpg', 'library_capsule.jpg') }
+function Get-SteamArtFile([string]$id, [string]$kind) {
+    if ($id -notmatch '^\d+$' -or -not $ArtNames.ContainsKey($kind)) { return '' }
+    $root = Get-SteamRoot; if (-not $root) { return '' }
+    $lc = Join-Path $root 'appcache\librarycache'
+    foreach ($n in $ArtNames[$kind]) { $f = Join-Path $lc "${id}_$n"; if (Test-Path -LiteralPath $f) { return $f } }
+    $d = Join-Path $lc $id
+    if (Test-Path -LiteralPath $d) {
+        foreach ($n in $ArtNames[$kind]) { $f = @(Get-ChildItem -LiteralPath $d -Recurse -Filter $n -ErrorAction SilentlyContinue) | Select-Object -First 1; if ($f) { return $f.FullName } }
+    }
+    return ''
+}
+function Get-GameArt([string]$id) {
+    if ($id -notmatch '^\d+$') { return $null }
+    # /art podaje plik z pamięci Steama, a gdy go nie ma – przekierowuje na CDN Steama
+    return [pscustomobject]@{ logo = "/art?id=$id&k=logo"; hero = "/art?id=$id&k=hero"; header = "/art?id=$id&k=header"; cover = "/art?id=$id&k=cover" }
+}
+
 function Update-Library($m, [string]$path) {
+    if (-not $m.Steam -and $path) { $sid = Get-SteamIdFromPath $path; if ($sid) { $m = $m.PSObject.Copy(); $m.Steam = $sid } }
     $id = if ($m.Steam) { 'steam:' + $m.Steam } elseif ($path) { 'exe:' + $path.ToLowerInvariant() } else { '' }
     if (-not $id) { return }
     $now = Get-Date
@@ -378,6 +444,7 @@ function Update-Library($m, [string]$path) {
 }
 function Start-LibraryItem([string]$id) {
     $e = $script:Library[$id]
+    if (-not $e -and $id -match '^steam:(\d+)$') { Start-Process ("steam://rungameid/" + $Matches[1]); Log "Uruchamiam: $id (Steam)" 'Cyan'; return '' }
     if (-not $e) { return 'nie ma takiej pozycji w bibliotece' }
     if ($e.steam) { Start-Process ("steam://rungameid/" + $e.steam); Log "Uruchamiam: $($e.name) (Steam)" 'Cyan'; return '' }
     if ($e.path -and (Test-Path -LiteralPath $e.path)) { Start-Process -FilePath $e.path -WorkingDirectory (Split-Path $e.path); Log "Uruchamiam: $($e.name)" 'Cyan'; return '' }
@@ -464,6 +531,8 @@ function Update-State {
             window = ''
             path   = [string]$pick.Path
         }
+        if (-not $game.steam -and $game.path) { $game.steam = Get-SteamIdFromPath $game.path }
+        $game | Add-Member -NotePropertyName art -NotePropertyValue (Get-GameArt ([string]$game.steam))
         $ws = Get-WindowSpec ([int]$pick.Pid)
         if ($ws) { $game.window = $ws.spec }
         try { Update-Library $m ([string]$pick.Path) } catch {}
@@ -1437,7 +1506,23 @@ function Invoke-Request($ctx) {
             '/library' {
                 $all = ([string]$q['all']) -eq '1'
                 $list = @($script:Library.Values | Where-Object { $all -or -not $_.hidden } | Sort-Object { [string]$_.last } -Descending)
-                Send-Json $ctx ([pscustomobject]@{ items = $list; current = $script:LibCurrent })
+                # zainstalowane gry Steam, których jeszcze nie uruchamiałeś (do wyboru z listy)
+                $inst = @()
+                try { $inst = @(Get-SteamInstalled | Where-Object { -not $script:Library.ContainsKey($_.id) } | Sort-Object name | ForEach-Object { [pscustomobject]@{ id = $_.id; name = $_.name; steam = $_.steam; kind = ''; installed = $true } }) } catch {}
+                Send-Json $ctx ([pscustomobject]@{ items = $list; installed = $inst; current = $script:LibCurrent })
+            }
+            '/art' {
+                $f = Get-SteamArtFile ([string]$q['id']) ([string]$q['k'])
+                $res = $ctx.Response
+                if (-not $f) {
+                    $cdn = @{ logo = 'logo.png'; hero = 'library_hero.jpg'; header = 'header.jpg'; cover = 'library_600x900.jpg' }[[string]$q['k']]
+                    if ($cdn -and ([string]$q['id']) -match '^\d+$') { $res.StatusCode = 302; $res.RedirectLocation = "https://cdn.cloudflare.steamstatic.com/steam/apps/$($q['id'])/$cdn" } else { $res.StatusCode = 404 }
+                    $res.OutputStream.Close(); return
+                }
+                $bytes = [IO.File]::ReadAllBytes($f)
+                $res.ContentType = if ($f -like '*.png') { 'image/png' } else { 'image/jpeg' }
+                $res.Headers['Cache-Control'] = 'max-age=86400'; $res.Headers['Access-Control-Allow-Origin'] = '*'
+                $res.ContentLength64 = $bytes.Length; $res.OutputStream.Write($bytes, 0, $bytes.Length); $res.OutputStream.Close()
             }
             '/library/launch' {
                 $err = Start-LibraryItem ([string]$q['id'])
