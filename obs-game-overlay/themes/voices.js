@@ -313,17 +313,20 @@
 
   function pick(themeId, kind, ctx, tier) {
     const d = D();
-    const scene = kind.startsWith('scene:') ? kind.slice(6) : null;
+    // 'trans:game' / 'trans:any' – wypowiedzi na przejścia (themes/voices-trans.js); traktowane jak ekran
+    const trans = kind.startsWith('trans:') ? kind.slice(6) : null;
+    const scene = kind.startsWith('scene:') ? kind.slice(6) : trans ? 'trans' : null;
     const who = d.V[themeId];
     let pool = null, register = 'normal';
-    if (who) pool = scene ? who.scenes && who.scenes[scene] : who[kind];
+    if (trans) pool = (who && who.trans && (who.trans[trans] || who.trans.any)) || (d.GAMEV[themeId] && d.GAMEV[themeId].trans && (d.GAMEV[themeId].trans[trans] || d.GAMEV[themeId].trans.any));
+    else if (who) pool = scene ? who.scenes && who.scenes[scene] : who[kind];
     else if (scene && d.GAMEV[themeId] && d.GAMEV[themeId].scenes) pool = d.GAMEV[themeId].scenes[scene];   // motyw gry jako styl ekranu
     if (!scene && tier >= 3) { const tp = tierPool(themeId, kind, tier); if (tp) pool = tp; }
     if (pool && !Array.isArray(pool)) {          // postać z rejestrami (Myr)
       register = forcedRegister() || pickRegister(myrWeights(who && who.weights || { protocol: 1 }, scene ? 0 : tier));
       pool = pool[register] || pool.protocol;
     }
-    if (!pool || !pool.length) pool = scene ? d.SCENES[scene] : d.V._[kind];
+    if (!pool || (Array.isArray(pool) && !pool.length)) pool = trans ? (d.V._.trans && (d.V._.trans[trans] || d.V._.trans.any)) : scene ? d.SCENES[scene] : d.V._[kind];
     if (!pool || !pool.length) return { label: '', line: '', register };
     const [label, line] = rand(pool);
     let out = { label: fill(label, ctx), line: fill(line, ctx), register };
@@ -445,7 +448,8 @@
     const scene = kind.startsWith('scene:') ? kind.slice(6) : null;
     const get = k => (vg && vg[k]) || base[k];
     let pool;
-    if (scene) { const sc = (vg && vg.scenes && vg.scenes[scene]) || (base.scenes && base.scenes[scene]); pool = sc; }
+    if (kind.startsWith('trans:')) { const k = kind.slice(6), t = (vg && vg.trans) || base.trans; pool = t && (t[k] || t.any); }
+    else if (scene) { const sc = (vg && vg.scenes && vg.scenes[scene]) || (base.scenes && base.scenes[scene]); pool = sc; }
     else pool = (tier >= 3 && get('big')) ? get('big') : (get(kind) || get('follow'));
     if (!pool || !pool.length) return null;
     const [label, line] = rand(pool);

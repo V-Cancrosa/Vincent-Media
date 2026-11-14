@@ -14,6 +14,7 @@
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
 <script src="themes/voices-en.js"></script>
+<script src="themes/voices-trans.js"></script>
 <script src="themes/i18n.js"></script>
 <script src="themes/client.js"></script>
 <style>
@@ -42,6 +43,10 @@
     text-shadow: 0 4px 30px color-mix(in srgb, var(--accent) 70%, transparent); }
   #txt .line { font-size: 30px; max-width: 1200px; opacity: .88; line-height: 1.35; }
   #t.hold #txt { animation: txt-in .45s cubic-bezier(.2,.9,.3,1.2) forwards; }
+  /* krótkie przejście: sam napis; długie: zdanie wjeżdża chwilę po napisie i jest większe – czas na przeczytanie */
+  .len-short #txt .line { display: none; }
+  .len-long #txt .line { font-size: 36px; max-width: 1300px; }
+  #t.len-long.hold #txt .line { animation: txt-in .6s .5s cubic-bezier(.2,.9,.3,1.2) both; }
   #t.off #txt { animation: txt-out .3s ease-in forwards; }
   @keyframes txt-in { from { opacity: 0; transform: scale(.92); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
   @keyframes txt-out { from { opacity: 1; } to { opacity: 0; transform: scale(1.04); filter: blur(6px); } }
@@ -246,19 +251,33 @@
     const r = C.applyTheme('');
     let kind = chooseKind(r, ev.style || s.transitionStyle);
     if (r.reduced) kind = 'fade';
-    const cover = Math.max(300, Math.min(2000, +ev.cover || 700)), hold = Math.max(300, Math.min(4000, +ev.hold || 900)), reveal = Math.max(300, Math.min(2000, +ev.reveal || 750));
+    // długość: krótkie (sam napis, szybko), zwykłe, długie (czas na przeczytanie – zależy od długości tekstu)
+    const len = ev.length || s.transitionLength || 'normal';
+    // napis: wypowiedź postaci / gry – o ekranie, na który przechodzimy, albo o powrocie do gry
+    const scene = ev.scene === 'brb-late' ? 'brbLate' : (ev.scene || 'start');
+    const det = C.read('obsGameOverlay.detected', {}) || {}, sim = C.read('obsGameOverlay.sim', null);
+    const gameName = (det.local && det.local.game && det.local.game.name) || (sim && sim.game && sim.game.name) || s.game || '';
+    let label = (window.VMi18n ? VMi18n.t('sc_' + scene) : SCENE_LABEL[scene]) || SCENE_LABEL[scene] || '', line = '';
+    if (VO && GT.voiceInfo) {
+      const vi = GT.voiceInfo(r), ctx = { game: gameName };
+      if (scene === 'game' || scene === 'frame') {
+        // bez znanej gry: zdanie, które nie potrzebuje jej nazwy
+        let v = null;
+        for (let i = 0; i < 6; i++) { v = VO.pickMix(vi, gameName ? 'trans:game' : 'trans:any', ctx); if (gameName || !/\{game\}|^\W|\W\W$/.test((v && v.line) || '')) break; }
+        label = (v && v.label) || gameName || (window.VMi18n ? VMi18n.t('nowPlaying') : 'Teraz gram'); line = (v && v.line) || (v && v.label ? gameName : '');
+      } else {
+        const v = VO.pickMix(vi, 'scene:' + scene, ctx);
+        if (v && v.label) { label = v.label; line = v.line || ''; }
+        // czasem zamiast zdania o ekranie – komentarz postaci / gry do samej zmiany
+        if (Math.random() < 0.3) { const t = VO.pickMix(vi, 'trans:any', ctx); if (t && t.line) line = t.line; }
+      }
+    }
+    const chars = ((ev.label || label) + ' ' + (ev.line || line)).length;
+    const T = len === 'short' ? { cover: 420, hold: 450, reveal: 480 } : len === 'long' ? { cover: 800, hold: Math.max(2800, Math.min(7500, 1500 + chars * 55)), reveal: 900 } : { cover: 700, hold: Math.max(1100, Math.min(2600, 600 + chars * 22)), reveal: 750 };
+    const cover = Math.max(300, Math.min(2000, +ev.cover || T.cover)), hold = Math.max(300, Math.min(8000, +ev.hold || T.hold)), reveal = Math.max(300, Math.min(2000, +ev.reveal || T.reveal));
     document.documentElement.style.setProperty('--cover', cover + 'ms');
     document.documentElement.style.setProperty('--reveal', reveal + 'ms');
-    // napis: tekst ekranu w głosie postaci / gry (narrator w Darkest Dungeon itd.)
-    const scene = ev.scene === 'brb-late' ? 'brbLate' : (ev.scene || 'start');
-    let label = (window.VMi18n ? VMi18n.t('sc_' + scene) : SCENE_LABEL[scene]) || SCENE_LABEL[scene] || '', line = '';
-    if (scene === 'game' || scene === 'frame') {
-      const det = C.read('obsGameOverlay.detected', {}) || {};
-      label = (det.local && det.local.game && det.local.game.name) || s.game || (window.VMi18n ? VMi18n.t('nowPlaying') : 'Teraz gram'); line = '';
-    } else if (VO && GT.voiceInfo) {
-      const v = VO.pickMix(GT.voiceInfo(r), 'scene:' + scene, {});
-      if (v && v.label) { label = v.label; line = v.line || ''; }
-    }
+
     $txt.querySelector('.lab').textContent = ev.label || label;
     $txt.querySelector('.line').textContent = ev.label ? (ev.line || '') : line;
     const persona = r.persona || (r.def && r.def.group === 'fursona' ? r.def : null);
@@ -268,7 +287,7 @@
     const pid = persona ? persona.id : r.cls;
     document.documentElement.style.setProperty('--font', getComputedStyle(document.body).getPropertyValue('--scene-font').trim() || FONT[pid] || "'Inter', sans-serif");
     build(kind);
-    $t.className = 'k-' + (kind === 'shoji' || kind === 'thread' ? 'doors' : kind === 'blueprint' ? 'wipe' : kind);
+    $t.className = (len === 'short' ? 'len-short ' : len === 'long' ? 'len-long ' : '') + 'k-' + (kind === 'shoji' || kind === 'thread' ? 'doors' : kind === 'blueprint' ? 'wipe' : kind);
     void $t.offsetWidth;
     $t.classList.add('on');
     later(cover, () => $t.classList.add('hold'));

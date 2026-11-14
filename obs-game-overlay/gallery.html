@@ -19,6 +19,7 @@
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
 <script src="themes/voices-en.js"></script>
+<script src="themes/voices-trans.js"></script>
 <script src="themes/i18n.js"></script>
 <script src="themes/tiers.js"></script>
 <script src="themes/alertinfo.js"></script>
@@ -151,6 +152,12 @@
       const p = data.V[vi.personaId] && data.V[vi.personaId].scenes && data.V[vi.personaId].scenes[kind];
       if (Array.isArray(p)) add(kind, 'postać', p); else if (p) for (const [reg, arr] of Object.entries(p)) add(kind, 'postać', arr, reg);
       for (const gid of [vi.variant, vi.gameId]) { const g = gid && data.GAMEV[gid]; if (g && g.scenes && g.scenes[kind]) add(kind, 'gra · ' + gid, g.scenes[kind]); }
+    }
+    // przejścia: powrót do gry i komentarze do samej zmiany
+    for (const [k, nm] of [['game', lang === 'en' ? 'transition → game' : 'przejście → gra'], ['any', lang === 'en' ? 'transition' : 'przejście']]) {
+      const pt = data.V[vi.personaId] && data.V[vi.personaId].trans && data.V[vi.personaId].trans[k];
+      if (Array.isArray(pt)) add(nm, 'postać', pt); else if (pt) for (const [reg, arr] of Object.entries(pt)) add(nm, 'postać', arr, reg);
+      for (const gid of [vi.variant, vi.gameId]) { const g = gid && data.GAMEV[gid]; if (g && g.trans && g.trans[k]) add(nm, 'gra · ' + gid, g.trans[k]); }
     }
     scenes.appendChild(list); out.appendChild(scenes);
     // alert w czacie (układy z czatem)

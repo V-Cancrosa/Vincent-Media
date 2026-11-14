@@ -1,5 +1,5 @@
 {
-  "version": "1.18.0",
+  "version": "1.18.1",
   "date": "2026-11-15",
-  "notes": "Angielska wersja na streamie, galeria powiadomień, stały napływ czatu i alertów do testów, widoczny test bota, Myr-35 z nową głową protogena i wyborem rejestru, pasek czatu z kafelkami na nakładce z grą, kontrast na jasnych kolorach, postać da się wyłączyć"
+  "notes": "Myr-35: głowa według wzoru protogena; przejścia z wypowiedziami postaci i gier (także powrót do gry) i wyborem długości: krótkie, zwykłe, długie do przeczytania"
 }

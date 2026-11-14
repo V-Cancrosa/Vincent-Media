@@ -102,6 +102,7 @@
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
 <script src="themes/voices-en.js"></script>
+<script src="themes/voices-trans.js"></script>
 <script src="themes/i18n.js"></script>
 <script src="themes/botcheck.js"></script>
 <script src="themes/testfeed.js"></script>
@@ -193,6 +194,13 @@
         </select>
       </label>
       <label class="check"><input id="transitionText" type="checkbox"> napis w trakcie przejścia (tekst postaci / gry – np. narrator)</label>
+      <label>Długość
+        <select id="transitionLength">
+          <option value="short">krótkie – sam napis, ok. 1,4 s</option>
+          <option value="normal">zwykłe – napis i zdanie, ok. 2–4 s</option>
+          <option value="long">długie – czas na przeczytanie, 4–9 s (zależy od długości tekstu)</option>
+        </select>
+      </label>
       <div class="row">
         <button id="transTest">Podgląd przejścia</button>
         <button id="transAdd" data-feature="obs">Dodaj źródło przejść do scen OBS</button>
@@ -823,7 +831,9 @@
     const ev = { type: 'transition', scene, style: s.transitionStyle || 'auto', at: Date.now(), tid: Math.random().toString(36).slice(2) };
     if (isRemote) fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/transition?scene=' + encodeURIComponent(scene) + '&style=' + encodeURIComponent(ev.style), { cache: 'no-store' }).catch(() => {});
     else if (bc) bc.postMessage({ type: 'alert', event: ev });
-    return isRemote ? 1900 : 760;     // telefon: zdarzenie idzie przez wykrywacz (do 1 s opóźnienia)
+    // scena przełącza się, gdy obraz jest zasłonięty (czas zasłaniania zależy od długości przejścia)
+    const cover = s.transitionLength === 'short' ? 420 : s.transitionLength === 'long' ? 800 : 700;
+    return (isRemote ? 1150 : 0) + cover + 60;     // telefon: zdarzenie idzie przez wykrywacz (do 1 s opóźnienia)
   }
   function goScene(scene, apply) {
     if (s.transitions === false) { apply(); return; }
@@ -892,6 +902,7 @@
   $('transitions').onchange = () => { s.transitions = $('transitions').checked; save(); };
   $('transitionText').onchange = () => { s.transitionText = $('transitionText').checked; save(); };
   $('transitionStyle').onchange = () => { s.transitionStyle = $('transitionStyle').value; save(); };
+  $('transitionLength').onchange = () => { s.transitionLength = $('transitionLength').value; save(); };
   $('transTest').onclick = () => sendTransition(s.scene || 'start');
   // dla starszych instalacji: źródło „VM · Przejścia” na wierzch każdej sceny VM przez OBS WebSocket
   $('transAdd').onclick = async () => {
@@ -946,6 +957,7 @@
     $('transitions').checked = s.transitions !== false;
     $('transitionText').checked = s.transitionText !== false;
     $('transitionStyle').value = s.transitionStyle || 'auto';
+    $('transitionLength').value = s.transitionLength || 'normal';
     $('micThreshold').value = s.micThreshold ?? -38; $('thrVal').textContent = (s.micThreshold ?? -38) + ' dB';
     for (const id of ['obsUrl', 'obsPassword']) if (document.activeElement !== $(id)) $(id).value = s[id] || '';
     for (const id of ['talkTopic', 'avatarIdle', 'avatarTalk']) if (document.activeElement !== $(id)) $(id).value = s[id] || '';

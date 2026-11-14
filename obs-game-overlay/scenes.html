@@ -19,6 +19,7 @@
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
 <script src="themes/voices-en.js"></script>
+<script src="themes/voices-trans.js"></script>
 <script src="themes/i18n.js"></script>
 <script src="themes/obsws.js"></script>
 <script src="themes/zones.js"></script>
@@ -310,7 +311,7 @@
   let voice = null, voiceKey = '', voiceAt = 0;
   function voiceFor(kind) {
     const k = kind + '|' + themeId + '|' + (voiceVI ? voiceVI.gameId + voiceVI.variant : '');
-    if (k !== voiceKey || Date.now() - voiceAt > 40000) {
+    if (k !== voiceKey || Date.now() - voiceAt > 25000) {   // co 25 s inne zdanie (postać albo gra)
       voiceKey = k; voiceAt = Date.now();
       const VO = window.OverlayVoices;
       voice = !VO ? { label: '', line: '', register: '' } : (voiceVI && VO.pickMix ? VO.pickMix(voiceVI, 'scene:' + kind, {}) : VO.pick(themeId, 'scene:' + kind, {}));

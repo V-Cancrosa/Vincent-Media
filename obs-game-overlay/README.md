@@ -232,6 +232,10 @@ Nic na siebie nie nachodzi:
 | piksele | Retro, Minecraft |
 | skośne pasy | pozostałe style |
 
+W środku przejścia mówi postać albo gra: zdanie o ekranie, na który przechodzisz, czasem komentarz do samej zmiany, a przy powrocie do gry – zdanie o powrocie (np. narrator Darkest Dungeon: „Z powrotem w ciemność”, Myr: „Ta jednostka wznawia operację”). Wszystkie te zdania widać w galerii powiadomień.
+
+**Długość przejścia** (Na żywo → Ekrany → Przejścia): *krótkie* – sam napis, ok. 1,4 s; *zwykłe* – napis i zdanie, 2–4 s; *długie* – czas na przeczytanie, 4–9 s zależnie od długości tekstu. Scena w OBS przełącza się zawsze w chwili, gdy obraz jest zasłonięty.
+
 Rodzaj możesz też wybrać na stałe (Na żywo → Ekrany → Przejścia), wyłączyć napis albo całe przejścia. Po aktualizacji ze starszej wersji kliknij tam *Dodaj źródło przejść do scen OBS* – panel doda je przez WebSocket (bez ponownej instalacji). Przełączanie scen bezpośrednio w OBS działa jak dotąd, bez tej animacji.
 
 ## Połączenie z OBS: avatar reagujący na głos i przełączanie scen
