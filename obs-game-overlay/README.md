@@ -62,7 +62,7 @@ Gry ze Steama dostają okładkę ze sklepu Steam, pozostałe wykryte gry – iko
 
 1. Pobierz **[Zainstaluj-Vincent-Media.bat](https://github.com/V-Cancrosa/Vincent-Media/raw/main/Zainstaluj-Vincent-Media.bat)** i kliknij go dwa razy.
    Jeśli Windows pokaże „System Windows ochronił ten komputer”: *Więcej informacji → Uruchom mimo to*.
-   Zamiast pliku możesz wkleić w PowerShellu: `irm https://raw.githubusercontent.com/V-Cancrosa/Vincent-Media/main/install.ps1 | iex`
+   Zamiast pliku możesz wkleić w PowerShellu: `irm "https://raw.githubusercontent.com/V-Cancrosa/Vincent-Media/main/install.ps1?t=$(Get-Random)" | iex`
 2. Instalator:
    - pobiera pliki do `%LOCALAPPDATA%\Vincent-Media\obs-game-overlay` (nie potrzebuje uprawnień administratora),
    - pyta, czy skonfigurować OBS (OBS musi być wtedy zamknięty). Jeśli tak, dodaje:
