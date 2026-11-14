@@ -60,6 +60,15 @@ try {
         Copy-Item -Path $f.FullName -Destination $dst -Force
         $n++
     }
+    # skrypty .ps1 z polskimi znakami musza miec BOM (UTF-8), inaczej Windows PowerShell 5.1 czyta je jako ANSI
+    foreach ($f in Get-ChildItem -Path $InstallDir -Recurse -File -Filter '*.ps1') {
+        try {
+            $b = [IO.File]::ReadAllBytes($f.FullName)
+            if ($b.Length -ge 3 -and $b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF) { continue }
+            if (-not ($b | Where-Object { $_ -gt 127 } | Select-Object -First 1)) { continue }
+            [IO.File]::WriteAllText($f.FullName, (New-Object Text.UTF8Encoding($false)).GetString($b), (New-Object Text.UTF8Encoding($true)))
+        } catch {}
+    }
 } finally {
     Remove-Item -Path $tmp -Recurse -Force -ErrorAction SilentlyContinue
 }

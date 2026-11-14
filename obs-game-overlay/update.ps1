@@ -32,6 +32,20 @@ function Test-VMNewer([string]$remote, [string]$local) {
 }
 
 # Pobiera paczkę z GitHuba i kopiuje do $target tylko zmienione pliki. Zwraca liczbę podmienionych plików.
+# Windows PowerShell 5.1 czyta skrypt bez znacznika BOM jako ANSI – polskie litery i półpauzy psują wtedy składnię.
+# Każdy .ps1 z polskimi znakami dostaje BOM (UTF-8), nawet gdyby przyszedł bez niego.
+function Repair-VMEncoding([string]$dir) {
+    $utf8 = New-Object Text.UTF8Encoding($false, $true)
+    foreach ($f in Get-ChildItem -Path $dir -Recurse -File -Filter '*.ps1' -ErrorAction SilentlyContinue) {
+        try {
+            $b = [IO.File]::ReadAllBytes($f.FullName)
+            if ($b.Length -ge 3 -and $b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF) { continue }
+            if (-not ($b | Where-Object { $_ -gt 127 } | Select-Object -First 1)) { continue }
+            $text = $utf8.GetString($b)
+            [IO.File]::WriteAllText($f.FullName, $text, (New-Object Text.UTF8Encoding($true)))
+        } catch {}
+    }
+}
 function Install-VMFiles([string]$target) {
     Enable-VMTls
     $tmp = Join-Path $env:TEMP ('vm-update-' + [guid]::NewGuid().ToString('N'))
@@ -56,6 +70,7 @@ function Install-VMFiles([string]$target) {
             Copy-Item -Path $f.FullName -Destination $dst -Force
             $changed++
         }
+        Repair-VMEncoding $target
         return $changed
     } finally {
         Remove-Item -Path $tmp -Recurse -Force -ErrorAction SilentlyContinue
