@@ -298,6 +298,20 @@ Efekty pokazuje źródło `alerts.html`, więc musi być w scenie.
 
 Panel → Wygląd → **Język streama**. Po angielsku jest wszystko, co widać na streamie: napisy nad grą („Now playing”), alerty i ich opisy, ekrany przerw i napisy końcowe, przejścia, pasek czatu i głosy postaci (każda zachowuje swój charakter – Chip dalej małymi literami, Myr w czterech rejestrach, narrator Darkest Dungeon po angielsku). Panel zostaje po polsku. Własny napis wpisany w panelu nie jest tłumaczony.
 
+## Słowa zakazane i cenzura ekranu
+
+**Filtr słów** (`themes/wordfilter.js`) zakrywa ▇▇▇ obelgi zakazane regulaminem Twitcha – rasowe, homofobiczne, transfobiczne, ableistyczne, także polskie – oraz ich przeróbki: leet (`n1gg3r`, `f@g`), powtórzone litery, kropki i kreski w środku, litery pisane osobno, słowa rozbite na dwa „pod TTS” (np. `knee grow`), cyrylicę i inne podobne litery, znaki zerowej szerokości, `q` zamiast `g`. Działa na czacie na ekranie, na nickach w alertach i w napisach końcowych (hate raid z kont o obraźliwych nazwach) oraz w skanie ekranu. Przekleństw nie rusza – Twitch na nie pozwala. Zwykłe słowa, które tylko zawierają podobne litery (`Niger`, `snigger`, `raccoon`), przechodzą. Ustawienia: *Czat → Moderacja → Słowa zakazane* (zakryj słowo / ukryj wiadomość, słowa dwuznaczne, własne słowa, wyjątki). Wzorce są w pliku zapisane szyfrem ROT13, więc plik nie wygląda jak lista obelg.
+
+Nakładka nie usuwa wiadomości z samego Twitcha. Żeby Twitch w ogóle ich nie wpuszczał, włącz w Panelu twórcy → Moderacja **AutoMod** i **Zablokowane wyrażenia**.
+
+**Napisz na czat (test)**: w *Czat → Moderacja* wpisujesz wiadomość jako dowolny nick, z wybranym wiekiem konta. Wiadomość przechodzi przez ocenę bota i filtr słów, a potem trafia na ekran tak jak prawdziwy czat. Na Twitchu nic się nie pojawia.
+
+**Cenzura ekranu**: gdy przeglądasz internet na wizji, wykrywacz kilka razy na sekundę czyta tekst z okna na pierwszym planie. Używa do tego wbudowanego rozpoznawania tekstu Windows, bez internetu, i niczego nie zapisuje. Warstwa `VM · Cenzura` (`censor.html`, na wierzchu scen) zasłania zakazane słowa dokładnie tam, gdzie są na scenie. Położenie okna na scenie panel odczytuje z OBS, więc panel musi być otwarty w OBS. Domyślnie skanowane są przeglądarki i Discord; można dopisać inne programy albo skanować każde okno.
+- **Opóźnij okna o 0,5 s** dodaje do każdego przechwytywania okna, ekranu i gry filtr *Opóźnienie renderowania* (500 ms). Rozpoznanie tekstu trwa 0,2–0,4 s, więc zasłona jest na streamie, zanim słowo w ogóle będzie widać.
+- **Opóźnienie całego streama** nie pomaga zasłonie, bo opóźnia także ją. Daje za to czas, żeby przełączyć na „Przerwę”, zanim widzowie coś zobaczą.
+- Rozpoznawanie tekstu wymaga pakietu OCR dla języka Windows (zwykle jest; jeśli nie: *Ustawienia → Czas i język → Język → Opcje języka*). Status pokazuje się w panelu.
+- To siatka bezpieczeństwa, nie gwarancja: OCR może przeoczyć bardzo mały, ozdobny albo ruchomy tekst.
+
 ## Testy: galeria, stały napływ, test bota
 
 - **Galeria powiadomień** (Na żywo → Alerty → *Galeria*) – wszystkie teksty aktywnej postaci i gry naraz, w prawdziwym wyglądzie karty: zwykłe, na duże zdarzenia, części gier, rejestry Myr; pod spodem teksty ekranów i alerty w czacie.

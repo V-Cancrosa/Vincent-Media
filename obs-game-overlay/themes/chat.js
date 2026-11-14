@@ -15,6 +15,14 @@
 
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 
+  // słowa zakazane (themes/wordfilter.js): zakryte ▇▇▇ albo cała wiadomość ukryta (panel → Czat → Słowa zakazane)
+  function words(ev) {
+    if (ev._w !== undefined || !window.VMWords) return ev._w || null;
+    const s = window.VMWords.settings();
+    ev._w = s.mode === 'off' ? null : window.VMWords.check(ev.text || '');
+    if (ev._w && !ev._w.level) ev._w = null;
+    return ev._w;
+  }
   function render(ev) {
     const style = STYLES.includes(ev.style) ? ev.style : 'theme';
     const color = ev.color || hashColor(ev.user || '?');
@@ -25,14 +33,17 @@
       m.append(el('span', 'csys-user', ev.user), el('span', 'csys-arrow', ' → '), el('span', 'csys-text', ev.reply || ev.text));
       return m;
     }
-    const av = el('div', 'cav', (ev.user || '?').slice(0, 1).toUpperCase());
+    const uname = window.VMWords ? window.VMWords.maskName(ev.user || '') : (ev.user || '');
+    const av = el('div', 'cav', uname.slice(0, 1).toUpperCase());
     const body = el('div', 'cbody');
-    const name = el('div', 'cname', ev.user || '');
+    const name = el('div', 'cname', uname);
     for (const b of ev.badges || []) if (BADGES[b]) name.append(el('span', 'cbadge cb-' + b, BADGES[b]));
     // oflagowana wiadomość, którą panel każe pokazać: wyraźny znacznik zamiast ukrycia
     if (ev.flag) { m.classList.add('cflagged', 'cflag-' + ev.flag.level); const fb = el('span', 'cbadge cb-flag', '⚑'); fb.title = (ev.flag.reasons || []).join(' · '); name.append(fb); }
     const text = el('div', 'ctext');
-    const frags = ev.fragments && ev.fragments.length ? ev.fragments : [{ t: 'text', v: ev.text || '' }];
+    const w = words(ev);
+    if (w) m.classList.add('cmasked');
+    const frags = w ? [{ t: 'text', v: w.masked }] : ev.fragments && ev.fragments.length ? ev.fragments : [{ t: 'text', v: ev.text || '' }];
     for (const f of frags) {
       if (f.t === 'emote' && f.id) { const i = new Image(); i.className = 'cemote'; i.alt = f.v || ''; i.src = EMOTE(f.id); text.append(i); }
       else text.append(document.createTextNode(f.v || ''));
@@ -90,6 +101,8 @@
 
   // podejrzane wiadomości (świeże konto, reklama widzów…) nie trafiają na ekran, dopóki panel ich nie puści
   function allowed(ev) {
+    const w = ev && ev.type === 'chat' ? words(ev) : null;
+    if (w && window.VMWords.settings().mode === 'hide') return false;
     if (!ev.flag || ev.flag.level !== 'suspect') return true;
     try { const s = window.VMClient ? window.VMClient.settings() : {}; return s.botHide === false; } catch (e) { return true; }
   }

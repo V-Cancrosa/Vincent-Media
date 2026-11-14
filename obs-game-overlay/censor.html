@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>VM · Cenzura</title>
+<!--
+  Warstwa cenzury ekranu (źródło przeglądarki „VM · Cenzura” na samej górze sceny, 1920×1080).
+  Wykrywacz czyta tekst z okna na pierwszym planie (wbudowany OCR Windows), a ta warstwa zasłania słowa
+  zakazane regulaminem Twitcha (themes/wordfilter.js – ten sam filtr co czat) dokładnie tam, gdzie są na scenie.
+  Gdzie okno jest na scenie, podaje panel (obsGameOverlay.censorMap – z OBS WebSocket).
+  Żeby zasłona zdążyła przed obrazem: panel → Czat → Moderacja → Cenzura ekranu → „Opóźnij obraz okna o 500 ms”.
+  ?test=1 – pokazuje przykładowe zasłony (bez wykrywacza)
+-->
+<style>
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+  .cz { position: absolute; border-radius: 4px; background: repeating-linear-gradient(135deg, #111 0 8px, #1d1d22 8px 16px); box-shadow: 0 0 0 2px #e91916, 0 2px 8px rgba(0,0,0,.6); }
+  .cz.soft { box-shadow: 0 0 0 2px #e9a316, 0 2px 8px rgba(0,0,0,.6); }
+  #st { position: absolute; right: 8px; top: 8px; font: 600 14px/1.2 system-ui, sans-serif; color: #fff; background: rgba(0,0,0,.6); padding: 4px 8px; border-radius: 6px; display: none; }
+  .debug #st { display: block; }
+</style>
+<script src="version.js"></script>
+<script src="themes/wordfilter.js"></script>
+</head>
+<body>
+<div id="st"></div>
+<script>
+(() => {
+  const q = new URLSearchParams(location.search);
+  const KEY = 'obsGameOverlay.v1', MAP = 'obsGameOverlay.censorMap';
+  const read = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } };
+  const settings = () => read(KEY) || {};
+  const hub = () => (window.vmHub ? window.vmHub(settings().localUrl) : 'http://localhost:7777');
+  const DEF_EXES = 'chrome.exe,msedge.exe,firefox.exe,opera.exe,brave.exe,vivaldi.exe,discord.exe';
+  if (q.get('debug') === '1') document.body.classList.add('debug');
+  const st = document.getElementById('st');
+
+  const boxes = new Map();       // klucz → { el, until }
+  function show(list) {
+    const hold = (+settings().censorHold || 1500), now = performance.now();
+    for (const b of list) {
+      const k = Math.round(b.x / 12) + ':' + Math.round(b.y / 12) + ':' + b.t;
+      let o = boxes.get(k);
+      if (!o) { o = { el: document.createElement('div') }; o.el.className = 'cz' + (b.level === 'soft' ? ' soft' : ''); document.body.appendChild(o.el); boxes.set(k, o); }
+      Object.assign(o.el.style, { left: b.x - 4 + 'px', top: b.y - 3 + 'px', width: b.w + 8 + 'px', height: b.h + 6 + 'px' });
+      o.until = now + hold;
+    }
+  }
+  setInterval(() => { const now = performance.now(); for (const [k, o] of boxes) if (now > o.until) { o.el.remove(); boxes.delete(k); } }, 100);
+
+  // słowo w pikselach ekranu → piksele tej warstwy (1920×1080 = cała scena)
+  function project(r, words) {
+    const m = read(MAP); if (!m || !m.items || !m.items.length || Date.now() - (m.at || 0) > 15000) return { out: [], why: 'brak mapy sceny (panel w OBS musi być otwarty)' };
+    const cw = (m.canvas && m.canvas.w) || 1920, ch = (m.canvas && m.canvas.h) || 1080, kx = 1920 / cw, ky = 1080 / ch;
+    let it = m.items.find(i => (i.kind === 'window_capture' || i.kind === 'game_capture') && i.exe && i.exe === r.exe), area = r.client;
+    if (!it) { it = m.items.find(i => i.kind === 'monitor_capture'); area = r.monitor; }
+    if (!it || !area) return { out: [], why: 'okna ' + r.exe + ' nie ma na tej scenie' };
+    const sw = it.srcW || area.w, sh = it.srcH || area.h;
+    const fx = it.rect.w / Math.max(1, sw - it.crop[0] - it.crop[2]), fy = it.rect.h / Math.max(1, sh - it.crop[1] - it.crop[3]);
+    const ax = sw / area.w, ay = sh / area.h;   // np. zrzut w innej skali niż źródło
+    return { out: words.map(w => ({ ...w, x: (it.rect.x + ((w.x - area.x) * ax - it.crop[0]) * fx) * kx, y: (it.rect.y + ((w.y - area.y) * ay - it.crop[1]) * fy) * ky, w: w.w * ax * fx * kx, h: w.h * ay * fy * ky }))
+      .filter(b => b.x + b.w > it.rect.x * kx && b.y + b.h > it.rect.y * ky && b.x < (it.rect.x + it.rect.w) * kx && b.y < (it.rect.y + it.rect.h) * ky), why: '' };
+  }
+
+  if (q.get('test') === '1') { show([{ x: 300, y: 300, w: 140, h: 34, t: 'a' }, { x: 900, y: 520, w: 220, h: 40, t: 'b', level: 'soft' }]); setInterval(() => show([{ x: 300, y: 300, w: 140, h: 34, t: 'a' }]), 1000); return; }
+
+  // prośba o skan co 4 s (wykrywacz sam przestaje, gdy prośby ustaną)
+  async function ping() {
+    const s = settings();
+    if (!s.censor || s.local === false) return;
+    try {
+      const j = await (await fetch(hub() + '/censor/config?on=1&exes=' + encodeURIComponent(s.censorAll ? '' : (s.censorExes || DEF_EXES)), { cache: 'no-store' })).json();
+      st.textContent = 'OCR: ' + j.status + (j.fps ? ' · ' + j.fps + '/s' : '') + (j.error ? ' · ' + j.error : '');
+    } catch { st.textContent = 'wykrywacz nie odpowiada'; }
+  }
+  ping(); setInterval(ping, 4000);
+  let since = 0, busy = false;
+  setInterval(async () => {
+    const s = settings(); if (!s.censor || busy || !window.VMWords) return;
+    busy = true;
+    try {
+      const r = await (await fetch(hub() + '/censor?since=' + since, { cache: 'no-store' })).json();
+      if (r && r.at && !r.same) {
+        since = r.at;
+        if (!r.skip && r.lines) {
+          const bad = window.VMWords.lines(r.lines);
+          if (bad.length) { const p = project(r, bad); show(p.out); if (p.why) st.textContent = p.why; }
+        }
+      }
+    } catch {}
+    busy = false;
+  }, 120);
+})();
+</script>
+</body>
+</html>

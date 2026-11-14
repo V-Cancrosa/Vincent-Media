@@ -118,6 +118,7 @@
 <script src="themes/voices-en.js"></script>
 <script src="themes/voices-trans.js"></script>
 <script src="themes/i18n.js"></script>
+<script src="themes/wordfilter.js"></script>
 <script src="themes/botcheck.js"></script>
 <script src="themes/testfeed.js"></script>
 </head>
@@ -427,6 +428,50 @@
     <p class="hint" style="margin:0">Każda testowa wiadomość przechodzi przez ocenę czatu. Wynik widać od razu poniżej – podejrzane są ukryte na ekranie, chyba że włączysz „Pokazuj podejrzane”. W napływie co kilka wiadomości wpada bot.</p>
     <div class="slist" id="testFlags"></div>
     <p class="hint" style="margin:0">W ramce i w rozmowie czat jest zawsze widoczny obok. Osobne źródło: <code>chat.html?mode=ticker</code>.</p>
+  </section>
+  <section>
+    <h2>Napisz na czat (test)</h2>
+    <p class="hint" style="margin:0">Wiadomość idzie przez wszystko to, co prawdziwy czat: ocenę bota, filtr słów i na ekran. Na Twitchu nic się nie wysyła.</p>
+    <div class="row"><input id="myMsg" type="text" placeholder="Napisz coś jak widz… (Enter)" autocomplete="off"><button class="primary auto" id="mySend">Wyślij</button></div>
+    <div class="row">
+      <label>Nick<input id="myNick" type="text" value="Test_Widz"></label>
+      <label>Konto
+        <select id="myAge"><option value="">stare (rok)</option><option value="10">10 dni</option><option value="0.08">2 godziny</option></select>
+      </label>
+      <label class="check" style="align-self:end"><input id="myFirst" type="checkbox" checked> pierwsza wiadomość</label>
+    </div>
+    <div class="slist" id="myResult"></div>
+  </section>
+  <section>
+    <h2>Słowa zakazane</h2>
+    <p class="hint" style="margin:0">Obelgi zakazane regulaminem Twitcha i ich przeróbki: leet (n1gg3r), litery osobno lub z kropkami, rozbite na dwa słowa „pod TTS” (np. knee grow), cyrylica, q zamiast g. Działa na czacie, nickach w alertach i napisach końcowych oraz w skanie ekranu. Przekleństwa nie są blokowane – Twitch na nie pozwala.</p>
+    <label>Gdy wiadomość ma takie słowo
+      <select id="wordFilter">
+        <option value="mask">zakryj słowo ▇▇▇ (reszta wiadomości zostaje)</option>
+        <option value="hide">ukryj całą wiadomość na ekranie</option>
+        <option value="off">nic nie rób (niezalecane)</option>
+      </select>
+    </label>
+    <label class="check"><input id="wordSoft" type="checkbox"> zakrywaj też słowa dwuznaczne (np. „pedał”, „murzyn”, „retarded”)</label>
+    <label>Dodatkowe słowa do zakrywania (po przecinku)<input id="wordExtra" type="text" placeholder="np. przezwisko trolla"></label>
+    <label>Zawsze pozwalaj (po przecinku)<input id="wordAllow" type="text" placeholder="np. słowo, które filtr myli"></label>
+    <p class="hint" style="margin:0">Na nakładce wiadomość zostaje zakryta, ale na samym Twitchu nadal ją widać. Żeby Twitch w ogóle jej nie wpuścił, ustaw w Panelu twórcy → Moderacja: <b>AutoMod</b> (poziom 2+) i <b>Zablokowane wyrażenia</b>.</p>
+  </section>
+  <section data-feature="local">
+    <h2>Cenzura ekranu <span id="censorPill" class="pill off"></span></h2>
+    <p class="hint" style="margin:0">Gdy przeglądasz internet na wizji, wykrywacz co chwilę czyta tekst z okna na pierwszym planie (wbudowane rozpoznawanie tekstu Windows, bez internetu, nic nie zapisuje), a warstwa <b>VM · Cenzura</b> zasłania na scenie słowa z listy zakazanych – ten sam filtr co na czacie.</p>
+    <label class="check"><input id="censor" type="checkbox"> zasłaniaj zakazane słowa na ekranie</label>
+    <label>Skanowane programy (pliki .exe, po przecinku)<input id="censorExes" type="text" placeholder="chrome.exe, msedge.exe, firefox.exe, opera.exe, brave.exe, vivaldi.exe, discord.exe"></label>
+    <label class="check"><input id="censorAll" type="checkbox"> skanuj każde okno na pierwszym planie (też gry – więcej pracy dla procesora)</label>
+    <div class="row">
+      <button id="censorAdd" data-feature="obs">Dodaj warstwę do scen</button>
+      <button id="censorDelay" data-feature="obs">Opóźnij okna o 0,5 s</button>
+    </div>
+    <label data-feature="obs">Opóźnienie całego streama (od następnego startu)
+      <select id="streamDelay"><option value="0">bez opóźnienia</option><option value="5">5 s</option><option value="10">10 s</option><option value="20">20 s</option><option value="30">30 s</option></select>
+    </label>
+    <div class="status" id="censorStatus"></div>
+    <p class="hint" style="margin:0"><b>Jak to działa w czasie:</b> rozpoznanie tekstu trwa ok. 0,2–0,4 s. „Opóźnij obraz okien” dodaje do przechwytywania okna/ekranu filtr <i>Opóźnienie renderowania</i> 0,5 s, więc zasłona pojawia się na streamie, zanim słowo w ogóle będzie widać. Opóźnienie całego streama tu nie pomaga (opóźnia też zasłonę), ale daje Ci czas, żeby w razie czego przełączyć na „Przerwę”, zanim widzowie coś zobaczą. Test: wpisz w przeglądarce słowo z listy (np. w pasku adresu) i patrz na podgląd OBS.</p>
   </section>
   <section data-feature="local">
     <h2>Podejrzane konta <span id="flagPill" class="pill off"></span></h2>
@@ -929,7 +974,7 @@
         if (!s.obsMic || name === s.obsMic) obsLevel = db;
       },
       onTalking: t => { obsTalk = t; },
-      onReady: () => { obsRecStatus(); setTimeout(ensureMic, 1500); },
+      onReady: () => { obsRecStatus(); setTimeout(ensureMic, 1500); setTimeout(readStreamDelay, 1000); },
       // nagrywanie razem ze streamem: start po starcie streama, stop po końcu (jeśli włączone)
       onOutput: async (t, d) => {
         if (t === 'RecordStateChanged') { obsRecStatus(); return; }
@@ -1318,6 +1363,150 @@
   $('botTest').onclick = () => { window.VMTestFeed.configure(feedOpts()); window.VMTestFeed.bot(s.lang || 'pl').forEach((ev, i) => setTimeout(() => feedSend(ev), i * 700)); };
   $('botShow').onclick = () => { s.botHide = s.botHide === false; save(); };
 
+
+  // --- własna wiadomość testowa + słowa zakazane ---
+  const WF_DEF = { wordFilter: 'mask', wordSoft: true };
+  function wordsUi() { $('wordFilter').value = s.wordFilter || 'mask'; $('wordSoft').checked = s.wordSoft !== false; $('wordExtra').value = s.wordExtra || ''; $('wordAllow').value = s.wordAllow || ''; }
+  $('wordFilter').onchange = () => { s.wordFilter = $('wordFilter').value; save(); };
+  $('wordSoft').onchange = () => { s.wordSoft = $('wordSoft').checked; save(); };
+  $('wordExtra').onchange = () => { s.wordExtra = $('wordExtra').value.trim(); save(); };
+  $('wordAllow').onchange = () => { s.wordAllow = $('wordAllow').value.trim(); save(); };
+  setTimeout(wordsUi, 0);
+  const myLog = [];
+  function mySend() {
+    const text = $('myMsg').value.trim(); if (!text) return;
+    const user = $('myNick').value.trim() || 'Test_Widz';
+    const age = $('myAge').value === '' ? 400 : +$('myAge').value;
+    const ev = { type: 'chat', user, login: user.toLowerCase(), text, test: true, accountAgeDays: age, color: '' };
+    let flag = null; try { flag = window.OverlayBotCheck ? window.OverlayBotCheck.check(ev, { first: $('myFirst').checked, lang: s.lang || 'pl', gaming: true }) : null; } catch {}
+    if (flag) ev.flag = flag;
+    const w = window.VMWords ? window.VMWords.check(text) : { level: null, hits: [], masked: text };
+    const nick = window.VMWords ? window.VMWords.maskName(user) : user;
+    const mode = s.wordFilter || 'mask';
+    const shown = (w.level && mode === 'hide') || (flag && flag.level === 'suspect' && s.botHide !== false) ? 'ukryta na ekranie' : 'na ekranie: „' + (w.level && mode !== 'off' ? w.masked : text) + '”';
+    const notes = [];
+    if (w.level) notes.push((w.level === 'hard' ? 'zakazane: ' : 'dwuznaczne: ') + w.hits.map(h => h.text).join(', '));
+    if (nick !== user) notes.push('nick zakryty');
+    if (flag) notes.push('bot? ' + flag.level + ' – ' + (flag.reasons || []).join(' · '));
+    if (!notes.length) notes.push('czysto ✓');
+    myLog.unshift({ user, text, bad: !!w.level || (flag && flag.level === 'suspect'), notes, shown }); myLog.length = Math.min(myLog.length, 6);
+    $('myResult').innerHTML = myLog.map(r => `<div class="flag ${r.bad ? 'suspect' : ''}"><div class="fh"><b>${esc(r.user)}</b></div><q>${esc(r.text)}</q><div class="fr">${r.notes.map(esc).join(' · ')} → ${esc(r.shown)}</div></div>`).join('');
+    feedSend(ev);
+    $('myMsg').value = ''; $('myMsg').focus();
+  }
+  $('mySend').onclick = mySend;
+  $('myMsg').addEventListener('keydown', e => { if (e.key === 'Enter') mySend(); });
+
+
+  // --- cenzura ekranu: mapa położenia okien na scenie, warstwa, opóźnienia ---
+  const CENSOR_NAME = 'VM · Cenzura', DELAY_NAME = 'VM · Opóźnienie (cenzura)', CAP_KINDS = ['window_capture', 'game_capture', 'monitor_capture'];
+  const DEF_EXES = 'chrome.exe, msedge.exe, firefox.exe, opera.exe, brave.exe, vivaldi.exe, discord.exe';
+  const winExe = spec => { const p = String(spec || '').split(':'); return (p[2] || '').replace(/#3A/g, ':').replace(/#22/g, '#').toLowerCase(); };
+  function itemRect(t) {
+    const cl = t.cropLeft || 0, cr = t.cropRight || 0, ct = t.cropTop || 0, cb = t.cropBottom || 0;
+    const cw = Math.max(1, (t.sourceWidth || 0) - cl - cr), ch = Math.max(1, (t.sourceHeight || 0) - ct - cb);
+    const off = (a, w, h) => [a & 1 ? 0 : a & 2 ? w : w / 2, a & 4 ? 0 : a & 8 ? h : h / 2];
+    const al = t.alignment == null ? 5 : t.alignment, bt = t.boundsType || 'OBS_BOUNDS_NONE';
+    if (bt === 'OBS_BOUNDS_NONE') { const w = cw * Math.abs(t.scaleX || 1), h = ch * Math.abs(t.scaleY || 1), [ox, oy] = off(al, w, h); return { x: t.positionX - ox, y: t.positionY - oy, w, h }; }
+    const bw = t.boundsWidth, bh = t.boundsHeight; let sx = bw / cw, sy = bh / ch;
+    if (bt === 'OBS_BOUNDS_SCALE_INNER') sx = sy = Math.min(sx, sy);
+    else if (bt === 'OBS_BOUNDS_SCALE_OUTER') sx = sy = Math.max(sx, sy);
+    else if (bt === 'OBS_BOUNDS_SCALE_TO_WIDTH') sy = sx;
+    else if (bt === 'OBS_BOUNDS_SCALE_TO_HEIGHT') sx = sy;
+    else if (bt === 'OBS_BOUNDS_MAX_ONLY') sx = sy = Math.min(1, sx, sy);
+    const w = cw * sx, h = ch * sy, [ox, oy] = off(al, bw, bh), ba = t.boundsAlignment || 0;
+    return { x: t.positionX - ox + (ba & 1 ? 0 : ba & 2 ? bw - w : (bw - w) / 2), y: t.positionY - oy + (ba & 4 ? 0 : ba & 8 ? bh - h : (bh - h) / 2), w, h };
+  }
+  async function captureItems(scene) {
+    const items = ((await obs.call('GetSceneItemList', { sceneName: scene })).sceneItems || []).filter(i => i.sceneItemEnabled && CAP_KINDS.includes(i.inputKind));
+    const out = [];
+    for (const i of items) {
+      let exe = '';
+      if (i.inputKind !== 'monitor_capture') { try { exe = winExe((await obs.call('GetInputSettings', { inputName: i.sourceName })).inputSettings.window); } catch {} }
+      const t = i.sceneItemTransform || {};
+      out.push({ name: i.sourceName, kind: i.inputKind, exe, rect: itemRect(t), crop: [t.cropLeft || 0, t.cropTop || 0, t.cropRight || 0, t.cropBottom || 0], srcW: t.sourceWidth || 0, srcH: t.sourceHeight || 0, index: i.sceneItemIndex });
+    }
+    return out.sort((a, b) => b.index - a.index);     // najwyżej na scenie – pierwsze
+  }
+  let censorBusy = false;
+  async function censorTick() {
+    pill('censorPill', !!s.censor, 'WŁ.', 'WYŁ.');
+    if (!s.censor || isRemote) return;
+    try { const j = await (await fetch(hubUrl() + '/censor/config?on=1&exes=' + encodeURIComponent(s.censorAll ? '' : (s.censorExes || DEF_EXES).replace(/\s/g, '')), { cache: 'no-store' })).json();
+      $('censorStatus').textContent = 'Rozpoznawanie tekstu: ' + j.status + (j.fps ? ` (${j.fps} skanów/s)` : '') + (j.lang ? ' · język ' + j.lang : '') + (j.error ? ' · ' + j.error : ''); }
+    catch { $('censorStatus').textContent = 'Wykrywacz nie odpowiada – cenzura ekranu nie działa.'; }
+    if (!obs || censorBusy) return;
+    censorBusy = true;
+    try {
+      const scene = obsCurrent || (await obs.call('GetCurrentProgramScene')).currentProgramSceneName;
+      const vs = await obs.call('GetVideoSettings');
+      const items = await captureItems(scene);
+      localStorage.setItem('obsGameOverlay.censorMap', JSON.stringify({ at: Date.now(), scene, canvas: { w: vs.baseWidth, h: vs.baseHeight }, items }));
+    } catch {}
+    censorBusy = false;
+  }
+  setInterval(censorTick, 2000);
+  async function censorAddLayer() {
+    const st = $('censorStatus');
+    if (!obs) { st.textContent = 'Brak połączenia z OBS.'; return; }
+    if (!/^file:/.test(location.protocol)) { st.textContent = 'To działa z doku w OBS (panel otwarty z dysku).'; return; }
+    const url = new URL('censor.html', location.href).href;
+    try {
+      const inputs = (await obs.call('GetInputList')).inputs || [];
+      let made = inputs.some(i => i.inputName === CENSOR_NAME), added = 0;
+      const vs = await obs.call('GetVideoSettings');
+      for (const sc of obsSceneList) {
+        const items = (await obs.call('GetSceneItemList', { sceneName: sc })).sceneItems || [];
+        if (items.some(i => i.sourceName === CENSOR_NAME)) continue;
+        const id = made ? (await obs.call('CreateSceneItem', { sceneName: sc, sourceName: CENSOR_NAME })).sceneItemId
+          : (await obs.call('CreateInput', { sceneName: sc, inputName: CENSOR_NAME, inputKind: 'browser_source', inputSettings: { url, width: 1920, height: 1080, is_local_file: false, css: 'body { background-color: rgba(0, 0, 0, 0); margin: 0px auto; overflow: hidden; }' } })).sceneItemId;
+        made = true; added++;
+        try {
+          await obs.call('SetSceneItemTransform', { sceneName: sc, sceneItemId: id, sceneItemTransform: { boundsType: 'OBS_BOUNDS_STRETCH', boundsWidth: vs.baseWidth, boundsHeight: vs.baseHeight, positionX: 0, positionY: 0 } });
+          await obs.call('SetSceneItemIndex', { sceneName: sc, sceneItemId: id, sceneItemIndex: items.length });
+        } catch {}
+      }
+      st.textContent = added ? `Dodano „${CENSOR_NAME}” na wierzch ${added} scen.` : `„${CENSOR_NAME}” jest już we wszystkich scenach.`;
+    } catch (e) { st.textContent = 'OBS odmówił: ' + e.message; }
+  }
+  $('censorAdd').onclick = censorAddLayer;
+  $('censor').onchange = () => { s.censor = $('censor').checked; save(); if (s.censor && obs) censorAddLayer(); censorTick(); };
+  $('censorExes').onchange = () => { s.censorExes = $('censorExes').value.trim(); save(); };
+  $('censorAll').onchange = () => { s.censorAll = $('censorAll').checked; save(); };
+  $('censorDelay').onclick = async () => {
+    const st = $('censorStatus'); if (!obs) { st.textContent = 'Brak połączenia z OBS.'; return; }
+    try {
+      const names = new Set();
+      for (const sc of obsSceneList) for (const i of ((await obs.call('GetSceneItemList', { sceneName: sc })).sceneItems || [])) if (CAP_KINDS.includes(i.inputKind)) names.add(i.sourceName);
+      let n = 0;
+      for (const name of names) {
+        const f = ((await obs.call('GetSourceFilterList', { sourceName: name })).filters || []).find(x => x.filterName === DELAY_NAME);
+        if (f) await obs.call('SetSourceFilterSettings', { sourceName: name, filterName: DELAY_NAME, filterSettings: { delay_ms: 500 } });
+        else await obs.call('CreateSourceFilter', { sourceName: name, filterName: DELAY_NAME, filterKind: 'gpu_delay', filterSettings: { delay_ms: 500 } });
+        n++;
+      }
+      st.textContent = n ? `Opóźnienie 0,5 s dodane do ${n} źródeł przechwytywania (filtr „${DELAY_NAME}” – usuniesz go w Filtrach źródła).` : 'Nie widzę źródeł przechwytywania okna, ekranu ani gry.';
+    } catch (e) { st.textContent = 'OBS odmówił: ' + e.message; }
+  };
+  $('streamDelay').onchange = async () => {
+    const v = +$('streamDelay').value, st = $('censorStatus'); if (!obs) { st.textContent = 'Brak połączenia z OBS.'; return; }
+    try {
+      await obs.call('SetProfileParameter', { parameterCategory: 'Output', parameterName: 'DelayEnable', parameterValue: v ? 'true' : 'false' });
+      if (v) await obs.call('SetProfileParameter', { parameterCategory: 'Output', parameterName: 'DelaySec', parameterValue: String(v) });
+      st.textContent = v ? `Stream będzie opóźniony o ${v} s od następnego startu (Ustawienia → Zaawansowane → Opóźnienie streama).` : 'Opóźnienie streama wyłączone.';
+    } catch (e) { st.textContent = 'OBS odmówił: ' + e.message; }
+  };
+  async function readStreamDelay() {
+    if (!obs) return;
+    try {
+      const en = (await obs.call('GetProfileParameter', { parameterCategory: 'Output', parameterName: 'DelayEnable' })).parameterValue;
+      const sec = (await obs.call('GetProfileParameter', { parameterCategory: 'Output', parameterName: 'DelaySec' })).parameterValue;
+      const v = en === 'true' ? String(+sec || 0) : '0';
+      $('streamDelay').value = [...$('streamDelay').options].some(o => o.value === v) ? v : '0';
+    } catch {}
+  }
+  setTimeout(() => { $('censor').checked = !!s.censor; $('censorExes').value = s.censorExes || ''; $('censorAll').checked = !!s.censorAll; }, 0);
+
   // --- czat na ekranie, moderacja, statystyki, nagrywanie ---
   document.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => runTest(b.dataset.ct, 0));
   $('gameChat').onchange = () => { s.gameChat = $('gameChat').value; save(); };
@@ -1457,7 +1646,7 @@
   const SUBS = {
     live: [['Gra', ['Gra']], ['Ekrany', ['Ekrany', 'Sceny OBS']], ['Alerty', ['Alerty']]],
     look: [['Karta', ['Wygląd']], ['Avatar', ['Avatar / kamerka']]],
-    chat: [['Na ekranie', ['Czat na ekranie']], ['Moderacja', ['Podejrzane konta']], ['Statystyki', ['Statystyki streamów']], ['Nagrywanie', ['Nagrywanie']]],
+    chat: [['Na ekranie', ['Czat na ekranie']], ['Moderacja', ['Napisz na czat (test)', 'Słowa zakazane', 'Cenzura ekranu', 'Podejrzane konta']], ['Statystyki', ['Statystyki streamów']], ['Nagrywanie', ['Nagrywanie']]],
     more: [['Twitch', ['Twitch']], ['OBS', ['OBS (WebSocket)']], ['Wykrywacz', ['Wykrywanie gier', 'Lokalny wykrywacz']], ['Funkcje', ['Funkcje']], ['Telefon', ['Pilot z telefonu']], ['Wersja', ['Wersja']], ['Discord', ['Discord (Lanyard)']], ['Źródła', ['Źródła w OBS', '']]]
   };
   const SUB_KEY = 'obsGameOverlay.panelSub';

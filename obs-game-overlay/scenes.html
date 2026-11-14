@@ -21,6 +21,7 @@
 <script src="themes/voices-en.js"></script>
 <script src="themes/voices-trans.js"></script>
 <script src="themes/i18n.js"></script>
+<script src="themes/wordfilter.js"></script>
 <script src="themes/obsws.js"></script>
 <script src="themes/zones.js"></script>
 <link rel="stylesheet" href="themes/base.css">
@@ -434,7 +435,7 @@
     const T = (k, o) => (window.VMi18n ? VMi18n.t(k, o) : k);
     add('p', endVoice.line || T('thanks')).className = 'thanks';
     const S = session || {};
-    const sec = (title, list, fmt) => { if (!list || !list.length) return; add('h3', title); for (const it of list) add('p', it.user, fmt ? fmt(it) : ''); };
+    const sec = (title, list, fmt) => { if (!list || !list.length) return; add('h3', title); for (const it of list) add('p', window.VMWords ? window.VMWords.maskName(it.user) : it.user, fmt ? fmt(it) : ''); };
     sec(T('cr_follow'), S.follow);
     const desc = l => (l || []).slice().sort((a, b) => (b.n || 0) - (a.n || 0));   // największe wsparcie na górze
     const EN = window.VMi18n && VMi18n.lang() === 'en';
@@ -475,8 +476,8 @@
         if (window.vmCheckVersion) window.vmCheckVersion(j.appVersion);
         for (const ev of j.events || []) {
           if (ev.test) continue;
-          if (ev.type === 'follow') recent.follow = ev.user;
-          if (['sub', 'resub', 'gift'].includes(ev.type)) recent.sub = ev.user;
+          if (ev.type === 'follow') recent.follow = window.VMWords ? window.VMWords.maskName(ev.user) : ev.user;
+          if (['sub', 'resub', 'gift'].includes(ev.type)) recent.sub = window.VMWords ? window.VMWords.maskName(ev.user) : ev.user;
         }
       } catch {}
     }
