@@ -137,6 +137,8 @@
   <section>
     <h2>Teraz</h2>
     <div class="stats" id="stStatus"></div>
+    <div class="row" id="detStartRow" hidden><button class="primary" id="detStart">▶ Uruchom wykrywacz</button></div>
+    <div class="status" id="detStartMsg" hidden></div>
     <div class="now"><b id="stGame">—</b><small id="stGameSub"></small></div>
     <label class="check"><input id="autoCapture" type="checkbox"> OBS sam łapie okno wykrytej gry</label>
     <div class="row">
@@ -147,6 +149,11 @@
         </select>
       </label>
     </div>
+    <details id="capScenesBox">
+      <summary>W których scenach</summary>
+      <p class="hint" style="margin:0">Źródło dodaje się samo do scen z grą VM i do Twoich scen. Odznacz scenę, żeby je stamtąd zabrać.</p>
+      <div class="checks" id="capScenes"></div>
+    </details>
     <div class="status" id="capStatus"></div>
   </section>
   <section>
@@ -1090,13 +1097,34 @@
     const box = $('stStatus'); if (!box) return;
     box.innerHTML = [['lcPill', 'Wykrywacz'], ['obsPill', 'OBS'], ['twPill', 'Twitch']].map(([id, n]) => {
       const p = $(id); const on = p && p.classList.contains('on');
+      if (id === 'lcPill') { $('detStartRow').hidden = on || !s.local || isRemote; if (on) $('detStartMsg').hidden = true; }
       return `<div class="stat" data-goto="${id}"><b style="color:${on ? 'var(--ok)' : 'var(--warn)'}">${on ? '✓' : '!'}</b><span>${n}: ${esc(p ? p.textContent : '')}</span></div>`;
     }).join('');
   }
+  // wykrywacz nie działa: uruchomienie przez adres vincentmedia:// (dodaje go instalator za zgodą)
+  $('detStart').onclick = () => {
+    const f = document.createElement('iframe'); f.style.display = 'none'; f.src = 'vincentmedia://start'; document.body.appendChild(f);
+    setTimeout(() => f.remove(), 3000);
+    $('detStartMsg').hidden = false;
+    $('detStartMsg').textContent = 'Uruchamiam… Jeśli po kilku sekundach nadal nie działa: Menu Start → Vincent-Media → Wykrywacz gier (albo uruchom instalator jeszcze raz i zgódź się na „uruchamianie z OBS”).';
+  };
   $('stStatus').addEventListener('click', e => { const d = e.target.closest('[data-goto]'); if (!d) return; showTab('more'); const tab = document.querySelector('.tab[data-tab="more"]'); showSub(tab, d.dataset.goto === 'twPill' ? 'Twitch' : d.dataset.goto === 'obsPill' ? 'OBS' : 'Wykrywacz'); });
   let capLast = '', capBusy = false;
   const CAP_NAME = 'VM · Gra (automatycznie)';
   const CAP_SCENES = { 'VM · Gra – pełny ekran': 'full', 'VM · Gra – w ramce': 'frame' };
+  // sceny z przechwytywaniem: sceny z grą VM + wszystkie Twoje (nie-VM), bez odznaczonych
+  const capTargets = () => obsSceneList.filter(n => (CAP_SCENES[n] || n.indexOf('VM · ') !== 0) && !(s.captureExclude || []).includes(n));
+  function renderCapScenes() {
+    const box = $('capScenes'); if (!box) return;
+    const list = obsSceneList.filter(n => CAP_SCENES[n] || n.indexOf('VM · ') !== 0);
+    const key = list.join('|') + '#' + (s.captureExclude || []).join('|'); if (box.dataset.key === key) return; box.dataset.key = key;
+    box.innerHTML = list.map(n => `<label class="check"><input type="checkbox" data-cap="${esc(n)}" ${(s.captureExclude || []).includes(n) ? '' : 'checked'}> ${esc(n)}</label>`).join('') || '<span class="hint">Brak połączenia z OBS.</span>';
+  }
+  $('capScenes').addEventListener('change', e => {
+    const n = e.target.dataset.cap; if (!n) return;
+    const ex = new Set(s.captureExclude || []); if (e.target.checked) ex.delete(n); else ex.add(n);
+    s.captureExclude = [...ex]; capLast = ''; save();
+  });
   // wykryta gra → źródło „VM · Gra (automatycznie)” w scenach z grą: okno tej gry (dopasowanie po pliku .exe)
   async function startGame() {
     let g = null;
@@ -1108,18 +1136,25 @@
       return;
     }
     const kind = s.captureKind === 'game' ? 'game_capture' : 'window_capture';
-    const key = kind + '|' + g.window; if (key === capLast) return;
+    const key = kind + '|' + g.window + '|' + capTargets().join('|') + '|' + (s.captureExclude || []).join('|'); if (key === capLast) return;
     capBusy = true;
     try {
       const inputs = (await obs.call('GetInputList')).inputs || [];
       const ex = inputs.find(i => i.inputName === CAP_NAME);
       if (ex && ex.inputKind !== kind) await obs.call('RemoveInput', { inputName: CAP_NAME });
       let made = !!(ex && ex.inputKind === kind);
-      const settings = kind === 'game_capture' ? { capture_mode: 'window', window: g.window, priority: 2 } : { window: g.window, priority: 2, cursor: false };
+      // okno: metoda Windows Graphics Capture (2) – BitBlt daje czarny obraz w nowych aplikacjach (np. Paint) i wielu grach
+      const settings = kind === 'game_capture' ? { capture_mode: 'window', window: g.window, priority: 2 } : { window: g.window, priority: 2, method: 2, cursor: false };
       const vs = await obs.call('GetVideoSettings');
       let placed = 0;
-      for (const [sc, mode] of Object.entries(CAP_SCENES)) {
+      // odznaczone sceny: zabierz źródło
+      for (const sc of s.captureExclude || []) {
         if (!obsSceneList.includes(sc)) continue;
+        const items = (await obs.call('GetSceneItemList', { sceneName: sc })).sceneItems || [];
+        for (const it of items.filter(i => i.sourceName === CAP_NAME)) await obs.call('RemoveSceneItem', { sceneName: sc, sceneItemId: it.sceneItemId });
+      }
+      for (const sc of capTargets()) {
+        const mode = CAP_SCENES[sc] || 'full';
         const items = (await obs.call('GetSceneItemList', { sceneName: sc })).sceneItems || [];
         if (items.some(i => i.sourceName === CAP_NAME)) { placed++; continue; }
         const id = made ? (await obs.call('CreateSceneItem', { sceneName: sc, sourceName: CAP_NAME })).sceneItemId
@@ -1132,7 +1167,7 @@
       }
       await obs.call('SetInputSettings', { inputName: CAP_NAME, inputSettings: settings });
       capLast = key;
-      $('capStatus').textContent = `OBS łapie: ${g.name} (${kind === 'game_capture' ? 'gra' : 'okno'}) w ${placed} scenach. W swoich scenach dodaj istniejące źródło „${CAP_NAME}”.`;
+      $('capStatus').textContent = `OBS łapie: ${g.name} (${kind === 'game_capture' ? 'gra' : 'okno'}) w ${placed} ${placed === 1 ? 'scenie' : 'scenach'}. Jeśli masz w scenie własne przechwytywanie tej gry, możesz je usunąć.`;
     } catch (e) { $('capStatus').textContent = 'OBS odmówił: ' + e.message; }
     capBusy = false;
   }
@@ -1162,7 +1197,7 @@
   document.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => (b.dataset.qt === 'bot' ? $('botTest').click() : runTest(b.dataset.qt, 0)));
   // aktywna scena podświetlona (scena OBS albo ekran przerwy)
   const markStartScenes = () => { for (const b of document.querySelectorAll('#stScenes [data-go]')) { const v = b.dataset.go.slice(2); b.setAttribute('aria-pressed', b.dataset.go[0] === 'o' ? obsCurrent === v : s.scene === v && /^VM · (Przygotowania|Zaraz|Spóźnienie|Przerwa|Koniec)/.test(obsCurrent)); } };
-  const startTick = () => { if (document.querySelector('.tab[data-tab="start"]').hidden) return; startStatus(); startGame(); markStartScenes(); };
+  const startTick = () => { if (document.querySelector('.tab[data-tab="start"]').hidden) return; startStatus(); renderCapScenes(); startGame(); markStartScenes(); };
   setInterval(startTick, 3000); setInterval(startLibrary, 15000);
   document.querySelector('.tabs button[data-tab="start"]').addEventListener('click', () => setTimeout(() => { startTick(); startLibrary(); }, 50));
   setTimeout(() => { startTick(); startLibrary(); }, 800);

@@ -122,3 +122,11 @@
 
 /* jasny akcent: napisy w kolorze akcentu na ciemnym tle zostają, ale tekst NA akcencie jest ciemny (--on-accent) */
 .light-accent .calabel { color: color-mix(in srgb, var(--accent) 80%, #fff); }
+
+/* wiadomości w kolumnie czatu nie kurczą się – starsze wyjeżdżają u góry (wcześniej ściskały się przy wielu alertach) */
+.chat > .cmsg { flex-shrink: 0; }
+/* alert w wąskiej kolumnie: zwięźlej – nick w jednej linii, opis w jednej, zdanie postaci najwyżej w dwóch */
+.chat-panel .calert .caname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-panel .calert .cadet { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-panel .calert .caline { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.chat-panel .calert .cbody { min-width: 0; flex: 1; }

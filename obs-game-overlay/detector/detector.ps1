@@ -18,6 +18,12 @@ param(
     [int]$WaitStart = 0       # po aktualizacji: poczekaj, aż poprzednia wersja zwolni port
 )
 if ($WaitStart -gt 0) { Start-Sleep -Seconds $WaitStart }
+# jedna kopia naraz: gdy wykrywacz już działa, kolejne uruchomienie (np. z panelu w OBS) od razu się kończy.
+# Po aktualizacji nowa wersja czeka, aż stara się zamknie.
+$script:Mutex = New-Object Threading.Mutex($false, 'Local\VincentMediaDetector')
+$gotMutex = $false
+try { $gotMutex = $script:Mutex.WaitOne([TimeSpan]::FromSeconds([Math]::Max(1, $WaitStart * 6))) } catch [Threading.AbandonedMutexException] { $gotMutex = $true }
+if (-not $gotMutex) { exit 0 }
 
 $ErrorActionPreference = 'Stop'
 $Host.UI.RawUI.WindowTitle = 'Vincent-Media: wykrywacz gier'

@@ -24,66 +24,65 @@
   // okrągłych uszu – Myr-35. Matryca: diody co 3 jednostki (~550), klatki mimiki przełączane w CSS:
   // spokój, mrugnięcie, uśmiech ^^, mówienie (fm-talk – gdy mikrofon), zakłócenie (Nanite Syndrome).
   function myrHead() {
-    const VIS = 'M62 20 C86 14 118 18 136 34 C150 46 156 60 152 74 C149 86 142 96 128 100 L84 104 C76 104 70 99 68 92 C62 70 58 44 62 20 Z';
+    const VIS = 'M64 22 C90 13 126 17 142 34 C154 47 157 62 153 78 C149 92 139 102 123 108 L98 114 C86 116 75 112 71 104 C64 86 60 52 64 22 Z';
     const P = 3, cells = [];
-    for (let y = 22; y <= 102; y += P) for (let x = 64; x <= 154; x += P) cells.push([x, y]);
-    // czy dioda mieści się w wizjerze (z marginesem od krawędzi)
+    for (let y = 18; y <= 114; y += P) for (let x = 64; x <= 156; x += P) cells.push([x, y]);
     let test = null;
     try {
       const c = document.createElement('canvas').getContext('2d'), path = new Path2D(VIS);
       test = (x, y) => [[0, 0], [2.4, 0], [-2.4, 0], [0, 2.4], [0, -2.4]].every(([dx, dy]) => c.isPointInPath(path, x + dx, y + dy));
-    } catch (e) { test = (x, y) => x > 70 && x < 148 && y > 26 && y < 98; }
+    } catch (e) { test = (x, y) => x > 72 && x < 150 && y > 26 && y < 106; }
     const vis = cells.filter(([x, y]) => test(x, y));
-    // oczy: bliższe (większe) i dalsze (zwężone perspektywą), lekko skośne
-    const eyes = [{ cx: 124, cy: 52, rx: 12, ry: 9 }, { cx: 92, cy: 50, rx: 8, ry: 8 }];
+    // oczy: przyjazne owale – bliższe większe, dalsze zwężone perspektywą
+    const eyes = [{ cx: 129, cy: 52, rx: 6.5, ry: 9 }, { cx: 101, cy: 50, rx: 4.6, ry: 8 }];
     const eye = (x, y, f) => eyes.some(e => {
       const dx = (x - e.cx) / e.rx, dy = (y - e.cy) / e.ry;
-      if (f === 'blink') return Math.abs(y - e.cy - 2) <= 1.6 && Math.abs(dx) <= 1.05;
-      if (f === 'happy') { const d = Math.hypot(dx, (y - e.cy - 4) / e.ry); return d <= 1.1 && d >= 0.55 && y <= e.cy + 3; }
-      const tilt = dy - dx * 0.25;
-      return dx * dx + tilt * tilt <= 1 && y >= e.cy - e.ry * 0.55;
+      if (f === 'blink') return Math.abs(y - e.cy - 1) <= 1.6 && Math.abs(dx) <= 1.15;
+      if (f === 'happy') return Math.abs(dx) <= 1.2 && Math.abs(y - (e.cy + 3 - e.ry * 0.75 * (1 - Math.abs(dx) / 1.2))) <= 1.7;   // ^ ^
+      return dx * dx + dy * dy <= 1;
     });
-    const mouthY = x => 80 - (x - 90) * 0.04;
-    const tri = t => 2 * Math.abs(2 * (t - Math.floor(t + 0.5)));
+    // usta: małe „w” przy pysku; mówienie – otwarte; uśmiech – szersze „w” i rumieńce
+    const W = (x, y, x0, x1, base, h) => {
+      if (x < x0 || x > x1) return false;
+      const t = (x - x0) / (x1 - x0), half = t < 0.5 ? t * 2 : (t - 0.5) * 2;
+      return Math.abs(y - (base + h * Math.sin(half * Math.PI))) <= 1.6;
+    };
     const mouth = (x, y, f) => {
-      if (x < 86 || x > 146) return false;
-      const base = mouthY(x);
-      if (f === 'talk') return Math.abs(y - (base - 2 + 3 * tri(x / 9))) <= 1.6 || (Math.abs(y - base - 3) <= 1.6 && x > 100 && x < 134);
-      if (f === 'happy') return Math.abs(y - (base + 3 - Math.pow((x - 116) / 30, 2) * 6)) <= 1.6;
-      return Math.abs(y - (base - 1 + 2 * tri(x / 9))) <= 1.6;
+      if (f === 'talk') return Math.hypot((x - 128) / 7, (y - 84) / 4.5) <= 1 && Math.hypot((x - 128) / 7, (y - 84) / 4.5) >= 0.45;
+      if (f === 'happy') return W(x, y, 112, 146, 80, 5) || (Math.abs(y - 66) <= 1 && (Math.abs(x - 136) <= 4 || Math.abs(x - 108) <= 2.5));
+      return W(x, y, 116, 142, 80, 4);
     };
     const dots = list => list.map(([x, y]) => `M${x} ${y}h0`).join('');
     const frame = (cls, f, mf) => `<path class="fm-f ${cls}" d="${dots(vis.filter(([x, y]) => eye(x, y, f) || mouth(x, y, mf)))}"/>`;
     let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
     const glitch = `<path class="fm-f fm-glitch" d="${dots(vis.filter(([x, y]) => (eye(x, y, 'neutral') && rnd() > 0.35) || (Math.abs(y - 64 - Math.round(rnd() * 3) * 3) <= 1 && rnd() > 0.45) || rnd() > 0.93))}"/>`;
-    return svg(160, 124, `
+    const FUR = '#ede6d6', FUR2 = '#d3c9b6', INK = '#0b0b0c';
+    return svg(160, 130, `
       <defs><clipPath id="fmVisClip"><path d="${VIS}"/></clipPath>
-        <linearGradient id="fmShell" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f0e3"/><stop offset="1" stop-color="#cfc6b3"/></linearGradient>
-        <linearGradient id="fmGlass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#232b38"/><stop offset=".5" stop-color="#121720"/><stop offset="1" stop-color="#07090d"/></linearGradient></defs>
-      <g class="fm-ears" stroke="#0b0b0c" stroke-width="2.5">
-        <circle cx="30" cy="30" r="9" fill="#585f66"/><circle cx="44" cy="15" r="9" fill="#585f66"/>
-        <circle cx="50" cy="24" r="12" fill="#6e767d"/><circle cx="66" cy="9" r="11" fill="#6e767d"/>
-        <circle cx="50" cy="24" r="5.5" fill="#d9823f" stroke-width="1.5"/><circle cx="66" cy="9" r="5" fill="#d9823f" stroke-width="1.5"/>
-      </g>
-      <path d="M46 100 L42 122 H94 L90 100 Z" fill="#cfc6b3" stroke="#0b0b0c" stroke-width="2.5"/>
-      <path d="M42 102 Q66 110 92 102 L92 110 Q66 118 42 110 Z" fill="#6e767d" stroke="#0b0b0c" stroke-width="2.5"/>
-      <path d="M62 20 C46 22 30 36 26 56 C22 76 30 94 48 102 L84 104 C76 104 70 99 68 92 C62 70 58 44 62 20 Z" fill="url(#fmShell)" stroke="#0b0b0c" stroke-width="3"/>
-      <path d="M32 74 C36 88 44 96 56 100" fill="none" stroke="#d9823f" stroke-width="4" stroke-linecap="round"/>
-      <path d="${VIS}" fill="url(#fmGlass)" stroke="#0b0b0c" stroke-width="3"/>
+        <linearGradient id="fmGlass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#26303f"/><stop offset=".55" stop-color="#151b25"/><stop offset="1" stop-color="#0a0d12"/></linearGradient>
+        <linearGradient id="fmFur" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${FUR}"/><stop offset="1" stop-color="${FUR2}"/></linearGradient></defs>
+      <path d="M100 22 L106 2 L112 12 L122 4 L120 20 Z" fill="${FUR2}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M50 100 L46 128 H98 L96 104 Z" fill="${FUR2}" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M72 18 L62 12 L64 21 L50 16 L54 27 L38 28 L46 37 L28 44 L39 51 L24 61 L37 66 L26 78 L41 80 L34 92 L48 92 L46 103 L60 99 L64 110 L82 106 L82 20 Z" fill="url(#fmFur)" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M40 56 l8 -3 M36 72 l8 -1 M46 86 l7 2" stroke="#a89f8e" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M40 40 L36 22 L32 4 L42 11 L46 1 L52 12 L61 7 L62 21 L70 27 L60 40 Z" fill="${FUR}" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M44 34 L41 19 L47 21 L52 15 L55 26 L51 34 Z" fill="#e8a26a"/>
+      <path d="M44 106 Q70 116 98 108 L98 117 Q70 125 44 115 Z" fill="#6e767d" stroke="${INK}" stroke-width="2.5"/>
+      <path d="${VIS}" fill="url(#fmGlass)" stroke="${INK}" stroke-width="3"/>
       <g clip-path="url(#fmVisClip)" stroke-linecap="round">
-        <path d="${dots(vis)}" stroke="#e08a3c" stroke-opacity=".13" stroke-width="1.7"/>
+        <path d="${dots(vis)}" stroke="#e08a3c" stroke-opacity=".12" stroke-width="1.7"/>
         <g class="fm-leds" stroke="#ffad5c" stroke-width="2.7">
           ${frame('fm-neutral', 'neutral', 'neutral')}${frame('fm-blink', 'blink', 'neutral')}${frame('fm-happy', 'happy', 'happy')}${frame('fm-talk', 'neutral', 'talk')}${glitch}
         </g>
-        <path d="M70 26 C96 18 124 24 140 40" fill="none" stroke="#ffffff" stroke-opacity=".14" stroke-width="3"/>
-        <path d="M66 22 C100 30 128 48 152 70" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="1.5"/>
+        <path d="M84 16 C106 26 124 46 128 112" fill="none" stroke="#ffffff" stroke-opacity=".07" stroke-width="2"/>
+        <path d="M72 24 C98 15 126 22 142 38" fill="none" stroke="#ffffff" stroke-opacity=".16" stroke-width="3"/>
       </g>
-      <path d="M62 18 C58 40 60 66 66 84" fill="none" stroke="#0b0b0c" stroke-width="9" stroke-linecap="round"/>
-      <path d="M62 18 C58 40 60 66 66 84" fill="none" stroke="#8a9097" stroke-width="5.5" stroke-linecap="round"/>
-      <path d="M58 82 L36 90 L58 98 Z" fill="#8a9097" stroke="#0b0b0c" stroke-width="2.5" stroke-linejoin="round"/>
-      <circle cx="66" cy="89" r="12" fill="#8a9097" stroke="#0b0b0c" stroke-width="2.5"/>
-      <circle cx="66" cy="89" r="7.5" fill="#121720" stroke="#0b0b0c" stroke-width="2"/>
-      <circle cx="66" cy="89" r="3" fill="#d9823f" class="fm-side"/>`, 'fm-head');
+      <path d="M64 20 C59 44 61 72 68 96" fill="none" stroke="${INK}" stroke-width="9" stroke-linecap="round"/>
+      <path d="M64 20 C59 44 61 72 68 96" fill="none" stroke="#8a9097" stroke-width="5.5" stroke-linecap="round"/>
+      <path d="M60 90 L38 100 L60 108 Z" fill="#8a9097" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle cx="68" cy="99" r="12" fill="#8a9097" stroke="${INK}" stroke-width="2.5"/>
+      <circle cx="68" cy="99" r="7.5" fill="#151b25" stroke="${INK}" stroke-width="2"/>
+      <circle cx="68" cy="99" r="3" fill="#d9823f" class="fm-side"/>`, 'fm-head');
   }
 
   const THEMES = [

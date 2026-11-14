@@ -164,7 +164,8 @@ Licznik czasu przy wykrytej grze liczy od uruchomienia gry, przy wpisanej ręczn
 
 Panel otwiera się na zakładce **Start**:
 - **stan** wykrywacza, OBS i Twitcha (kliknięcie prowadzi do ustawień),
-- **wykryta gra** i **automatyczne przechwytywanie**: panel sam tworzy źródło `VM · Gra (automatycznie)` w scenach „Gra – pełny ekran” i „Gra – w ramce” (na samym dole, w ramce dopasowane do okna 1440×810) i przestawia je na okno właśnie wykrytej gry (dopasowanie po pliku .exe). Domyślnie *przechwytywanie okna*; *przechwytywanie gry* do wyboru. Do własnych scen dodaj to samo źródło jako *istniejące* – też będzie podążać za grą,
+- **wykryta gra** i **automatyczne przechwytywanie**: panel sam dodaje źródło `VM · Gra (automatycznie)` do **wszystkich scen** (Twoich i scen gry VM; na samym dole, w ramce dopasowane do okna 1440×810) i przestawia je na okno właśnie wykrytej gry (dopasowanie po pliku .exe). Sceny, w których go nie chcesz, odznacz w *Start → Sceny z przechwytywaniem* – źródło zostanie z nich usunięte. Domyślnie *przechwytywanie okna* metodą Windows Graphics Capture (zwykła metoda dawała czarny obraz); *przechwytywanie gry* do wyboru,
+- **uruchom wykrywacz**: gdy wykrywacz nie działa, na karcie Start pojawia się przycisk *Uruchom wykrywacz*. Działa, jeśli przy instalacji zgodzisz się na „uruchamianie z OBS i strażnika” (instalator rejestruje adres `vincentmedia://start` i zadanie, które co 5 minut sprawdza, czy wykrywacz żyje – to samo pytanie wyłącza oba),
 - **sceny** jednym kliknięciem (z przejściem),
 - **Moje gry i programy** – każda wykryta gra i program (np. Blender) zapisuje się sama (`detector\data\library.json`, z czasem grania); ▶ uruchamia ją przez Steam albo z pliku, ✕ ukrywa na liście,
 - **szybki test** alertów, czatu i bota.

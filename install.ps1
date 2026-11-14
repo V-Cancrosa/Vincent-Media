@@ -407,6 +407,36 @@ if (Ask 'Uruchamiać wykrywacz razem z Windows (w tle, bez okna)? Pilnuje też a
     Say 'Autostart włączony.' 'Green'
 } elseif (Test-Path $startup) { Remove-Item $startup -Force; Say 'Autostart wyłączony.' }
 
+# uruchamianie wykrywacza z panelu w OBS (adres vincentmedia://) i strażnik w Harmonogramie zadań – tylko za zgodą
+$vbs = Join-Path $det 'start-detector-silent.vbs'
+$taskName = 'Vincent-Media wykrywacz'
+$protoKey = 'HKCU:\Software\Classes\vincentmedia'
+Say 'Panel w OBS może uruchomić wykrywacz jednym kliknięciem, gdyby się wyłączył (adres vincentmedia://, tylko dla Twojego konta).' 'Gray'
+Say 'Strażnik w Harmonogramie zadań co 5 minut sprawdza, czy wykrywacz działa – jeśli działa, nic nie robi.' 'DarkGray'
+if (Ask 'Włączyć uruchamianie z OBS i strażnika?' $true) {
+    try {
+        $cmd = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""' + (Join-Path $det 'detector.ps1') + '"" -Hidden'
+        [IO.File]::WriteAllText($vbs, ('CreateObject("WScript.Shell").Run "' + $cmd + '", 0, False'), [Text.Encoding]::Unicode)
+        New-Item -Path "$protoKey\shell\open\command" -Force | Out-Null
+        Set-ItemProperty -Path $protoKey -Name '(default)' -Value 'URL:Vincent-Media'
+        Set-ItemProperty -Path $protoKey -Name 'URL Protocol' -Value ''
+        Set-ItemProperty -Path "$protoKey\shell\open\command" -Name '(default)' -Value ('wscript.exe "' + $vbs + '"')
+        Say 'Uruchamianie z OBS włączone (przycisk w panelu, gdy wykrywacz nie działa).' 'Green'
+    } catch { Say "Nie udało się włączyć uruchamiania z OBS: $($_.Exception.Message)" 'Yellow' }
+    try {
+        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+        $act = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument ('"' + $vbs + '"')
+        $t1 = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+        $t2 = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)
+        $set = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero)
+        Register-ScheduledTask -TaskName $taskName -Action $act -Trigger @($t1, $t2) -Settings $set -Description 'Vincent-Media: uruchamia wykrywacz, gdyby się wyłączył (gdy działa, nic nie robi).' | Out-Null
+        Say 'Strażnik włączony (Harmonogram zadań → «Vincent-Media wykrywacz»).' 'Green'
+    } catch { Say "Strażnik niedostępny: $($_.Exception.Message)" 'Yellow' }
+} else {
+    try { Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue } catch {}
+    try { Remove-Item $protoKey -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+}
+
 # ------------------------------------------------------------------ gotowe
 Step 'Gotowe'
 if ($obsConfigured) {
