@@ -22,3 +22,7 @@ Protogeny to gatunek Zenith's Outer Reach, Avali to gatunek stworzony przez Ryuu
 ## Grafiki gier
 
 Logo, okładki i tła gier (naszywka na karcie, ikona) nie są częścią repozytorium: nakładka wczytuje je z pamięci Steama na komputerze streamera albo z publicznego CDN Steama. Należą do wydawców i twórców gier. Używamy ich z uwielbieniem dla tych gier i w duchu współpracy – na prośbę właściciela praw zostaną natychmiast wyłączone/usunięte.
+
+## Logo serwisów społecznościowych
+
+Ikony Telegram, Bluesky, Instagram, X, Reddit, GitHub, Twitch, YouTube, TikTok i Discord (`themes/socials.js`) to kształty z projektu **Simple Icons** (simpleicons.org, licencja CC0). Same logotypy są znakami towarowymi ich właścicieli i służą tu tylko do wskazania, gdzie znaleźć streamera.

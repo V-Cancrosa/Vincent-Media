@@ -43,13 +43,19 @@
   .srow { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: #1d2027; cursor: pointer; }
   .srow small { color: var(--muted); grid-column: 1 / -1; } .srow .dl { display: flex; gap: 4px; } .srow .dl a { font-size: 11px; color: var(--accent); }
   .spark { width: 100%; height: 46px; display: block; }
+  .health { width: 100%; text-align: left; padding: 9px 12px; font-weight: 700; border-radius: 8px; white-space: normal; line-height: 1.35; }
+  .health.ok { background: color-mix(in srgb, var(--ok) 16%, #1d2027); border-color: color-mix(in srgb, var(--ok) 55%, transparent); color: #d9ffe6; }
+  .health.bad { background: color-mix(in srgb, var(--warn) 18%, #1d2027); border-color: var(--warn); color: #fff3d6; }
+  .chk { display: grid; grid-template-columns: 20px 1fr auto; gap: 8px; align-items: center; padding: 5px 8px; border-radius: 6px; background: #14161b; font-size: 12px; }
+  .chk b { font-size: 14px; } .chk.ok b { color: var(--ok); } .chk.bad b { color: var(--warn); } .chk.na { opacity: .55; }
+  .chk small { display: block; color: var(--muted); } .chk button { padding: 4px 10px; font-size: 12px; }
   .now { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; background: #14161b; border: 1px solid var(--line); }
   .now b { font-size: 18px; color: #fff; } .now small { color: var(--muted); }
   .bigbtns { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
   .bigbtns button { padding: 12px 8px; font-size: 13px; font-weight: 600; white-space: normal; }
   .bigbtns.small button { padding: 8px 6px; font-weight: 500; }
   .bigbtns button[aria-pressed="true"] { background: #e91916; border-color: #e91916; color: #fff; }
-  .soc { display: inline-flex; gap: .4em; align-items: center; white-space: nowrap; } .soc-ic { width: 1.2em; height: 1.2em; color: var(--accent); flex: none; }
+  .soc { display: inline-flex; gap: .4em; align-items: center; white-space: nowrap; } .soc-ic { width: 1.2em; height: 1.2em; flex: none; } #socPrev a { color: inherit; text-decoration: none; } #socPrev a:hover b { text-decoration: underline; }
   .lib select { grid-column: 1 / -1; font-size: 12px; padding: 4px 6px; }
   .scgroup { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; margin-bottom: 8px; }
   .scgroup button { padding: 10px 8px; font-size: 13px; font-weight: 600; white-space: normal; }
@@ -144,10 +150,13 @@
   <div class="tab" data-tab="start">
   <section>
     <h2>Teraz</h2>
-    <div class="stats" id="stStatus"></div>
+    <button class="health" id="stHealth" aria-expanded="false">Sprawdzam…</button>
+    <div class="slist" id="stChecks" hidden></div>
+    <div class="stats" id="stStatus" hidden></div>
     <div class="row" id="detStartRow" hidden><button class="primary" id="detStart">▶ Uruchom wykrywacz</button></div>
     <div class="status" id="detStartMsg" hidden></div>
     <div class="now"><b id="stGame">—</b><small id="stGameSub"></small></div>
+    <details id="autoBox"><summary id="autoSum">Automatyka</summary>
     <label class="check"><input id="autoCapture" type="checkbox"> OBS sam łapie okno wykrytej gry</label>
     <label class="check"><input id="autoMic" type="checkbox"> dodaj mikrofon do scen, jeśli OBS go nie ma</label>
     <div class="status" id="micStatus"></div>
@@ -165,6 +174,7 @@
       <div class="checks" id="capScenes"></div>
     </details>
     <div class="status" id="capStatus"></div>
+    </details>
   </section>
   <section data-feature="local">
     <h2>Co dziś? <span class="pill" id="pickPill"></span></h2>
@@ -1056,7 +1066,7 @@
   };
   $('sceneStop').onclick = () => { s.sceneUntil = 0; save(); };
   for (const id of ['sceneSub', 'socials']) $(id).addEventListener('change', () => { s[id] = $(id).value.trim(); save(); socPrev(); });
-  const socPrev = () => { if (window.VMSocials) { $('socPrev').dataset.soc = ''; window.VMSocials.render($('socPrev'), s.socials); } };
+  const socPrev = () => { if (window.VMSocials) { $('socPrev').dataset.soc = ''; window.VMSocials.render($('socPrev'), s.socials, { links: true }); } };
   setTimeout(socPrev, 0);
   for (const id of ['chatSkin', 'sceneChat']) { $(id).onchange = () => { s[id] = $(id).checked; save(); }; setTimeout(() => { $(id).checked = s[id] !== false; }, 0); }
   $('sceneHero').addEventListener('change', () => { s.sceneHero = $('sceneHero').checked; save(); });
@@ -1534,6 +1544,85 @@
     } catch {}
   }
   setTimeout(() => { $('censor').checked = !!s.censor; $('censorExes').value = s.censorExes || ''; $('censorAll').checked = !!s.censorAll; }, 0);
+
+
+  // --- autotest: co działa samo, jest sprawdzane co kilka sekund i chowane; widać tylko to, co wymaga uwagi ---
+  const CHECK_NAMES = { det: 'Wykrywacz działa', ver: 'Wykrywacz w tej samej wersji co panel', lib: 'Lista gier i programów', obs: 'Połączenie z OBS', scenes: 'Sceny VM w OBS',
+    cap: 'Przechwytywanie uruchomionej gry', mic: 'Mikrofon w OBS', censor: 'Cenzura ekranu', twitch: 'Twitch' };
+  let checks = {}, checksOpen = false, testBusy = false;
+  const FIX = {
+    det: () => $('detStart').click(),
+    cap: () => { capLast = ''; startGame(); },
+    mic: () => ensureMic(),
+    censor: () => censorAddLayer(),
+    scenes: () => { showTab('more'); },
+    twitch: () => { showTab('more'); const tab = document.querySelector('.tab[data-tab="more"]'); showSub(tab, 'Twitch'); }
+  };
+  async function selfTest() {
+    if (testBusy || isRemote) return; testBusy = true;
+    const c = {};
+    const feat = feats();
+    let g = null, ver = '';
+    if (s.local) {
+      try { const j = await (await fetch(hubUrl() + '/game', { cache: 'no-store' })).json(); g = j.game; ver = j.appVersion || ''; c.det = { ok: true }; }
+      catch { c.det = { ok: false, msg: 'nie odpowiada' }; }
+      if (c.det.ok) c.ver = ver && window.VM_VERSION && ver !== window.VM_VERSION ? { ok: false, msg: `wykrywacz ${ver}, panel ${window.VM_VERSION} – zamknij wykrywacz i uruchom ponownie` } : { ok: true };
+      if (c.det.ok) {
+        try { const r = await fetch(hubUrl() + '/library', { cache: 'no-store' }); const j = r.ok ? await r.json() : null; c.lib = !j ? { ok: false, msg: 'HTTP ' + r.status } : j.error ? { ok: false, msg: j.error } : { ok: true, msg: arr(j.items).length + ' zapisanych, ' + arr(j.installed).length + ' ze Steama' }; }
+        catch (e) { c.lib = { ok: false, msg: e.message }; }
+      }
+    }
+    if (feat.obs !== false) {
+      c.obs = obs && $('obsPill').classList.contains('on') ? { ok: true } : { ok: false, msg: 'uruchom OBS / włącz WebSocket' };
+      if (c.obs.ok) {
+        const vm = obsSceneList.filter(n => n.indexOf('VM · ') === 0).length;
+        c.scenes = vm ? { ok: true, msg: vm + ' scen' } : { ok: false, msg: 'brak scen „VM · …” – uruchom instalator' };
+        try {
+          if (s.autoCapture === false) c.cap = { ok: null, msg: 'wyłączone' };
+          else if (!g || !g.window) c.cap = { ok: null, msg: g ? 'gra bez widocznego okna' : 'nic nie jest uruchomione' };
+          else {
+            const set = (await obs.call('GetInputSettings', { inputName: CAP_NAME })).inputSettings || {};
+            const inScene = obsCurrent && ((await obs.call('GetSceneItemList', { sceneName: obsCurrent })).sceneItems || []).some(i => i.sourceName === CAP_NAME);
+            c.cap = set.window === g.window ? { ok: true, msg: g.name + (inScene ? '' : ' (w tej scenie nie ma przechwytywania – może celowo)') } : { ok: false, msg: 'źródło nie wskazuje na okno ' + g.name };
+          }
+        } catch { c.cap = g && g.window ? { ok: false, msg: 'nie ma źródła „' + CAP_NAME + '”' } : { ok: null, msg: 'nic nie jest uruchomione' }; }
+        try {
+          const sp = await obs.call('GetSpecialInputs');
+          const inputs = (await obs.call('GetInputList')).inputs || [];
+          const has = [sp.mic1, sp.mic2, sp.mic3, sp.mic4].some(Boolean) || inputs.some(i => /input_capture$/.test(i.inputKind));
+          c.mic = has ? { ok: true } : { ok: false, msg: 'OBS nie ma mikrofonu' };
+        } catch { c.mic = { ok: false, msg: 'nie mogę sprawdzić' }; }
+        if (s.censor) {
+          try {
+            const inputs = (await obs.call('GetInputList')).inputs || [];
+            const layer = inputs.some(i => i.inputName === CENSOR_NAME);
+            const j = s.local ? await (await fetch(hubUrl() + '/censor/config?on=1&exes=' + encodeURIComponent(s.censorAll ? '' : (s.censorExes || DEF_EXES).replace(/\s/g, '')), { cache: 'no-store' })).json() : null;
+            c.censor = !layer ? { ok: false, msg: 'brak warstwy „' + CENSOR_NAME + '” w scenach' } : j && /błąd|brak/.test(j.status) ? { ok: false, msg: j.error || j.status } : { ok: true, msg: j ? j.status : '' };
+          } catch { c.censor = { ok: false, msg: 'nie mogę sprawdzić' }; }
+        }
+      }
+    }
+    if (feat.twitch !== false && !/WYŁ/.test($('twPill').textContent)) c.twitch = $('twPill').classList.contains('on') ? { ok: true } : { ok: false, msg: $('twPill').textContent || 'brak połączenia' };
+    checks = c; testBusy = false; renderChecks();
+  }
+  function renderChecks() {
+    const list = Object.entries(checks), bad = list.filter(([, v]) => v.ok === false), okN = list.filter(([, v]) => v.ok === true).length;
+    const h = $('stHealth');
+    h.className = 'health ' + (bad.length ? 'bad' : 'ok');
+    h.textContent = bad.length ? `⚠ ${bad.length === 1 ? CHECK_NAMES[bad[0][0]] + ': ' + (bad[0][1].msg || 'nie działa') : bad.length + ' rzeczy wymaga uwagi'} ${checksOpen ? '▴' : '▾'}` : `✓ Wszystko działa samo · ${okN} ${okN === 1 ? 'sprawdzenie' : okN % 10 >= 2 && okN % 10 <= 4 && (okN % 100 < 12 || okN % 100 > 14) ? 'sprawdzenia' : 'sprawdzeń'} ${checksOpen ? '▴' : '▾'}`;
+    const open = checksOpen || bad.length > 0;
+    $('stChecks').hidden = !open; h.setAttribute('aria-expanded', open);
+    $('stChecks').innerHTML = list.map(([k, v]) => `<div class="chk ${v.ok === true ? 'ok' : v.ok === false ? 'bad' : 'na'}"><b>${v.ok === true ? '✓' : v.ok === false ? '✗' : '–'}</b><div>${esc(CHECK_NAMES[k])}${v.msg ? `<small>${esc(v.msg)}</small>` : ''}</div>${v.ok === false && FIX[k] ? `<button data-fix="${k}">Napraw</button>` : '<span></span>'}</div>`).join('');
+    // to, co działa, chowamy: karty stanu i ustawienia automatyki
+    $('stStatus').hidden = !open;
+    const autoBad = ['cap', 'mic'].some(k => checks[k] && checks[k].ok === false);
+    $('autoSum').textContent = autoBad ? 'Automatyka – wymaga uwagi' : 'Automatyka (przechwytywanie gry, mikrofon) – działa sama';
+    if (autoBad) $('autoBox').open = true;
+  }
+  $('stHealth').onclick = () => { checksOpen = !checksOpen; renderChecks(); };
+  $('stChecks').addEventListener('click', e => { const b = e.target.closest('[data-fix]'); if (!b) return; b.textContent = '…'; try { FIX[b.dataset.fix](); } catch {} setTimeout(selfTest, 2500); });
+  setInterval(() => { if (!document.querySelector('.tab[data-tab="start"]').hidden) selfTest(); }, 6000);
+  setTimeout(selfTest, 2500);
 
   // --- czat na ekranie, moderacja, statystyki, nagrywanie ---
   document.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => runTest(b.dataset.ct, 0));
