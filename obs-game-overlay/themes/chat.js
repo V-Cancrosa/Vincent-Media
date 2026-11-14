@@ -24,11 +24,26 @@
     return ev._w;
   }
   let msgNo = 0;
+  // panel → Czat → „tylko motyw”: tymczasowo ignoruj style i kolory wybrane przez widzów (!styl, !kolor)
+  function themeOnly() { try { const s = window.VMClient ? window.VMClient.settings() : JSON.parse(localStorage.getItem('obsGameOverlay.v1') || '{}'); return s.viewerStyles === false; } catch (e) { return false; } }
+  function dress(m, force) {
+    const style = force ? 'theme' : m.dataset.vs;
+    for (const c of [...m.classList]) if (c.startsWith('cs-')) m.classList.remove(c);
+    m.classList.add('cs-' + style);
+    m.style.setProperty('--uc', force ? m.dataset.hc : m.dataset.uc);
+  }
+  // już widoczne wiadomości też zmieniają wygląd, gdy przełącznik się zmieni
+  let lastForce = null;
+  setInterval(() => {
+    const f = themeOnly(); if (f === lastForce) return; lastForce = f;
+    document.querySelectorAll('.cmsg[data-vs]').forEach(m => dress(m, f));
+  }, 800);
   function render(ev) {
     const style = STYLES.includes(ev.style) ? ev.style : 'theme';
-    const color = ev.color || hashColor(ev.user || '?');
-    const m = el('div', `cmsg cs-${style}` + (ev.command ? ' cmsg-sys' : ''));
-    m.style.setProperty('--uc', color);
+    const hc = hashColor(ev.user || '?'), color = ev.color || hc;
+    const m = el('div', 'cmsg' + (ev.command ? ' cmsg-sys' : ''));
+    m.dataset.vs = style; m.dataset.uc = color; m.dataset.hc = hc;
+    dress(m, themeOnly());
     if (ev.command) {
       // komenda: zamiast treści krótkie potwierdzenie
       m.append(el('span', 'csys-user', ev.user), el('span', 'csys-arrow', ' → '), el('span', 'csys-text', ev.reply || ev.text));

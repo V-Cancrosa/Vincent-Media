@@ -190,7 +190,7 @@
   </section>
   <section>
     <h2>Szybki test</h2>
-    <div class="bigbtns small"><button data-qt="follow">Follow</button><button data-qt="sub">Sub</button><button data-qt="raid">Raid</button><button data-qt="chat">Czat</button><button data-qt="bot">Bot</button></div>
+    <div class="bigbtns small"><button id="qtTheme" aria-pressed="false" title="Czat: tylko motyw postaci/gry">Czat: tylko motyw</button><button data-qt="follow">Follow</button><button data-qt="sub">Sub</button><button data-qt="raid">Raid</button><button data-qt="chat">Czat</button><button data-qt="bot">Bot</button></div>
   </section>
   </div>
   <div class="tab" data-tab="live">
@@ -433,6 +433,7 @@
         <input id="tickerSpeed" type="range" min="70" max="320" step="10">
       </label>
     </div>
+    <label class="check"><input id="themeOnly" type="checkbox"> <b>tylko motyw postaci / gry</b> – tymczasowo ignoruj style i kolory wybrane przez widzów (!styl, !kolor); po wyłączeniu wracają</label>
     <label class="check"><input id="chatSkin" type="checkbox"> czat w stylu postaci albo gry (terminal Myr, karteczki Chipa, playlista Ragnara, lampiony Toro, adnotacje Vince'a, tabliczki Zarin; bez postaci – pergamin DD, komunikator ME, EVA z C&amp;C)</label>
     <label class="check"><input id="sceneChat" type="checkbox"> czat także na ekranach przerw (kolumna z prawej)</label>
     <label class="check"><input id="botHide" type="checkbox"> nie pokazuj na ekranie wiadomości z flagą „podejrzane” (świeże konto, reklama widzów…)</label>
@@ -1068,6 +1069,10 @@
   for (const id of ['sceneSub', 'socials']) $(id).addEventListener('change', () => { s[id] = $(id).value.trim(); save(); socPrev(); });
   const socPrev = () => { if (window.VMSocials) { $('socPrev').dataset.soc = ''; window.VMSocials.render($('socPrev'), s.socials, { links: true }); } };
   setTimeout(socPrev, 0);
+  const themeOnlyUi = () => { $('themeOnly').checked = s.viewerStyles === false; $('qtTheme').setAttribute('aria-pressed', s.viewerStyles === false); };
+  $('themeOnly').onchange = () => { s.viewerStyles = !$('themeOnly').checked; save(); themeOnlyUi(); };
+  $('qtTheme').onclick = () => { s.viewerStyles = s.viewerStyles === false; save(); themeOnlyUi(); };
+  setTimeout(themeOnlyUi, 0);
   for (const id of ['chatSkin', 'sceneChat']) { $(id).onchange = () => { s[id] = $(id).checked; save(); }; setTimeout(() => { $(id).checked = s[id] !== false; }, 0); }
   $('sceneHero').addEventListener('change', () => { s.sceneHero = $('sceneHero').checked; save(); });
   function syncScenes() {

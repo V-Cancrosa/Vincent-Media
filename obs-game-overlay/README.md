@@ -317,7 +317,7 @@ Gdzie czat jest na poszczególnych scenach:
 - **gra w ramce i rozmowa** – panel w tym samym stylu,
 - **gra na pełnym ekranie** – pasek z kafelkami w stylu postaci.
 
-Wiadomości widzów, którzy wybrali własny styl (`!styl`), zostają w ich stylu. Wyłączniki są w *Czat → Na ekranie*.
+Wiadomości widzów, którzy wybrali własny styl (`!styl`), zostają w ich stylu. Przełącznik **tylko motyw postaci / gry** (*Czat → Na ekranie* albo szybki przycisk *Czat: tylko motyw* na karcie Start) tymczasowo ignoruje style i kolory wybrane przez widzów (`!styl`, `!kolor`). Zmienia też wiadomości, które już są na ekranie, a po wyłączeniu wszystko wraca do wyborów widzów. Wyłączniki są w *Czat → Na ekranie*.
 
 ## Słowa zakazane i cenzura ekranu
 
