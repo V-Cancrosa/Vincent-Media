@@ -2,7 +2,7 @@
 <#
   Vincent-Media – aktualizacja plików nakładki z GitHuba.
 
-  Uruchomiony sam (np. ze skrótu „Aktualizuj”): sprawdza wersję i podmienia zmienione pliki.
+  Uruchomiony sam (np. ze skrótu «Aktualizuj»): sprawdza wersję i podmienia zmienione pliki.
   Z parametrem -Library tylko definiuje funkcje (używa go wykrywacz).
 
   Twoje dane zostają: detector\data\ (logowanie Twitcha, baza gier) i detector\my-games.txt.

@@ -130,7 +130,7 @@ function Initialize-CustomFile {
 #   !steam:431960
 #
 # Plik możesz edytować w trakcie działania – zmiany wchodzą od razu.
-# Panel w OBS też umie tu dopisywać gry (przycisk „Dodaj jako grę”).
+# Panel w OBS też umie tu dopisywać gry (przycisk «Dodaj jako grę»).
 
 "@
     [IO.File]::WriteAllText($CustomFile, $txt, (New-Object Text.UTF8Encoding $true))
@@ -304,14 +304,14 @@ $GameParts = @(
     @{ Re = '^cnc3ep1.*\.(dat|exe)$'; Name = "Command & Conquer 3: Kane's Wrath"; Family = 'command|c&c|tiberium' }
     @{ Re = '^cnc3game\.dat$'; Name = 'Command & Conquer 3: Tiberium Wars'; Family = 'command|c&c|tiberium' }
 )
-# programy do tworzenia (nie gry): karta mówi „Teraz tworzę”, a flagowanie botów nie traktuje tego jak grania
+# programy do tworzenia (nie gry): karta mówi «Teraz tworzę», a flagowanie botów nie traktuje tego jak grania
 $MakeApps = @{
     'blender.exe' = 'Blender'; 'blender-launcher.exe' = 'Blender'; 'zbrush.exe' = 'ZBrush'; 'substance painter.exe' = 'Substance 3D Painter'
     'adobe substance 3d painter.exe' = 'Substance 3D Painter'; 'houdini.exe' = 'Houdini'; 'houdinifx.exe' = 'Houdini'; 'maya.exe' = 'Maya'
     '3dsmax.exe' = '3ds Max'; 'cinema 4d.exe' = 'Cinema 4D'; 'krita.exe' = 'Krita'; 'aseprite.exe' = 'Aseprite'; 'clipstudiopaint.exe' = 'Clip Studio Paint'
     'photoshop.exe' = 'Photoshop'; 'procreate.exe' = 'Procreate'; 'unity.exe' = 'Unity'; 'unrealeditor.exe' = 'Unreal Editor'; 'godot.exe' = 'Godot'
 }
-# gra na silniku Ren'Py (visual novel): nazwa z folderu gry, np. „Soulcreek-0.10-pc” → „Soulcreek”
+# gra na silniku Ren'Py (visual novel): nazwa z folderu gry, np. «Soulcreek-0.10-pc» → «Soulcreek»
 function Get-RenPyName([string]$path) {
     $dir = Split-Path $path
     $root = $null
@@ -345,7 +345,7 @@ function Update-State {
         if ($m) { [void]$found.Add([pscustomobject]@{ M = $m; Pid = $p.ProcessId; Start = $p.CreationDate }) }
     }
 
-    # ostatnie okna na pierwszym planie (do „Dodaj jako grę” w panelu)
+    # ostatnie okna na pierwszym planie (do «Dodaj jako grę» w panelu)
     if ($fgPath) {
         $exe = [IO.Path]::GetFileName($fgPath).ToLowerInvariant()
         if ($NeverGame -notcontains $exe -and $exe -ne 'msedgewebview2.exe') {
@@ -508,7 +508,7 @@ function Invoke-ChatCommand($login, $user, [string]$text) {
 function New-ChatEvent($login, $user, [string]$color, [string]$text, $fragments, $badges, [bool]$test = $false, [string]$userId = '', [double]$fakeAge = -2) {
     $reply = Invoke-ChatCommand $login $user $text
     $v = $script:Viewers[$login]
-    # flaga: nowe konto, link, tekst bota, „fajnie grasz” gdy nikt nie gra (panel → Czat i statystyki)
+    # flaga: nowe konto, link, tekst bota, «fajnie grasz» gdy nikt nie gra (panel → Czat i statystyki)
     $flag = $null
     if (-not $reply) {
         $rec = if ($test) { [pscustomobject]@{ login = $login; msgs = 0; trust = $false; created = '' } } else { Get-ChatterRecord $login $user }
@@ -526,7 +526,7 @@ function New-ChatEvent($login, $user, [string]$color, [string]$text, $fragments,
 # data\archive\chatters.json            – każdy czatownik: pierwsza/ostatnia wizyta, liczba wiadomości, wiek konta, zaufany
 # data\archive\streams\<id>.jsonl       – wszystko z jednego streama (czat + alerty), linia = jedno zdarzenie
 # data\archive\streams\<id>.json        – podsumowanie (zapisywane co 2 min i na końcu streama)
-# Stream = od stream.online do stream.offline z Twitcha; czat poza streamem trafia do „poza-streamem-<data>”.
+# Stream = od stream.online do stream.offline z Twitcha; czat poza streamem trafia do «poza-streamem-<data>».
 $ArchiveDir = Join-Path $DataDir 'archive'
 $StreamsDir = Join-Path $ArchiveDir 'streams'
 $ChattersFile = Join-Path $ArchiveDir 'chatters.json'
@@ -615,7 +615,7 @@ function Get-AccountAgeDays($rec, [string]$userId) {
     try { return [Math]::Max(0, ((Get-Date).ToUniversalTime() - [datetime]::Parse($rec.created).ToUniversalTime()).TotalDays) } catch { return -1 }
 }
 
-# ocena wiadomości: świeże konto, link w pierwszej wiadomości, typowe teksty botów i „fajnie grasz”, gdy nikt nie gra
+# ocena wiadomości: świeże konto, link w pierwszej wiadomości, typowe teksty botów i «fajnie grasz», gdy nikt nie gra
 function Get-ChatFlag($rec, [string]$text, $badges, [string]$userId, [double]$fakeAge = -2) {
     if ($rec.trust) { return $null }
     foreach ($b in @($badges)) { if (@('broadcaster', 'moderator', 'vip', 'subscriber', 'founder') -contains [string]$b) { return $null } }
@@ -635,13 +635,13 @@ function Get-ChatFlag($rec, [string]$text, $badges, [string]$userId, [double]$fa
         $score += 4; [void]$why.Add('tekst jak z reklamy widzów/followów')
     }
     if ($first -and $t -match '^\W*(hi|hello|hey|yo|siema|czesc|hej|witam)?\W*(streamer|bro|friend)?\W*(fajnie|super|swietnie|dobrze|niezle|ladnie|nice|great|good|cool|awesome|amazing|love)\W+(grasz|gra|stream\w*|content|gameplay|game|play\w*|channel|kanal|vibe|video)\b') {
-        $score += 2; [void]$why.Add('ogólnikowe „fajny stream” na dzień dobry')
+        $score += 2; [void]$why.Add('ogólnikowe «fajny stream» na dzień dobry')
     }
     # pisze o graniu, a nikt nie gra (np. Blender, rozmowa)
     $gaming = [bool]$script:State.game -and $script:State.game.kind -ne 'make'
     $cat = ([string]$script:Channel.category).ToLowerInvariant()
     if (-not $gaming -and $cat -and $NonGameCategories -contains $cat -and $t -match '\b(grasz|grac|gra\b|gierk|gameplay|game|play(ing)?|gg|level|boss)') {
-        $score += 3; [void]$why.Add("pisze o graniu, a kategoria to „$($script:Channel.category)”")
+        $score += 3; [void]$why.Add("pisze o graniu, a kategoria to «$($script:Channel.category)»")
     } elseif (-not $gaming -and -not $cat -and $first -and $t -match '\b(grasz|gameplay|playing)\b') {
         $score += 2; [void]$why.Add('pisze o graniu, a nic nie jest uruchomione')
     }
@@ -781,7 +781,7 @@ function Export-Stream([string]$id, [string]$fmt, [int]$offsetSec = 0) {
 }
 
 # ---------------------------------------------------------------- Twitch (EventSub przez WebSocket)
-# Logowanie: Device Code Flow (kod na twitch.tv/activate), aplikacja typu „Public” – bez sekretu.
+# Logowanie: Device Code Flow (kod na twitch.tv/activate), aplikacja typu «Public» – bez sekretu.
 # Token jest zaszyfrowany kontem Windows (DPAPI) w data\twitch-token.bin.
 Add-Type -AssemblyName System.Security
 $TwitchCfgFile = Join-Path $DataDir 'twitch.json'
@@ -870,7 +870,7 @@ function Start-TwitchLogin([string]$clientId) {
 
 function Test-TwitchDevice {
     if ((Get-Date) -lt $script:TW.nextPoll) { return }
-    if ((Get-Date) -gt $script:TW.deviceUntil) { $script:TW.status = 'need-login'; $script:TW.error = 'Kod wygasł – kliknij „Połącz” jeszcze raz.'; return }
+    if ((Get-Date) -gt $script:TW.deviceUntil) { $script:TW.status = 'need-login'; $script:TW.error = 'Kod wygasł – kliknij «Połącz» jeszcze raz.'; return }
     $script:TW.nextPoll = (Get-Date).AddSeconds($script:TW.deviceInterval)
     try {
         $r = Invoke-RestMethod -UseBasicParsing -Method Post -Uri 'https://id.twitch.tv/oauth2/token' -TimeoutSec 15 -Body @{
@@ -953,7 +953,7 @@ function Convert-TwitchEvent([string]$type, $e) {
     switch ($type) {
         'channel.follow' { return [pscustomobject]@{ type = 'follow'; user = $e.user_name } }
         'channel.subscribe' {
-            if ($e.is_gift) { return $null }   # pokazujemy jeden alert „gift” zamiast wielu
+            if ($e.is_gift) { return $null }   # pokazujemy jeden alert «gift» zamiast wielu
             return [pscustomobject]@{ type = 'sub'; user = $e.user_name; tier = (& $tier $e.tier) }
         }
         'channel.subscription.message' {
@@ -978,7 +978,7 @@ function Convert-TwitchEvent([string]$type, $e) {
             return (New-ChatEvent ([string]$e.chatter_user_login) ([string]$e.chatter_user_name) ([string]$e.color) ([string]$e.message.text) $frags $badges $false ([string]$e.chatter_user_id))
         }
         'channel.channel_points_custom_reward_redemption.add' {
-            # nagroda „Efekt: konfetti” (albo inny efekt) uruchamia efekt bez limitu czasu
+            # nagroda «Efekt: konfetti» (albo inny efekt) uruchamia efekt bez limitu czasu
             $title = Remove-Diacritics ([string]$e.reward.title)
             foreach ($fx in $ChatEffects) { if ($title -match "efekt\W*$fx") { Add-Event ([pscustomobject]@{ type = 'effect'; effect = $fx; user = $e.user_name }); break } }
             return [pscustomobject]@{ type = 'redeem'; user = $e.user_name; reward = [string]$e.reward.title; cost = [int]$e.reward.cost; message = [string]$e.user_input }
@@ -1040,7 +1040,7 @@ function Update-Twitch {
             try { Read-TwitchMessage $text } catch { Log "Twitch: błąd wiadomości ($($_.Exception.Message))" 'DarkYellow' }
         }
         if (-not $tw.ws) { return }
-        if ($tw.recv -ne $cur) { continue }   # po „session_reconnect” nowe połączenie już czeka na dane
+        if ($tw.recv -ne $cur) { continue }   # po «session_reconnect» nowe połączenie już czeka na dane
         $tw.recv = $tw.ws.ReceiveAsync([ArraySegment[byte]]::new($tw.buf), [Threading.CancellationToken]::None)
     }
     $silent = ((Get-Date) - $tw.lastMsg).TotalSeconds -gt ($tw.keepalive + 10)
@@ -1089,7 +1089,7 @@ function New-TestEvent([string]$type, [int]$tier = 0, [string]$msg = '') {
     }
     switch ($type) {
         'chatbot' {
-            # podejrzana wiadomość: świeże konto, „fajnie grasz” i reklama widzów
+            # podejrzana wiadomość: świeże konto, «fajnie grasz» i reklama widzów
             $m = 'fajnie grasz! best viewers on streamboo .com'
             return (New-ChatEvent 'nowe_konto_2077' 'nowe_konto_2077' '' $m @([pscustomobject]@{ t = 'text'; v = $m }) @() $true '' 0.3)
         }
@@ -1342,7 +1342,7 @@ function Invoke-Request($ctx) {
                 Send-Json $ctx (Get-UpdateStatus)
             }
             '/events' {
-                # bez „after” zwracamy tylko numer ostatniego zdarzenia – nowa nakładka nie odtwarza starych alertów
+                # bez «after» zwracamy tylko numer ostatniego zdarzenia – nowa nakładka nie odtwarza starych alertów
                 $after = -1
                 if ($q.ContainsKey('after')) { [void][int]::TryParse([string]$q['after'], [ref]$after) }
                 $list = @()
@@ -1391,7 +1391,7 @@ function Invoke-Request($ctx) {
             '/twitch/status' { Send-Json $ctx (Get-TwitchStatus) }
             '/twitch/setup' {
                 $cid = [string]$q['clientId']
-                if ($cid -eq 'keep') { $cid = $script:TW.clientId }   # „Połącz” bez wpisywania ID ponownie
+                if ($cid -eq 'keep') { $cid = $script:TW.clientId }   # «Połącz» bez wpisywania ID ponownie
                 try { Start-TwitchLogin $cid; Send-Json $ctx (Get-TwitchStatus) }
                 catch { Send-Json $ctx @{ ok = $false; error = (Get-ErrBody $_) } 400 }
             }
@@ -1458,7 +1458,7 @@ Log "Nasłuchuję na http://localhost:$Port/" 'Green'
 if ($script:LanMode) {
     foreach ($ip in Get-LanAddresses) { Log "Pilot z telefonu: http://${ip}:$Port/ui/panel.html?key=$($script:RemoteKey)" 'Cyan' }
 } else {
-    Log 'Pilot z telefonu wyłączony – włączysz go skrótem „Włącz pilota z telefonu” (jedna zgoda administratora).' 'DarkGray'
+    Log 'Pilot z telefonu wyłączony – włączysz go skrótem «Włącz pilota z telefonu» (jedna zgoda administratora).' 'DarkGray'
 }
 
 try {

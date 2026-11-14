@@ -24,7 +24,7 @@ if ($Disable) {
     netsh http add urlacl url=http://+:7777/ 'sddl=D:(A;;GX;;;WD)' | Out-Null
     netsh advfirewall firewall add rule name=VincentMediaPilot dir=in action=allow protocol=TCP localport=7777 profile=private | Out-Null
     Write-Host '  Pilot z telefonu włączony (tylko w sieci prywatnej).' -ForegroundColor Green
-    Write-Host '  Jeśli Twoja sieć Wi‑Fi jest w Windows oznaczona jako „publiczna”, zmień ją na „prywatną”:' -ForegroundColor DarkGray
+    Write-Host '  Jeśli Twoja sieć Wi‑Fi jest w Windows oznaczona jako «publiczna», zmień ją na «prywatną»:' -ForegroundColor DarkGray
     Write-Host '  Ustawienia → Sieć i Internet → Wi‑Fi → [Twoja sieć] → Typ profilu sieci → Prywatna.' -ForegroundColor DarkGray
 }
 # poproś działający wykrywacz o restart, żeby od razu nasłuchiwał w nowym trybie

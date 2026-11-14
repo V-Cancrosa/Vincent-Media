@@ -172,10 +172,10 @@ if (-not (Test-Path $ObsDir)) {
 } else {
     Step 'Konfiguracja OBS'
     Say 'Mogę dodać do OBS:' 'Gray'
-    Say "  • scenę „${Prefix}Nakładki” (karta z grą + alerty) – dodasz ją jako źródło do swoich scen z grą" 'Gray'
+    Say "  • scenę «${Prefix}Nakładki» (karta z grą + alerty) – dodasz ją jako źródło do swoich scen z grą" 'Gray'
     Say "  • ekrany: Przygotowania, Stream za…, Zaraz zaczynamy, Spóźnienie, Przerwa, Koniec (z napisami)" 'Gray'
     Say "  • układy: Gra – pełny ekran, Gra – w ramce (z czatem), Rozmowa" 'Gray'
-    Say '  • dok „Vincent-Media” z panelem sterowania' 'Gray'
+    Say '  • dok «Vincent-Media» z panelem sterowania' 'Gray'
     Say 'Przed zmianą zrobię kopię zapasową plików OBS.' 'DarkGray'
     if (Ask 'Skonfigurować OBS?') {
         while (Get-Process -Name obs64, obs32, obs -ErrorAction SilentlyContinue) {
@@ -278,7 +278,7 @@ if (-not (Test-Path $ObsDir)) {
                 $userScenes = @($sources | Where-Object { $_['id'] -eq 'scene' -and -not ([string]$_['name']).StartsWith($Prefix) })
                 if ($userScenes.Count) {
                     Say "Twoje sceny: $(($userScenes | ForEach-Object { $_['name'] }) -join ', ')" 'DarkGray'
-                    if (Ask "Dodać „${Prefix}Nakładki” na wierzch tych scen?" $true) {
+                    if (Ask "Dodać «${Prefix}Nakładki» na wierzch tych scen?" $true) {
                         foreach ($us in $userScenes) {
                             $st = $us['settings']
                             $items = New-Object Collections.ArrayList
@@ -300,7 +300,7 @@ if (-not (Test-Path $ObsDir)) {
                 $coll['scene_order'] = $order.ToArray()
                 [IO.File]::WriteAllText($collPath, $Json.Serialize($coll), (New-Object Text.UTF8Encoding $false))
                 Say 'Sceny i źródła dodane.' 'Green'
-                Say "W scenach „${Prefix}Gra – …” dodaj swoje przechwytywanie gry i przesuń je na sam dół listy źródeł." 'Yellow'
+                Say "W scenach «${Prefix}Gra – …» dodaj swoje przechwytywanie gry i przesuń je na sam dół listy źródeł." 'Yellow'
                 Say 'Kamerka / VTuber: w panelu (Wygląd → Avatar) wybierz tryb, a źródło kamerki ustaw pod układem w miejscu okna.' 'DarkGray'
 
                 # --- dok z panelem
@@ -317,7 +317,7 @@ if (-not (Test-Path $ObsDir)) {
                 }
                 Set-IniValue $ini 'BasicWindow' 'ExtraBrowserDocks' ($Json.Serialize($docks.ToArray()))
                 Save-Ini $ini
-                Say 'Dok „Vincent-Media” dodany (OBS: menu Doki).' 'Green'
+                Say 'Dok «Vincent-Media» dodany (OBS: menu Doki).' 'Green'
                 Say "Kopie zapasowe: $bk1" 'DarkGray'
                 Say "                $bk2" 'DarkGray'
                 # --- OBS WebSocket: avatar reagujący na głos i przełączanie scen z panelu / telefonu
@@ -384,10 +384,10 @@ if (Ask 'Uruchamiać wykrywacz razem z Windows (w tle, bez okna)? Pilnuje też a
 # ------------------------------------------------------------------ gotowe
 Step 'Gotowe'
 if ($obsConfigured) {
-    Say 'Uruchom OBS. Zobaczysz nowe sceny „VM · …” i dok „Vincent-Media” (jeśli go nie widać: menu Doki).' 'White'
+    Say 'Uruchom OBS. Zobaczysz nowe sceny «VM · …» i dok «Vincent-Media» (jeśli go nie widać: menu Doki).' 'White'
     Say 'Dok i nakładki czasem potrzebują chwili na pierwsze załadowanie czcionek.' 'DarkGray'
 } else {
-    Say 'Adresy do ręcznego dodania w OBS (Źródło przeglądarki, bez „Plik lokalny”, 1920×1080):' 'White'
+    Say 'Adresy do ręcznego dodania w OBS (Źródło przeglądarki, bez «Plik lokalny», 1920×1080):' 'White'
     foreach ($k in $Urls.Keys) { Say "  $k : $($Urls[$k])" 'Gray' }
 }
 Say 'Aktualizacje instalują się same, gdy działa wykrywacz (sprawdza co 6 godzin).' 'Gray'
