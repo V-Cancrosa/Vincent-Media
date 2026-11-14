@@ -204,6 +204,7 @@
 
   <section>
     <h2>Alerty</h2>
+    <label class="check"><input id="alertsInChat" type="checkbox"> w układach z czatem (gra w ramce, rozmowa) alerty są częścią czatu – nie zasłaniają gry ani avatara</label>
     <label class="check"><input id="alertFast" type="checkbox"> ⚡ szybkie powiadomienia – od razu, bez kolejki, krótko (do sprawdzania)</label>
     <label>Wielkość zdarzenia w teście (bitsy, gift, miesiące, raid, koszt nagrody)
       <select id="testTier">
@@ -504,7 +505,7 @@
     scene: 'start', sceneUntil: 0, sceneSub: '', socials: '', sceneHero: true,
     alertPos: 'tc', alertScale: 1.25, alertDuration: 6, alertVolume: 0.5,
     alertTypes: { follow: true, sub: true, resub: true, gift: true, cheer: true, raid: true, redeem: true },
-    gameChat: 'ticker', tickerPos: 'bottom', tickerSpeed: 140, botHide: true, autoRecord: false, autoRecordStop: true
+    gameChat: 'ticker', tickerPos: 'bottom', tickerSpeed: 140, botHide: true, alertsInChat: true, autoRecord: false, autoRecordStop: true
   };
   const $ = id => document.getElementById(id);
   const load = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
@@ -796,8 +797,12 @@
 
   // --- OBS: sceny, mikrofon, próg głosu ---
   let obs = null, obsSceneList = [], obsMics = new Set(), obsLevel = -100, obsTalk = false;
+  // alerty dobierają miejsce do sceny na wizji (alerts.html → strefy)
+  let obsCurrent = '';
+  const tellScene = () => { if (obsCurrent && bc && !isRemote) bc.postMessage({ type: 'scene', name: obsCurrent }); };
+  setInterval(tellScene, 4000);
   function obsRenderScenes(list, current) {
-    obsSceneList = list;
+    obsSceneList = list; obsCurrent = current || ''; tellScene();
     const box = $('obsScenes'); box.textContent = '';
     for (const name of list) {
       const b = document.createElement('button'); b.textContent = name.replace(/^VM · /, ''); b.title = name;
@@ -994,12 +999,13 @@
   $('tickerSpeed').oninput = () => { s.tickerSpeed = +$('tickerSpeed').value; $('tickerSpeedVal').textContent = s.tickerSpeed + ' px/s'; };
   $('tickerSpeed').onchange = () => save();
   $('botHide').onchange = () => { s.botHide = $('botHide').checked; save(); };
+  $('alertsInChat').onchange = () => { s.alertsInChat = $('alertsInChat').checked; save(); };
   $('autoRecord').onchange = () => { s.autoRecord = $('autoRecord').checked; save(); };
   $('autoRecordStop').onchange = () => { s.autoRecordStop = $('autoRecordStop').checked; save(); };
   function syncChatUi() {
     $('gameChat').value = s.gameChat || 'ticker'; $('tickerPos').value = s.tickerPos || 'bottom';
     $('tickerSpeed').value = s.tickerSpeed || 140; $('tickerSpeedVal').textContent = (s.tickerSpeed || 140) + ' px/s';
-    $('botHide').checked = s.botHide !== false; $('autoRecord').checked = !!s.autoRecord; $('autoRecordStop').checked = s.autoRecordStop !== false;
+    $('botHide').checked = s.botHide !== false; $('alertsInChat').checked = s.alertsInChat !== false; $('autoRecord').checked = !!s.autoRecord; $('autoRecordStop').checked = s.autoRecordStop !== false;
   }
   const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const fmtMin = m => m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;

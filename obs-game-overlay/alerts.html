@@ -17,6 +17,8 @@
 <script src="themes/fusion.js"></script>
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
+<script src="themes/alertinfo.js"></script>
+<script src="themes/zones.js"></script>
 <script src="themes/effects.js"></script>
 <script src="themes/tiers.js"></script>
 <link rel="stylesheet" href="themes/base.css">
@@ -61,6 +63,9 @@
   .reduced-motion #tierStars i, .reduced-motion #tierName { animation: none !important; opacity: 1; }
   .reduced-motion.shake-1 #stage, .reduced-motion.shake-2 #stage { animation: none !important; }
 
+  /* strefa podana przez ekran / układ na wizji (themes/zones.js): karta mieści się w wolnym miejscu */
+  .zoned #stage { inset: auto; left: var(--zx); top: var(--zy); width: var(--zw); height: var(--zh); padding: 0 !important; align-items: center; justify-content: center; }
+  .zoned #wrap { transform-origin: center; }
   #timebar { position: absolute; left: 0; right: 0; bottom: -10px; height: 3px; z-index: 3; background: color-mix(in srgb, var(--accent) 25%, transparent); overflow: hidden; border-radius: 2px; }
   #timebar i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; }
   #wrap.show #timebar i { animation: timebar var(--dur, 6s) linear forwards; }
@@ -115,15 +120,7 @@
   let settings = load();
 
   // ---------------------------------------------------------------- teksty
-  const ICONS = {
-    follow: '<path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.9 4.5 6.6 4.5c2.2 0 3.6 1.3 4.4 2.6.8-1.3 2.2-2.6 4.4-2.6 3.7 0 5.7 3.9 4.2 7.3C19.5 16.4 12 21 12 21z"/>',
-    sub: '<path d="M12 2.5l2.9 6.2 6.6.7-5 4.5 1.4 6.6L12 17.2l-5.9 3.3 1.4-6.6-5-4.5 6.6-.7z"/>',
-    resub: '<path d="M12 2.5l2.9 6.2 6.6.7-5 4.5 1.4 6.6L12 17.2l-5.9 3.3 1.4-6.6-5-4.5 6.6-.7z"/>',
-    gift: '<path d="M3 9h18v4H3zM5 13h14v8H5z"/><path d="M12 9v12" stroke="#000" stroke-opacity=".35" stroke-width="2"/><path d="M12 9c-1.5-3.5-6-4.5-6-1.8C6 9 9.5 9 12 9zm0 0c1.5-3.5 6-4.5 6-1.8C18 9 14.5 9 12 9z"/>',
-    cheer: '<path d="M12 2l7 7-7 13L5 9z"/><path d="M5 9h14M12 2v20" stroke="#000" stroke-opacity=".3" stroke-width="1.2" fill="none"/>',
-    raid: '<path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zm8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM1.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5zm13.5 0c0-2.2-.8-4.2-2.1-5.6.9-.6 2-.9 3.1-.9 3 0 5.5 2.5 5.5 6.5z"/>',
-    redeem: '<path d="M3 7h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4z"/><path d="M9 7v12" stroke="#000" stroke-opacity=".35" stroke-width="1.5" stroke-dasharray="2 2"/>'
-  };
+  const { ICONS, details, pl } = window.OverlayAlertInfo;
   const LABELS = {
     _: { follow: 'Nowy obserwujący', sub: 'Nowa subskrypcja', resub: 'Subskrypcja przedłużona', gift: 'Prezent dla czatu', cheer: 'Bitsy!', raid: 'Raid!', redeem: 'Nagroda za punkty' },
     chip: { follow: 'no co. nowy follow', sub: 'no co. sub', resub: 'znowu ty. dobrze.', gift: 'ciasteczka dla wszystkich', cheer: 'okruszki bitsów', raid: 'ktoś wpadł. dużo ktosiów.', redeem: 'no dobra, nagroda' },
@@ -133,24 +130,6 @@
     zarin: { follow: 'nowa część w kolekcji:', sub: 'to jeszcze działa! sub:', resub: 'nadal na chodzie:', gift: 'paczka części dla załogi', cheer: 'iskry z wymiennika', raid: 'frachtowiec ląduje:', redeem: 'zlecenie od załogi:' },
     vince: { raid: 'Tunel ma wyjście – raid' }
   };
-  const pl = (n, one, few, many) => {
-    const n10 = n % 10, n100 = n % 100;
-    if (n === 1) return one;
-    if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return few;
-    return many;
-  };
-  function details(ev) {
-    switch (ev.type) {
-      case 'sub': return ev.tier || '';
-      case 'resub': return [`${ev.months} ${pl(ev.months, 'miesiąc', 'miesiące', 'miesięcy')}`, ev.message ? `„${ev.message}”` : ''].filter(Boolean).join(' · ');
-      case 'gift': return `${ev.count} ${pl(ev.count, 'sub', 'suby', 'subów')} w prezencie`;
-      case 'cheer': return [`${ev.amount} ${pl(ev.amount, 'bits', 'bitsy', 'bitsów')}`, ev.message ? `„${ev.message}”` : ''].filter(Boolean).join(' · ');
-      case 'raid': return `${ev.viewers} ${pl(ev.viewers, 'osoba wpada', 'osoby wpadają', 'osób wpada')} na stream`;
-      case 'redeem': return [ev.reward, ev.cost ? `${ev.cost} pkt` : '', ev.message ? `„${ev.message}”` : ''].filter(Boolean).join(' · ');
-      default: return 'Dzięki!';
-    }
-  }
-
   // ---------------------------------------------------------------- motyw (taki sam jak karta z grą)
   const GT = window.OverlayGameThemes || { byId: () => null, FX: { attach() {}, set() {} }, texture: () => '' };
   GT.FX.attach($('fx'));
@@ -162,13 +141,13 @@
     const cls = p.has('theme') ? settings.theme : (active && active.cls) || settings.theme || 'neon';
     return cls.startsWith('g-') ? cls.slice(2) : cls;
   }
-  function applyStyle(extra = '') {
+  function applyStyle(extra = '', pos) {
     // styl i gra z karty „Teraz gram” (overlay.html publikuje je w activeTheme) – ta sama fuzja
     fusion = currentFusion();
     const { cls, def, game } = fusion;
     themeId = def ? def.id : cls;
     const reduced = settings.motion === 'reduced';
-    document.body.className = `theme-${cls} pos-${settings.alertPos}` + (GT.bodyClasses ? GT.bodyClasses(fusion) : '') +
+    document.body.className = `theme-${cls} pos-${pos || settings.alertPos}` + (GT.bodyClasses ? GT.bodyClasses(fusion) : '') +
       (reduced ? ' reduced-motion' : '') + extra;
     const key = cls + '|' + (game ? game.id : '') + '|' + (fusion.persona ? fusion.persona.id : '') + fusion.mode + (fusion.variant || '');
     if (emblemFor !== key) {
@@ -185,6 +164,45 @@
     root.setProperty('--margin', '60px');
     root.setProperty('--tex', def ? GT.texture(def) : '');
     return { def, reduced };
+  }
+
+  // ---------------------------------------------------------------- strefy (themes/zones.js)
+  // źródła na wizji podają wolne miejsce; bez nich – domyślne strefy scen VM według nazwy sceny z panelu
+  const zones = new Map();
+  let obsScene = '', obsSceneAt = 0;
+  const SCREEN_ZONE = { mode: 'card', rect: [134, 18, 1250, 262] };
+  function sceneZone(name) {
+    const inChat = settings.alertsInChat !== false;
+    if (/^VM · (Przygotowania|Stream za|Zaraz zaczynamy|Spóźnienie|Przerwa|Koniec)/.test(name)) return SCREEN_ZONE;
+    if (name === 'VM · Gra – pełny ekran') return { mode: 'card', rect: [420, 24, 1080, 300] };
+    if (name === 'VM · Gra – w ramce') return inChat ? { mode: 'chat' } : { mode: 'card', rect: [40, 858, 1440, 200] };
+    if (name === 'VM · Rozmowa') return inChat ? { mode: 'chat' } : { mode: 'card', rect: [1000, 30, 840, 340] };
+    return null;
+  }
+  function currentZone() {
+    const now = Date.now();
+    let best = null;
+    for (const [k, z] of zones) {
+      if (now - z.at > 6000) { zones.delete(k); continue; }
+      if (!best || z.prio > best.prio || (z.prio === best.prio && z.since > best.since)) best = z;   // remis: ostatnio pokazany
+    }
+    if (best) return best.zone;
+    if (obsScene && now - obsSceneAt < 15000) return sceneZone(obsScene);
+    return null;
+  }
+  function onZoneMsg(m) {
+    if (m.type === 'scene') { obsScene = String(m.name || ''); obsSceneAt = Date.now(); return; }
+    if (m.on && m.zone) zones.set(m.src, { prio: m.prio || 1, zone: m.zone, since: m.since || 0, at: m.at || Date.now() });
+    else zones.delete(m.src);
+  }
+  // karta mieści się w strefie (albo w ekranie): skala nie większa niż ustawiona, z miejscem na gwiazdki i napis poziomu
+  function fitScale(want, zone) {
+    const wrap = $('wrap');
+    const ow = wrap.offsetWidth, oh = wrap.offsetHeight;
+    if (!ow || !oh) return want;
+    const W = zone && zone.rect ? zone.rect[2] : innerWidth - 120, H = zone && zone.rect ? zone.rect[3] : innerHeight * 0.42;
+    const extraV = 96;   // gwiazdki nad kartą i napis pod nią
+    return Math.max(0.45, Math.min(want, (W * 0.94) / ow, (H - extraV) / oh));
   }
 
   // ---------------------------------------------------------------- dźwięk (syntezowany, bez plików)
@@ -273,8 +291,11 @@
     const vi = GT.voiceInfo ? GT.voiceInfo(currentFusion()) : { personaId: themeIdPeek() };
     const v = window.OverlayVoices ? (window.OverlayVoices.pickMix || window.OverlayVoices.pick)(window.OverlayVoices.pickMix ? vi : vi.personaId, ev.type, { user: ev.user || '', n, reward: ev.reward || '', game: activeGame }, tier) : null;
     const reg = v ? v.register : '';
-    const { def, reduced } = applyStyle((reg === 'syndrome' ? ' syndrome' : reg === 'terminal' ? ' terminal-voice' : '') + ` tier-${tier}` + (R.shake ? ` shake-${R.shake}` : ''));
-    document.documentElement.style.setProperty('--scale', (+settings.alertScale || 1.25) * R.scale);
+    const zone = currentZone();
+    const inChat = zone && zone.mode === 'chat' && settings.alertsInChat !== false;   // układ z czatem pokaże alert jako wiadomość
+    const zoned = !inChat && zone && zone.rect;
+    const { def, reduced } = applyStyle((reg === 'syndrome' ? ' syndrome' : reg === 'terminal' ? ' terminal-voice' : '') + ` tier-${tier}` + (R.shake && !inChat ? ` shake-${R.shake}` : '') + (zoned ? ' zoned' : '') + (inChat ? ' in-chat' : ''), zoned ? 'mc' : null);
+    if (zoned) { const r = document.documentElement.style; ['--zx', '--zy', '--zw', '--zh'].forEach((k, i) => r.setProperty(k, zone.rect[i] + 'px')); }
     // większy alert potrzebuje więcej miejsca od krawędzi (gwiazdki, postać wyglądająca zza karty)
     document.documentElement.style.setProperty('--margin', (60 + (tier - 1) * 30) + 'px');
     $('tierStars').innerHTML = tier >= 3 ? Array.from({ length: tier }, (_, i) => `<i style="--i:${i}"></i>`).join('') : '';
@@ -291,12 +312,15 @@
     card.classList.toggle('xlong', (ev.user || '').length > 34);
     $('icon').className = 'glyph';
     $('icon').innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[ev.type] || ICONS.follow}</svg>`;
-    const dur = settings.alertFast ? 2.5 : Math.max(3, +settings.alertDuration || 6) + R.extra;
+    // rozmiar dopiero po wpisaniu treści: najpierw skala bazowa, potem dopasowanie do wolnego miejsca
+    const want = (+settings.alertScale || 1.25) * R.scale;
+    document.documentElement.style.setProperty('--scale', fitScale(want, zoned ? zone : null));
+    const dur = inChat ? 2.5 : settings.alertFast ? 2.5 : Math.max(3, +settings.alertDuration || 6) + R.extra;
     document.documentElement.style.setProperty('--dur', dur + 's');
     const baseFx = !reduced ? (GT.fusionFx ? GT.fusionFx(fusion) : def && def.fx) : null;
     GT.FX.set(baseFx ? { ...baseFx, count: Math.round(baseFx.count * R.fx) } : null);
     const wrap = $('wrap');
-    requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('show')));
+    if (!inChat) requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('show')));
     play(ev.type, tier);
     // duże zdarzenie: efekt na cały ekran + reakcja avatara w układach i na ekranach
     if (R.effect && !reduced && !settings.alertFast && window.OverlayEffects) {
@@ -337,10 +361,12 @@
     bc.onmessage = e => {
       const m = e.data;
       if (m && typeof m === 'object' && m.type === 'alert') push({ ...m.event, id: undefined, _n: Math.random() });
+      else if (m && typeof m === 'object' && (m.type === 'zone' || m.type === 'scene')) onZoneMsg(m);
       else if (m === 'update') { settings = load(); }
     };
   } catch {}
   window.addEventListener('storage', e => { if (e.key === KEY) settings = load(); });
+  try { const q = new BroadcastChannel('obsGameOverlay'); q.postMessage({ type: 'zone-query' }); setTimeout(() => q.postMessage({ type: 'zone-query' }), 1500); } catch {}
 
   applyStyle();
   poll();

@@ -14,6 +14,9 @@
 <script src="themes/fusion.js"></script>
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
+<script src="themes/tiers.js"></script>
+<script src="themes/alertinfo.js"></script>
+<script src="themes/zones.js"></script>
 <script src="themes/chat.js"></script>
 <script src="themes/client.js"></script>
 <script src="themes/obsws.js"></script>
@@ -60,7 +63,7 @@
   #avatar { position: absolute; display: none; }
   .has-avatar #avatar { display: block; }
   .l-game-frame #avatar { left: 1510px; top: 40px; width: 370px; height: 370px; }
-  .l-game-full #avatar { left: 40px; bottom: 40px; width: 300px; height: 300px; }
+  .l-game-full #avatar { left: 40px; top: auto; bottom: 40px; width: 300px; height: 300px; }   /* top: auto – #avatar ma też klasę av-art (inset: 0) */
   .l-talk #avatar { left: 110px; top: 150px; width: 780px; height: 780px; }
   .av-art { position: absolute; inset: 0; display: grid; place-items: end center; }
   .av-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; transform-origin: 50% 100%; transition: transform .12s ease, filter .2s ease;
@@ -92,16 +95,20 @@
   .l-game-full #chat.chat-ticker { left: 0; right: 0; bottom: 0; width: auto; max-height: none; }
   .ticker-top.l-game-full #chat.chat-ticker { top: 0; bottom: auto; border-top: 0; border-bottom: 2px solid var(--accent); transform: translateY(-100%); }
   .ticker-top.l-game-full #chat.chat-ticker.on { transform: none; }
-  .ticker-bottom #avatar { translate: 0 -70px; }
+  .l-game-full #avatar { bottom: var(--av-bottom, 40px); transition: bottom .6s cubic-bezier(.2,.9,.3,1); }
   .l-talk #chat { left: 1000px; top: 360px; width: 840px; height: 680px; }
   .l-game-frame .chat, .l-talk .chat { font-size: 18px; }
   .chat-panel .cmsg { background-color: rgba(10,10,16,.6); }
+  /* wąska kolumna czatu (gra w ramce): alert ciaśniej, długi nick się nie łamie w środku */
+  .l-game-frame .calert { padding: 10px 12px; gap: 10px; }
+  .l-game-frame .caicon { width: 40px; height: 40px; border-radius: 10px; }
+  .l-game-frame .caname { font-size: 1.05em; word-break: normal; overflow-wrap: anywhere; }
 
   /* temat rozmowy */
   #topic { position: absolute; display: none; left: 1000px; top: 90px; width: 840px; }
   .l-talk #topic { display: block; }
   #topicLabel { font: 800 18px/1 var(--font); letter-spacing: .3em; text-transform: uppercase; color: var(--accent); }
-  #topicText { font: 800 64px/1.05 var(--font); margin-top: 12px; text-wrap: balance; text-shadow: 0 0 30px color-mix(in srgb, var(--accent) 45%, transparent); }
+  #topicText { font: 800 var(--topic-size, 64px)/1.05 var(--font); overflow-wrap: anywhere; margin-top: 12px; text-wrap: balance; text-shadow: 0 0 30px color-mix(in srgb, var(--accent) 45%, transparent); }
   #topicLine { margin-top: 12px; font-size: 22px; opacity: .8; font-style: italic; }
 
   /* pasek pod grą: ostatnie zdarzenia i linki */
@@ -234,6 +241,13 @@
     holes(s);
     renderAvatar(s);
     mountChat(s);
+    // pełny ekran: avatar stoi nad kartą „Teraz gram”, gdy karta jest w tym samym rogu; pasek czatu podnosi oba
+    if (layout === 'game-full') {
+      const tick = chatMode === 'ticker' && s.tickerPos !== 'top' ? 62 : 0;
+      const pos = s.position || 'bl';
+      const card = s.visible !== false && pos === 'bl' ? Math.round(130 * (+s.scale || 1)) + 24 : 0;
+      document.body.style.setProperty('--av-bottom', (40 + tick + card) + 'px');
+    }
     // gra
     const det = C.read('obsGameOverlay.detected', {}) || {};
     const game = (det.local && det.local.game && det.local.game.name) || (det.discord && det.discord.game && det.discord.game.name) || s.game || '';
@@ -242,7 +256,13 @@
     if (layout === 'talk') {
       const v = window.OverlayVoices ? window.OverlayVoices.pick(th.id, 'scene:talk', {}) : { label: 'Rozmowa', line: '' };
       if (!$('topicLabel').textContent || topicStale()) { $('topicLabel').textContent = v.label; $('topicLine').textContent = v.line; }
-      $('topicText').textContent = s.talkTopic || 'Pogadajmy';
+      const tt = $('topicText'), txt = s.talkTopic || 'Pogadajmy';
+      {
+        if (tt.textContent !== txt) tt.textContent = txt;
+        // długi temat: mniejsza czcionka, najwyżej trzy linijki – nic nie wychodzi poza kolumnę
+        let size = 64; tt.style.setProperty('--topic-size', size + 'px');
+        while (size > 30 && (tt.scrollHeight > size * 1.05 * 3 + 4 || tt.scrollWidth > tt.clientWidth + 2)) { size -= 4; tt.style.setProperty('--topic-size', size + 'px'); }
+      }
     }
     renderBar(s);
   }
@@ -268,8 +288,28 @@
   render();
   setInterval(render, 2000);
   pollSession();
+  // alerty jako część czatu (w ramce i w rozmowie) – karta alertu wtedy nie zasłania gry ani avatara
+  const ALERTS = ['follow', 'sub', 'resub', 'gift', 'cheer', 'raid', 'redeem'];
+  const alertsInChat = () => layout !== 'game-full' && C.settings().alertsInChat !== false;
+  const seenAlerts = new Set();
+  function alertToChat(ev) {
+    const key = ev.id != null ? 'a' + ev.id : JSON.stringify(ev); if (seenAlerts.has(key)) return; seenAlerts.add(key);
+    const s = C.settings(); if (s.alertTypes && s.alertTypes[ev.type] === false) return;
+    const tier = window.OverlayTiers ? window.OverlayTiers.tier(ev) : 1;
+    const n = ev.count || ev.months || ev.amount || ev.viewers || '';
+    const v = window.OverlayVoices && GT.voiceInfo ? window.OverlayVoices.pickMix(GT.voiceInfo(th || C.applyTheme('l-' + layout)), ev.type, { user: ev.user || '', n, reward: ev.reward || '' }, tier) : null;
+    if (chat.addAlert) chat.addAlert(ev, { tier, label: v && v.label, line: v && v.line });
+  }
+  // gdzie alerts.html ma pokazać kartę, gdy ten układ jest na wizji
+  if (window.VMZone) window.VMZone.announce(() => {
+    if (layout === 'game-full') return { mode: 'card', rect: [420, 24, 1080, 300] };
+    if (alertsInChat()) return { mode: 'chat' };
+    return layout === 'game-frame' ? { mode: 'card', rect: [40, 858, 1440, 200] } : { mode: 'card', rect: [1000, 30, 840, 340] };
+  });
+
   C.events(ev => {
     if (ev.type === 'chat') chat.add(ev);
+    if (ALERTS.includes(ev.type) && alertsInChat()) alertToChat(ev);
     if (ev.type === 'voice') setTalking(ev.talking);
     if (['follow', 'sub', 'resub', 'raid'].includes(ev.type)) setTimeout(pollSession, 500);
   }, { onSettings: render });

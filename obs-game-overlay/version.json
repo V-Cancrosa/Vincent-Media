@@ -1,5 +1,5 @@
 {
-  "version": "1.15.0",
+  "version": "1.16.0",
   "date": "2026-11-14",
-  "notes": "Przejścia między ekranami w stylu gry/postaci, narrator Darkest Dungeon, części Mass Effect, motywy Red Alert/Tiberium/Generals, czat jako pasek, archiwum streamów ze statystykami i flagowaniem botów, nagrywanie razem ze streamem, fuzja 50:50 domyślnie"
+  "notes": "Ułożenie bez nakładania się: karta ekranów przerw mieści się obok postaci i pasa alertów, alerty dobierają miejsce do sceny (w układach z czatem są częścią czatu), avatar nad kartą w grze na pełnym ekranie, temat rozmowy dopasowany do miejsca"
 }

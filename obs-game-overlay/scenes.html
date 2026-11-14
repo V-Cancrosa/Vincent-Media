@@ -18,6 +18,7 @@
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
 <script src="themes/obsws.js"></script>
+<script src="themes/zones.js"></script>
 <link rel="stylesheet" href="themes/base.css">
 <style>
   /* Ekran przerwy: pełnoekranowe tło motywu + duża karta z odliczaniem + postać + stopka z linkami i ostatnimi zdarzeniami. */
@@ -338,7 +339,35 @@
       const el = document.createElement('span'); el.textContent = s; $('socials').appendChild(el);
     }
     renderRecent();
+    layoutScreen(kind);
   }
+
+  // ---------------------------------------------------------------- układ: nic na siebie nie nachodzi
+  // u góry pas na alerty, po prawej postać (albo napisy końcowe), na dole stopka (i lista kontrolna);
+  // karta stoi w tym, co zostaje, i zmniejsza się, gdy się nie mieści
+  const ALERT_BAND = 268;
+  let alertRect = [260, 18, 1400, ALERT_BAND - 28];
+  function layoutScreen(kind) {
+    const W = innerWidth, H = innerHeight, stage = $('stage'), wrapEl = $('wrap');
+    const vis = el => el && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0;
+    const heroEl = $('hero'), heroImg = heroEl.querySelector('img');
+    const side = kind === 'end' ? $('extra') : (vis(heroEl) ? (heroImg && heroImg.getBoundingClientRect().width ? heroImg : heroEl) : null);
+    const left = side ? Math.round(W * 0.07) : 60;
+    const right = side ? Math.round(side.getBoundingClientRect().left) - 36 : W - 60;
+    let bottom = vis($('foot')) && $('foot').textContent.trim() ? Math.round($('foot').getBoundingClientRect().top) - 12 : H - 40;
+    if (kind === 'prep' && vis($('extra'))) bottom = Math.min(bottom, Math.round($('extra').getBoundingClientRect().top) - 24);
+    const top = ALERT_BAND;
+    stage.style.inset = `${top}px ${W - right}px ${H - bottom}px ${left}px`;
+    stage.style.padding = '0';
+    stage.style.justifyContent = side ? 'flex-start' : 'center';
+    wrapEl.style.transformOrigin = side ? 'left center' : 'center';
+    const base = kind === 'end' ? 1.55 : (+settings.sceneScale || 2.1);
+    const ow = wrapEl.offsetWidth, oh = wrapEl.offsetHeight;
+    const f = ow && oh ? Math.min(1, (right - left) * 0.97 / (ow * base), (bottom - top) * 0.9 / (oh * base)) : 1;
+    document.body.style.setProperty('--scale', (base * f).toFixed(3));
+    alertRect = side ? [left, 18, right - left, top - 28] : [260, 18, W - 520, top - 28];
+  }
+  if (window.VMZone) window.VMZone.announce(() => ({ mode: 'card', rect: alertRect }));
 
   // ---------------------------------------------------------------- przygotowania: lista kontrolna
   const CHECK = ['Scena', 'Dźwięk', 'Mikrofon', 'Czat', 'Alerty', 'Napój', 'Gra'];
@@ -366,7 +395,11 @@
     x.textContent = '';
     const c = document.createElement('div'); c.className = 'credits';
     const add = (tag, text, small) => { const e = document.createElement(tag); e.textContent = text; if (small) { const sm = document.createElement('small'); sm.textContent = small; e.appendChild(sm); } c.appendChild(e); return e; };
-    const endVoice = voiceFor('end');
+    // napisy: inne zdanie niż w karcie
+    const VO = window.OverlayVoices, cardLine = voiceFor('end').line;
+    let endVoice = { line: '' };
+    for (let i = 0; i < 6 && VO; i++) { endVoice = voiceVI && VO.pickMix ? VO.pickMix(voiceVI, 'scene:end', {}) : VO.pick(themeId, 'scene:end', {}); if (endVoice.line !== cardLine) break; }
+    if (endVoice.line === cardLine) endVoice = { line: '' };
     add('p', endVoice.line || 'Dziękuję, że byliście!').className = 'thanks';
     const S = session || {};
     const sec = (title, list, fmt) => { if (!list || !list.length) return; add('h3', title); for (const it of list) add('p', it.user, fmt ? fmt(it) : ''); };

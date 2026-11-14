@@ -111,7 +111,25 @@
         setTimeout(() => { m.classList.add('out'); setTimeout(() => m.remove(), 700); }, ev.command ? Math.min(life, 5000) : life);
       }
     }
-    return { add, clear: () => { container.textContent = ''; } };
+    // alert jako wiadomość w czacie (układy z czatem): ikona, napis postaci/gry, kto, ile, zdanie postaci
+    function addAlert(ev, info = {}) {
+      const AI = window.OverlayAlertInfo; if (!AI) return;
+      const tier = info.tier || 1;
+      const m = el('div', `cmsg calert ca-${ev.type} tier-${tier}`);
+      const ic = el('div', 'caicon'); ic.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${AI.ICONS[ev.type] || AI.ICONS.follow}</svg>`;
+      const body = el('div', 'cbody');
+      const lab = el('div', 'calabel', info.label || ev.type);
+      if (tier >= 3) lab.append(el('span', 'castars', '★'.repeat(tier)));
+      body.append(lab, el('div', 'caname', ev.user || ''));
+      const det = AI.details(ev); if (det && det !== 'Dzięki!') body.append(el('div', 'cadet', det));
+      if (info.line) body.append(el('div', 'caline', info.line));
+      m.append(ic, body);
+      container.appendChild(m);
+      requestAnimationFrame(() => requestAnimationFrame(() => m.classList.add('in')));
+      while (container.children.length > max) container.firstElementChild.remove();
+      if (mode === 'bubbles') setTimeout(() => { m.classList.add('out'); setTimeout(() => m.remove(), 700); }, Math.max(life, 10000));
+    }
+    return { add, addAlert, clear: () => { container.textContent = ''; } };
   }
 
   window.OverlayChat = { mount, styles: STYLES, allowed };

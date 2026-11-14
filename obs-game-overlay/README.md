@@ -193,6 +193,15 @@ Możesz też podać własne obrazki „cisza” i „mówię” (PNGtuber).
 
 W panelu (Na żywo → Ekrany) wybierasz ekran, odliczanie, termin dla „Stream za…”, temat rozmowy, podpis i linki w stopce.
 
+### Ułożenie i miejsce na alerty
+
+Nic na siebie nie nachodzi:
+- **Ekrany przerw** – u góry jest pas na alerty, po prawej postać (albo napisy końcowe), na dole stopka. Karta z odliczaniem stoi w tym, co zostaje, i sama się zmniejsza, gdy tekst jest długi.
+- **Alerty wiedzą, która scena jest na wizji** (OBS mówi to źródłom, a panel podaje nazwę sceny). Na przerwach pokazują się w pasie u góry, w grze na pełnym ekranie u góry na środku, a w układach z czatem (*Gra – w ramce*, *Rozmowa*) **są częścią czatu**, jako wyróżniona wiadomość z dźwiękiem. Wyłączysz to w *Na żywo → Alerty* – wtedy alert w ramce pojawi się nad paskiem pod grą, a w rozmowie nad tematem.
+- Karta alertu zawsze mieści się na ekranie (zmniejsza się zamiast wychodzić poza krawędź).
+- **Gra na pełnym ekranie** – avatar stoi nad kartą „Teraz gram”, a pasek czatu podnosi oba.
+- **Rozmowa** – długi temat dostaje mniejszą czcionkę (najwyżej trzy linijki).
+
 ### Przejścia między ekranami
 
 Źródło `VM · Przejścia` (`transition.html`) leży na wierzchu każdej sceny VM. Gdy zmieniasz ekran albo scenę z panelu (także z telefonu), obraz najpierw zasłania animacja, potem OBS przełącza scenę cięciem, a na końcu obraz się odsłania. W środku pojawia się napis w głosie postaci albo gry, np. narratora Darkest Dungeon.
