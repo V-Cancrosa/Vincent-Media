@@ -22,6 +22,7 @@
 <script src="themes/voices-trans.js"></script>
 <script src="themes/i18n.js"></script>
 <script src="themes/wordfilter.js"></script>
+<script src="themes/socials.js"></script>
 <link rel="stylesheet" href="themes/base.css">
 <link rel="stylesheet" href="themes/chat.css">
 <script src="themes/chat.js"></script>
@@ -306,6 +307,7 @@
     // logo gry (Steam – z pamięci Steama na tym komputerze przez wykrywacz, inaczej z CDN Steama) na naszywce
     th.logo = g && g.steam && settings.local !== false && settings.gameLogo !== false ? window.vmHub(settings.localUrl) + '/art?id=' + encodeURIComponent(g.steam) + '&k=logo' : '';
     if (GT.applyFusion) GT.applyFusion(wrap, th);
+    if (window.OverlayChat) window.OverlayChat.setSkin(document.getElementById('ticker'), th, settings.chatSkin !== false);
     const fxKey = key + reduced;
     if (fxKey !== fxFor) { fxFor = fxKey; GT.FX.set(!reduced ? (GT.fusionFx ? GT.fusionFx(th) : def && def.fx) : null); }
     document.documentElement.style.setProperty('--tex', def ? GT.texture(def) : '');

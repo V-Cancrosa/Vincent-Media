@@ -23,6 +23,7 @@
     if (ev._w && !ev._w.level) ev._w = null;
     return ev._w;
   }
+  let msgNo = 0;
   function render(ev) {
     const style = STYLES.includes(ev.style) ? ev.style : 'theme';
     const color = ev.color || hashColor(ev.user || '?');
@@ -38,6 +39,9 @@
     const body = el('div', 'cbody');
     const name = el('div', 'cname', uname);
     for (const b of ev.badges || []) if (BADGES[b]) name.append(el('span', 'cbadge cb-' + b, BADGES[b]));
+    // numer i godzina – widoczne tylko w niektórych stylach czatu (terminal, playlista, adnotacje…)
+    const d = new Date(), pad = n => String(n).padStart(2, '0');
+    name.prepend(el('span', 'ctime', pad(d.getHours()) + ':' + pad(d.getMinutes())), el('span', 'cnum', pad(++msgNo % 100)));
     // oflagowana wiadomość, którą panel każe pokazać: wyraźny znacznik zamiast ukrycia
     if (ev.flag) { m.classList.add('cflagged', 'cflag-' + ev.flag.level); const fb = el('span', 'cbadge cb-flag', '⚑'); fb.title = (ev.flag.reasons || []).join(' · '); name.append(fb); }
     const text = el('div', 'ctext');
@@ -60,6 +64,19 @@
     const tag = el('div', 'ticker-tag'); tag.append(el('span', 'tdot'), el('span', 'ttext', opts.label || (window.VMi18n ? window.VMi18n.t('chat') : 'CZAT')));
     const lane = el('div', 'ticker-lane');
     container.append(tag, lane);
+    // sociale: na końcu paska, co kilka sekund następny
+    if (opts.socials !== false && window.VMSocials) {
+      const soc = el('div', 'ticker-soc'); container.append(soc);
+      let k = 0;
+      const next = () => {
+        const s = window.VMClient ? window.VMClient.settings() : {};
+        const list = window.VMSocials.parse(s.socials);
+        if (s.socialsOff || !list.length) { soc.innerHTML = ''; return; }
+        const it = list[k++ % list.length]; soc.innerHTML = window.VMSocials.item(it, false);
+        soc.classList.remove('flip'); void soc.offsetWidth; soc.classList.add('flip');
+      };
+      next(); setInterval(next, 7000);
+    }
     const items = [], seen = new Set(), GAP = 16;   // odstęp między kafelkami
     const base = opts.speed || 140;            // px/s w 1920×1080
     let last = performance.now(), idleAt = 0, raf = 0;
@@ -147,5 +164,20 @@
     return { add, addAlert, clear: () => { container.textContent = ''; } };
   }
 
-  window.OverlayChat = { mount, styles: STYLES, allowed };
+  // styl czatu dopasowany do postaci (prowadzi stream) albo – bez postaci – do gry
+  const GAME_SKIN = { dd: 'dd', me: 'me', ra: 'cnc', cnc: 'cnc', gen: 'cnc', elden: 'dd', hk: 'dd', cp: 'me', wf: 'me' };
+  function skinOf(r) {
+    if (!r) return 'theme';
+    const p = r.persona || (r.def && r.def.group === 'fursona' ? r.def : null);
+    if (p) return p.id;
+    const g = r.game || (r.def && r.def.group !== 'fursona' ? r.def : null);
+    return g && GAME_SKIN[g.variantOf || g.id] ? GAME_SKIN[g.variantOf || g.id] : 'theme';
+  }
+  function setSkin(container, r, on = true) {
+    if (!container) return;
+    const sk = on ? skinOf(r) : 'theme';
+    if (container.dataset.skin !== sk) container.dataset.skin = sk;
+    container.classList.toggle('chat-skin', sk !== 'theme' && !container.classList.contains('chat-ticker'));
+  }
+  window.OverlayChat = { mount, styles: STYLES, allowed, skinOf, setSkin };
 })();

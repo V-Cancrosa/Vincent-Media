@@ -22,6 +22,10 @@
 <script src="themes/voices-trans.js"></script>
 <script src="themes/i18n.js"></script>
 <script src="themes/wordfilter.js"></script>
+<script src="themes/client.js"></script>
+<script src="themes/chat.js"></script>
+<script src="themes/socials.js"></script>
+<link rel="stylesheet" href="themes/chat.css">
 <script src="themes/obsws.js"></script>
 <script src="themes/zones.js"></script>
 <link rel="stylesheet" href="themes/base.css">
@@ -91,9 +95,17 @@
     background: linear-gradient(transparent, rgba(0,0,0,.55));
   }
   #foot:empty { display: none; }
-  #socials { display: flex; gap: 28px; flex-wrap: wrap; }
-  #socials span { white-space: nowrap; }
-  #socials span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 10px; border-radius: 2px; background: var(--accent); vertical-align: middle; }
+  #socials { display: flex; gap: 14px 30px; flex-wrap: wrap; font-size: 20px; }
+  #socials .soc-ic { width: 1.3em; height: 1.3em; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 50%, transparent)); }
+  /* czat na ekranach: kolumna po prawej w stylu postaci / gry; postać i napisy końcowe przesuwają się w lewo */
+  #schat { position: fixed; z-index: 3; right: 40px; top: 40px; bottom: 120px; width: 470px; display: none; }
+  .has-schat #schat { display: flex; }
+  .has-schat #hero.full { right: calc(470px + 4vw); height: 80vh; }
+  .has-schat #hero.photo { right: calc(470px + 4vw); width: 18vw; }
+  .has-schat #hero.photo.wide { right: calc(470px + 3vw); width: 26vw; }
+  .has-schat #hero.sheet { right: calc(470px + 4vw); width: 24vw; }
+  .has-schat #hero.emblem { right: calc(470px + 5vw); width: 17vw; height: 17vw; }
+  .has-schat.k-end #extra { right: calc(470px + 80px); width: 24vw; }
   #recent { display: flex; gap: 26px; color: var(--scene-muted); font-size: 18px; }
   #recent b { color: var(--scene-ink); font-weight: 700; }
 
@@ -176,6 +188,7 @@
 </div>
 <div id="extra" aria-live="polite"></div>
 <div id="sweep" aria-hidden="true"></div>
+<div id="schat"></div>
 <div id="foot"><div id="socials"></div><div id="recent"></div></div>
 
 <script>
@@ -249,6 +262,7 @@
   function applyStyle(kind) {
     const fusion = GT.fromActive ? GT.fromActive(read(ACTIVE_KEY, null), settings, p.has('theme') ? settings.theme : null) : { cls: settings.theme || 'neon', def: null, game: null };
     const { cls, def, game } = fusion;
+    if (window.OverlayChat) window.OverlayChat.setSkin($('schat'), fusion, settings.chatSkin !== false);
     // głos i duża postać: postać (także gdy jest dodatkiem do gry), inaczej styl
     const heroDef = fusion.persona || def;
     themeId = heroDef ? heroDef.id : cls;
@@ -366,10 +380,8 @@
     if ($('sub').textContent !== (sub || '')) $('sub').textContent = sub || '';
     if (window.VMFit) VMFit.text($('sub'), { min: 0.7, lines: 2, container: $('wrap') });
     if (kind === 'prep') tickChecklist();
-    $('socials').innerHTML = '';
-    for (const s of String(settings.socials || '').split(/[,|\n]/).map(x => x.trim()).filter(Boolean)) {
-      const el = document.createElement('span'); el.textContent = s; $('socials').appendChild(el);
-    }
+    if (window.VMSocials) window.VMSocials.render($('socials'), settings.socials);
+    document.body.classList.toggle('has-schat', settings.sceneChat !== false && !!window.OverlayChat);
     renderRecent();
     layoutScreen(kind);
   }
@@ -385,7 +397,8 @@
     const heroEl = $('hero'), heroImg = heroEl.querySelector('img');
     const side = kind === 'end' ? $('extra') : (vis(heroEl) ? (heroImg && heroImg.getBoundingClientRect().width ? heroImg : heroEl) : null);
     const left = side ? Math.round(W * 0.07) : 60;
-    const right = side ? Math.round(side.getBoundingClientRect().left) - 36 : W - 60;
+    let right = side ? Math.round(side.getBoundingClientRect().left) - 36 : W - 60;
+    if (vis($('schat'))) right = Math.min(right, Math.round($('schat').getBoundingClientRect().left) - 40);
     let bottom = vis($('foot')) && $('foot').textContent.trim() ? Math.round($('foot').getBoundingClientRect().top) - 12 : H - 40;
     if (kind === 'prep' && vis($('extra'))) bottom = Math.min(bottom, Math.round($('extra').getBoundingClientRect().top) - 24);
     const top = ALERT_BAND;
@@ -483,6 +496,10 @@
     }
     setTimeout(pollRecent, 15000);
   }
+
+  // ---------------------------------------------------------------- czat na ekranie (w stylu postaci / gry)
+  const schat = window.OverlayChat ? window.OverlayChat.mount($('schat'), { mode: 'panel', max: 10 }) : null;
+  if (schat && window.VMClient) window.VMClient.events(ev => { if (ev && ev.type === 'chat') schat.add(ev); });
 
   // ---------------------------------------------------------------- start
   const wrap = $('wrap');

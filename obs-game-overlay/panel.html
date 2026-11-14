@@ -49,6 +49,7 @@
   .bigbtns button { padding: 12px 8px; font-size: 13px; font-weight: 600; white-space: normal; }
   .bigbtns.small button { padding: 8px 6px; font-weight: 500; }
   .bigbtns button[aria-pressed="true"] { background: #e91916; border-color: #e91916; color: #fff; }
+  .soc { display: inline-flex; gap: .4em; align-items: center; white-space: nowrap; } .soc-ic { width: 1.2em; height: 1.2em; color: var(--accent); flex: none; }
   .lib select { grid-column: 1 / -1; font-size: 12px; padding: 4px 6px; }
   .scgroup { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; margin-bottom: 8px; }
   .scgroup button { padding: 10px 8px; font-size: 13px; font-weight: 600; white-space: normal; }
@@ -119,6 +120,7 @@
 <script src="themes/voices-trans.js"></script>
 <script src="themes/i18n.js"></script>
 <script src="themes/wordfilter.js"></script>
+<script src="themes/socials.js"></script>
 <script src="themes/botcheck.js"></script>
 <script src="themes/testfeed.js"></script>
 </head>
@@ -234,9 +236,10 @@
     <label>Podpis pod odliczaniem (pusty = „Dziś: [gra]”)
       <input id="sceneSub" type="text" placeholder="np. Dziś: ELDEN RING, boss Malenia">
     </label>
-    <label>Linki w stopce (po przecinku)
-      <input id="socials" type="text" placeholder="twitch.tv/…, @…bsky.social, tiktok: @…">
+    <label>Sociale z ikonami (ekrany, gra w ramce, rozmowa, pasek czatu) – puste = Twoje konta, „-” = bez
+      <input id="socials" type="text" placeholder="telegram: @…, bluesky: @….bsky.social, instagram: @…, x: @…, reddit: u/…, github: …">
     </label>
+    <div class="row" id="socPrev" style="flex-wrap:wrap;gap:6px 16px;font-size:13px"></div>
     <label class="check"><input id="sceneHero" type="checkbox"> duża postać / emblemat obok odliczania</label>
     <details>
       <summary>Przejścia między ekranami</summary>
@@ -420,6 +423,8 @@
         <input id="tickerSpeed" type="range" min="70" max="320" step="10">
       </label>
     </div>
+    <label class="check"><input id="chatSkin" type="checkbox"> czat w stylu postaci albo gry (terminal Myr, karteczki Chipa, playlista Ragnara, lampiony Toro, adnotacje Vince'a, tabliczki Zarin; bez postaci – pergamin DD, komunikator ME, EVA z C&amp;C)</label>
+    <label class="check"><input id="sceneChat" type="checkbox"> czat także na ekranach przerw (kolumna z prawej)</label>
     <label class="check"><input id="botHide" type="checkbox"> nie pokazuj na ekranie wiadomości z flagą „podejrzane” (świeże konto, reklama widzów…)</label>
     <div class="seg3">
       <button data-ct="chat">Test: wiadomość</button><button id="botTest">Test: wiadomość bota</button><button id="botShow" aria-pressed="false">Pokazuj podejrzane (z ⚑)</button>
@@ -1050,7 +1055,10 @@
     s.sceneUntil = Date.now() + Math.round(m * 60000); save();
   };
   $('sceneStop').onclick = () => { s.sceneUntil = 0; save(); };
-  for (const id of ['sceneSub', 'socials']) $(id).addEventListener('change', () => { s[id] = $(id).value.trim(); save(); });
+  for (const id of ['sceneSub', 'socials']) $(id).addEventListener('change', () => { s[id] = $(id).value.trim(); save(); socPrev(); });
+  const socPrev = () => { if (window.VMSocials) { $('socPrev').dataset.soc = ''; window.VMSocials.render($('socPrev'), s.socials); } };
+  setTimeout(socPrev, 0);
+  for (const id of ['chatSkin', 'sceneChat']) { $(id).onchange = () => { s[id] = $(id).checked; save(); }; setTimeout(() => { $(id).checked = s[id] !== false; }, 0); }
   $('sceneHero').addEventListener('change', () => { s.sceneHero = $('sceneHero').checked; save(); });
   function syncScenes() {
     for (const b of $('sceneBtns').querySelectorAll('button')) b.setAttribute('aria-pressed', b.dataset.s === s.scene);

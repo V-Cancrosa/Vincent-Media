@@ -18,6 +18,7 @@
 <script src="themes/voices-trans.js"></script>
 <script src="themes/i18n.js"></script>
 <script src="themes/wordfilter.js"></script>
+<script src="themes/socials.js"></script>
 <script src="themes/tiers.js"></script>
 <script src="themes/alertinfo.js"></script>
 <script src="themes/zones.js"></script>
@@ -124,7 +125,8 @@
   #bar .item { display: flex; flex-direction: column; gap: 6px; }
   #bar .item small { font-size: 13px; letter-spacing: .24em; text-transform: uppercase; color: var(--accent); }
   #bar .item b { font-size: 26px; }
-  #bar .socials { margin-left: auto; display: flex; flex-direction: column; gap: 6px; text-align: right; opacity: .9; }
+  #bar .socials { margin-left: auto; display: grid; grid-template-columns: repeat(2, auto); gap: 8px 24px; font-size: 17px; opacity: .95; }
+  .l-talk #bar { flex-wrap: wrap; } .l-talk #bar .socials { margin-left: 0; width: 100%; grid-template-columns: repeat(3, auto); justify-content: start; }
 
   /* rozmowa: temat, pasek i czat w jednej kolumnie – długi temat przesuwa resztę w dół, nic nie nachodzi */
   #col { display: none; }
@@ -237,6 +239,7 @@
   function render() {
     const s = C.settings();
     th = C.applyTheme('l-' + layout + (document.body.classList.contains('talking') ? ' talking' : '') + (document.body.classList.contains('hype') ? ' hype' : ''));
+    if (window.OverlayChat && chatMode !== 'ticker') window.OverlayChat.setSkin($('chat'), th, C.settings().chatSkin !== false);
     if (BGFX) {
       const k = th.cls + (th.game ? th.game.id : '') + (th.variant || '') + th.reduced;
       if (k !== fxKey) { fxKey = k; const base = GT.fusionFx ? GT.fusionFx(th) : th.def && th.def.fx; BGFX.set(base && !th.reduced && layout !== 'game-full' ? { ...base, count: Math.round(base.count * 2) } : null); }
@@ -281,8 +284,7 @@
     item(T('lastFollow', 'Ostatni follow'), last('follow'));
     item(T('lastSub', 'Ostatni sub'), last('sub'));
     item(T('lastRaid', 'Ostatni raid'), last('raid'));
-    const soc = String(s.socials || '').split(/[,|\n]/).map(x => x.trim()).filter(Boolean);
-    if (soc.length && layout === 'game-frame') { const d = document.createElement('div'); d.className = 'socials'; for (const x of soc) { const e = document.createElement('span'); e.textContent = x; d.appendChild(e); } b.appendChild(d); }
+    if (window.VMSocials && layout !== 'game-full') { const d = document.createElement('div'); d.className = 'socials'; window.VMSocials.render(d, s.socials); if (d.childElementCount) b.appendChild(d); }
   }
   async function pollSession() {
     try { session = await C.hubGet('/session'); } catch (e) { session = C.read('obsGameOverlay.demoSession', session) || {}; }

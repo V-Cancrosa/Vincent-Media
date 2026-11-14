@@ -298,6 +298,26 @@ Efekty pokazuje źródło `alerts.html`, więc musi być w scenie.
 
 Panel → Wygląd → **Język streama**. Po angielsku jest wszystko, co widać na streamie: napisy nad grą („Now playing”), alerty i ich opisy, ekrany przerw i napisy końcowe, przejścia, pasek czatu i głosy postaci (każda zachowuje swój charakter – Chip dalej małymi literami, Myr w czterech rejestrach, narrator Darkest Dungeon po angielsku). Panel zostaje po polsku. Własny napis wpisany w panelu nie jest tłumaczony.
 
+## Sociale i czat w stylu postaci
+
+**Sociale z ikonami** (`themes/socials.js`) są w stopce ekranów przerw, na pasku pod grą w ramce, w rozmowie i rotują co kilka sekund na końcu paska czatu w grze. Domyślnie są tam Twoje konta: Telegram, Bluesky, Instagram, X, Reddit i GitHub. Zmienisz je w *Sterowanie → Ekrany → Sociale* (np. `bluesky: @ktoś.bsky.social`; sieć rozpoznaje się też po samym adresie), a `-` ukrywa wszystkie.
+
+**Czat jest na każdej scenie** i dopasowuje się do tego, kto prowadzi stream:
+- **Myr-35** – log terminala jednostki (`[12:04] nick> …` z migającym kursorem),
+- **Vince** – adnotacje architekta na siatce (№ i linia odniesienia),
+- **Chip** – kolorowe karteczki przyklejone taśmą, pisane odręcznie,
+- **Ragnar** – playlista „NOW PLAYING”: każda wiadomość to utwór z numerem i korektorem,
+- **Toro** – lampiony w ciepłym świetle,
+- **Zarin** – metalowe tabliczki z kadłuba, log radia „CH-4”,
+- bez postaci, w motywie gry: pergamin (Darkest Dungeon i inne mroczne), komunikator (Mass Effect, Cyberpunk, Warframe), transmisja EVA (Command & Conquer).
+
+Gdzie czat jest na poszczególnych scenach:
+- **ekrany przerw** – kolumna z prawej strony (postać i napisy końcowe przesuwają się w lewo),
+- **gra w ramce i rozmowa** – panel w tym samym stylu,
+- **gra na pełnym ekranie** – pasek z kafelkami w stylu postaci.
+
+Wiadomości widzów, którzy wybrali własny styl (`!styl`), zostają w ich stylu. Wyłączniki są w *Czat → Na ekranie*.
+
 ## Słowa zakazane i cenzura ekranu
 
 **Filtr słów** (`themes/wordfilter.js`) zakrywa ▇▇▇ obelgi zakazane regulaminem Twitcha – rasowe, homofobiczne, transfobiczne, ableistyczne, także polskie – oraz ich przeróbki: leet (`n1gg3r`, `f@g`), powtórzone litery, kropki i kreski w środku, litery pisane osobno, słowa rozbite na dwa „pod TTS” (np. `knee grow`), cyrylicę i inne podobne litery, znaki zerowej szerokości, `q` zamiast `g`. Działa na czacie na ekranie, na nickach w alertach i w napisach końcowych (hate raid z kont o obraźliwych nazwach) oraz w skanie ekranu. Przekleństw nie rusza – Twitch na nie pozwala. Zwykłe słowa, które tylko zawierają podobne litery (`Niger`, `snigger`, `raccoon`), przechodzą. Ustawienia: *Czat → Moderacja → Słowa zakazane* (zakryj słowo / ukryj wiadomość, słowa dwuznaczne, własne słowa, wyjątki). Wzorce są w pliku zapisane szyfrem ROT13, więc plik nie wygląda jak lista obelg.
