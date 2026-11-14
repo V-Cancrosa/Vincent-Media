@@ -18,6 +18,8 @@
 <script src="themes/fit.js"></script>
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
+<script src="themes/voices-en.js"></script>
+<script src="themes/i18n.js"></script>
 <script src="themes/obsws.js"></script>
 <script src="themes/zones.js"></script>
 <link rel="stylesheet" href="themes/base.css">
@@ -41,7 +43,7 @@
   #stage { z-index: 2; }
   #name { font-variant-numeric: tabular-nums; }
   #icon.glyph { display: grid; place-items: center; }
-  #icon.glyph svg { width: 58%; height: 58%; color: #fff; }
+  #icon.glyph svg { width: 58%; height: 58%; color: var(--on-accent, #fff); }
   .theme-retro #icon.glyph svg, .game-theme #icon.glyph svg { color: var(--accent); }
   .theme-g-chip #icon.glyph svg, .theme-g-val #icon.glyph svg { color: #fff; }
   #icon.glyph #mono { display: none; }
@@ -270,6 +272,7 @@
     const root = document.documentElement.style;
     const acc = GT.fusionAccent ? GT.fusionAccent(fusion, ['#7c5cff', '#00e1ff']) : ['#7c5cff', '#00e1ff'];
     root.setProperty('--accent', settings.accent || acc[0]);
+    setTimeout(() => GT.markContrast && GT.markContrast(), 0);
     root.setProperty('--accent2', settings.accent2 || acc[1]);
     root.setProperty('--scale', settings.sceneScale);
     root.setProperty('--margin', '60px');
@@ -296,8 +299,10 @@
     const hm = d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
     const day = new Date(d.getFullYear(), d.getMonth(), d.getDate()), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const diff = Math.round((day - today) / 86400000);
-    if (diff === 0) return `dziś o ${hm}`;
-    if (diff === 1) return `jutro o ${hm}`;
+    const T = (k, o) => window.VMi18n ? VMi18n.t(k, o) : null;
+    if (diff === 0) return T('todayAt', { t: hm }) || `dziś o ${hm}`;
+    if (diff === 1) return T('tomorrowAt', { t: hm }) || `jutro o ${hm}`;
+    if (window.VMi18n && VMi18n.lang() === 'en') return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) + T('at', { t: hm });
     return d.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }) + ` o ${hm}`;
   }
 
@@ -341,7 +346,7 @@
     $('icon').className = 'glyph';
     $('icon').innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[kind] || ICONS.start}</svg>`;
     const now = Date.now();
-    let big = STATIC_BIG[kind] || '', animate = true;
+    let big = (window.VMi18n ? VMi18n.t('big_' + kind) : STATIC_BIG[kind]) || STATIC_BIG[kind] || '', animate = true;
     if (kind === 'soon' && settings.sceneAt > now) { big = clock(settings.sceneAt - now); animate = false; }
     if ((kind === 'start' || kind === 'brb') && settings.sceneUntil > now) { big = clock(settings.sceneUntil - now); animate = false; }
     if (kind === 'late' || kind === 'brbLate') {
@@ -353,8 +358,9 @@
     const det = read(DETECTED_KEY, {}) || {};
     const game = (det.local && det.local.game && det.local.game.name) || (det.discord && det.discord.game && det.discord.game.name) || settings.game;
     let sub = settings.sceneSub;
-    if (!sub && kind === 'soon' && settings.sceneAt) sub = 'Start ' + whenText(settings.sceneAt) + (game ? ' · ' + game : '');
-    if (!sub && game && kind !== 'end') sub = (kind === 'brb' || kind === 'brbLate' ? 'Gramy dalej w ' : 'Dziś: ') + game;
+    const T = (k, fb) => (window.VMi18n ? VMi18n.t(k) : fb);
+    if (!sub && kind === 'soon' && settings.sceneAt) sub = T('start', 'Start ') + whenText(settings.sceneAt) + (game ? ' · ' + game : '');
+    if (!sub && game && kind !== 'end') sub = (kind === 'brb' || kind === 'brbLate' ? T('playingOn', 'Gramy dalej w ') : T('today', 'Dziś: ')) + game;
     if ($('sub').textContent !== (sub || '')) $('sub').textContent = sub || '';
     if (window.VMFit) VMFit.text($('sub'), { min: 0.7, lines: 2, container: $('wrap') });
     if (kind === 'prep') tickChecklist();
@@ -409,7 +415,7 @@
     const x = $('extra'); x.textContent = '';
     if (kind === 'prep') {
       const c = document.createElement('div'); c.className = 'checklist';
-      for (const t of CHECK) { const s = document.createElement('span'); s.textContent = t; c.appendChild(s); }
+      for (const t of (window.VMi18n ? VMi18n.t('check') : CHECK)) { const s = document.createElement('span'); s.textContent = t; c.appendChild(s); }
       x.appendChild(c); checkStep = 0;
     }
     if (kind === 'end') renderCredits();
@@ -424,18 +430,20 @@
     let endVoice = { line: '' };
     for (let i = 0; i < 6 && VO; i++) { endVoice = voiceVI && VO.pickMix ? VO.pickMix(voiceVI, 'scene:end', {}) : VO.pick(themeId, 'scene:end', {}); if (endVoice.line !== cardLine) break; }
     if (endVoice.line === cardLine) endVoice = { line: '' };
-    add('p', endVoice.line || 'Dziękuję, że byliście!').className = 'thanks';
+    const T = (k, o) => (window.VMi18n ? VMi18n.t(k, o) : k);
+    add('p', endVoice.line || T('thanks')).className = 'thanks';
     const S = session || {};
     const sec = (title, list, fmt) => { if (!list || !list.length) return; add('h3', title); for (const it of list) add('p', it.user, fmt ? fmt(it) : ''); };
-    sec('Nowi obserwujący', S.follow);
+    sec(T('cr_follow'), S.follow);
     const desc = l => (l || []).slice().sort((a, b) => (b.n || 0) - (a.n || 0));   // największe wsparcie na górze
-    sec('Prezenty', desc(S.gift), it => `${it.n}× sub`);
-    sec('Bitsy', desc(S.cheer), it => `${it.n}`);
-    sec('Subskrypcje', desc(S.sub), it => it.n > 1 ? `${it.n}. miesiąc` : '');
-    sec('Raidy', desc(S.raid), it => `${it.n} osób`.replace(/^1 osób$/, '1 osoba').replace(/^([234]) osób$/, '$1 osoby'));
-    sec('Nagrody za punkty', S.redeem);
-    sec('Byli z nami na czacie', (S.chatters || []).slice().sort((a, b) => b.n - a.n));
-    if (c.children.length < 3) add('p', 'Każdemu, kto dziś zajrzał – dziękuję!');
+    const EN = window.VMi18n && VMi18n.lang() === 'en';
+    sec(T('cr_gift'), desc(S.gift), it => `${it.n}× sub`);
+    sec(T('cr_cheer'), desc(S.cheer), it => `${it.n}`);
+    sec(T('cr_sub'), desc(S.sub), it => it.n > 1 ? T('monthN', { n: it.n }) : '');
+    sec(T('cr_raid'), desc(S.raid), it => EN ? `${it.n} ${it.n === 1 ? 'viewer' : 'viewers'}` : `${it.n} osób`.replace(/^1 osób$/, '1 osoba').replace(/^([234]) osób$/, '$1 osoby'));
+    sec(T('cr_redeem'), S.redeem);
+    sec(T('cr_chat'), (S.chatters || []).slice().sort((a, b) => b.n - a.n));
+    if (c.children.length < 3) add('p', T('thanksAll'));
     c.style.setProperty('--roll', Math.max(20, c.children.length * 2.2) + 's');
     x.appendChild(c);
   }
@@ -455,8 +463,8 @@
     const r = $('recent'); r.textContent = '';
     if (shownKind === 'end') return;
     const add = (label, v) => { if (!v) return; const s = document.createElement('span'); s.append(label + ' '); const b = document.createElement('b'); b.textContent = v; s.append(b); r.appendChild(s); };
-    add('Ostatni follow:', recent.follow);
-    add('Ostatni sub:', recent.sub);
+    add(window.VMi18n ? VMi18n.t('recentFollow') : 'Ostatni follow:', recent.follow);
+    add(window.VMi18n ? VMi18n.t('recentSub') : 'Ostatni sub:', recent.sub);
   }
   async function pollRecent() {
     if (settings.local) {

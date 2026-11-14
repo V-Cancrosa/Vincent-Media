@@ -1,5 +1,5 @@
 {
-  "version": "1.17.0",
+  "version": "1.18.0",
   "date": "2026-11-15",
-  "notes": "Retro z polskimi znakami bez podskakiwania, długie nazwy się nie ucinają, części Red Alert / Tiberium / Generals / Hollow Knight / Darkest Dungeon / Talisman, motywy Visual Novel (Ren'Py) i Blender / 3D, nowe arty postaci na ekranach przerw"
+  "notes": "Angielska wersja na streamie, galeria powiadomień, stały napływ czatu i alertów do testów, widoczny test bota, Myr-35 z nową głową protogena i wyborem rejestru, pasek czatu z kafelkami na nakładce z grą, kontrast na jasnych kolorach, postać da się wyłączyć"
 }

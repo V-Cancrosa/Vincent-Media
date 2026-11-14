@@ -18,7 +18,19 @@
 <script src="themes/fit.js"></script>
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
+<script src="themes/voices-en.js"></script>
+<script src="themes/i18n.js"></script>
 <link rel="stylesheet" href="themes/base.css">
+<link rel="stylesheet" href="themes/chat.css">
+<script src="themes/chat.js"></script>
+<script src="themes/client.js"></script>
+<style>
+  /* pasek czatu na ekranie gry (w każdej scenie z tą nakładką) */
+  #ticker { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; }
+  .tk-top #ticker { top: 0; bottom: auto; }
+  .tk-top #ticker .chat-ticker { border-top: 0; border-bottom: 2px solid var(--accent); transform: translateY(-100%); }
+  .tk-top #ticker .chat-ticker.on { transform: none; }
+</style>
 </head>
 <body class="theme-neon pos-bl">
 <div id="stage">
@@ -36,6 +48,7 @@
     <div id="emblem" aria-hidden="true"></div>
   </div>
 </div>
+<div id="ticker"></div>
 
 <script>
 (() => {
@@ -289,14 +302,17 @@
     th.game = def;
     const root = document.documentElement.style;
     root.setProperty('--accent', settings.accent || a1);
+    setTimeout(() => GT.markContrast && GT.markContrast(), 0);
     root.setProperty('--accent2', settings.accent2 || a2);
     root.setProperty('--scale', settings.scale);
     root.setProperty('--margin', settings.margin + 'px');
     // motyw postaci ma własny napis, dopóki w panelu zostaje domyślny „Teraz gram”
     const lab = th.persona || th.game;   // napis postaci także wtedy, gdy bazą jest gra
     labelText.textContent = lab && lab.label && settings.label === DEFAULTS.label ? lab.label : settings.label;
+    // angielski stream: domyślny napis i napisy motywów po angielsku (własny napis z panelu zostaje bez zmian)
+    if (window.VMi18n && settings.label === DEFAULTS.label) labelText.textContent = VMi18n.lang() === 'en' && labelText.textContent === DEFAULTS.label ? VMi18n.t('nowPlaying') : VMi18n.label(labelText.textContent);
     // Blender, Krita itp.: nie „gram”, tylko „tworzę” (także gdy postać ma własny napis z „gram”)
-    if (making && settings.label === DEFAULTS.label && /gram|teraz gram/i.test(labelText.textContent)) labelText.textContent = gameDef && gameDef.label ? gameDef.label : 'Teraz tworzę';
+    if (making && settings.label === DEFAULTS.label && /gram|teraz gram|playing/i.test(labelText.textContent)) labelText.textContent = window.VMi18n ? VMi18n.label(gameDef && gameDef.label ? gameDef.label : 'TERAZ TWORZĘ') : (gameDef && gameDef.label ? gameDef.label : 'Teraz tworzę');
   }
 
   // długa nazwa gry: mniejsza czcionka, a w ostateczności dwie linijki (bez ucinania „…”)
@@ -373,10 +389,27 @@
   setInterval(tick, 1000);
 
   // ---- synchronizacja z panelem ----
+  // ---- pasek czatu: kafelki jadą od prawej; karta odsuwa się, gdy pasek jest widoczny ----
+  let tickerChat = null, tickKey = null;
+  function setGap(on) {
+    const r = document.documentElement.style, top = settings.tickerPos === 'top';
+    r.setProperty('--tb', on && !top ? '62px' : '0px'); r.setProperty('--tt', on && top ? '62px' : '0px');
+  }
+  function mountTicker() {
+    const want = window.OverlayChat && settings.overlayTicker !== false && p.get('ticker') !== '0' && !['bubbles', 'off'].includes(settings.gameChat);
+    const key = (want ? 1 : 0) + '|' + (settings.tickerPos || '') + '|' + (settings.tickerSpeed || '') + '|' + (window.VMi18n ? VMi18n.lang() : '');
+    document.body.classList.toggle('tk-top', settings.tickerPos === 'top');
+    if (key === tickKey) return; tickKey = key;
+    const box = document.getElementById('ticker'); box.className = ''; box.textContent = ''; setGap(false);
+    tickerChat = want ? window.OverlayChat.mount(box, { mode: 'ticker', speed: +settings.tickerSpeed || 140, onVisible: setGap }) : null;
+  }
+  if (window.VMClient) window.VMClient.events(ev => { if (ev && ev.type === 'chat' && tickerChat) tickerChat.add(ev); });
+
   function reload() {
     const prevId = dcId(), prevMode = settings.mode;
     const prevLocal = settings.local + settings.localUrl;
     settings = normalize({ ...DEFAULTS, ...fromUrl, ...(readStore() || {}) });
+    mountTicker();
     if (settings.local + settings.localUrl !== prevLocal || settings.mode !== prevMode) pollLocal();
     if (dcId() !== prevId || (settings.mode === 'manual') !== (prevMode === 'manual')) connect(dcId());
     render();
@@ -387,8 +420,6 @@
     bc.onmessage = e => {
       const d = e.data;
       if (d && typeof d === 'object') {
-        // pasek czatu w grze: karta odsuwa się, żeby się nie nakładały
-        if (d.type === 'ticker') { const r = document.documentElement.style; r.setProperty('--tb', d.on && d.pos !== 'top' ? '62px' : '0px'); r.setProperty('--tt', d.on && d.pos === 'top' ? '62px' : '0px'); }
         return;
       }
       d === 'sim' ? pollLocal() : reload();
@@ -398,6 +429,7 @@
   connect(dcId());
   pollLocal();
   render();
+  mountTicker();
 })();
 </script>
 </body>

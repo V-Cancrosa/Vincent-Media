@@ -18,6 +18,8 @@
 <script src="themes/fit.js"></script>
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
+<script src="themes/voices-en.js"></script>
+<script src="themes/i18n.js"></script>
 <script src="themes/alertinfo.js"></script>
 <script src="themes/zones.js"></script>
 <script src="themes/effects.js"></script>
@@ -27,7 +29,7 @@
   /* Alert = ta sama karta co „Teraz gram”, tylko większa, z ikoną zdarzenia i błyskiem przy wejściu. */
   #icon.glyph { display: grid; place-items: center; }
   /* w motywach bazowych tło ikony to kolor akcentu, więc znak jest biały; w ciemnych ikonach – w kolorze akcentu */
-  #icon.glyph svg { width: 62%; height: 62%; color: #fff; filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); }
+  #icon.glyph svg { width: 62%; height: 62%; color: var(--on-accent, #fff); filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); }
   .theme-retro #icon.glyph svg, .game-theme #icon.glyph svg { color: var(--accent); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 60%, transparent)); }
   .theme-g-chip #icon.glyph svg, .theme-g-val #icon.glyph svg { color: #fff; }
   .theme-g-cp #icon.glyph svg { color: #00f0ff; }
@@ -160,6 +162,7 @@
     const root = document.documentElement.style;
     const acc = GT.fusionAccent ? GT.fusionAccent(fusion, ['#7c5cff', '#00e1ff']) : (def ? def.accent : ['#7c5cff', '#00e1ff']);
     root.setProperty('--accent', settings.accent || acc[0]);
+    setTimeout(() => GT.markContrast && GT.markContrast(), 0);
     root.setProperty('--accent2', settings.accent2 || acc[1]);
     root.setProperty('--scale', settings.alertScale);
     root.setProperty('--margin', '60px');
@@ -275,7 +278,8 @@
     const cs = getComputedStyle(document.documentElement);
     const colors = ['--accent', '--accent2', '--g1', '--g2'].map(v => cs.getPropertyValue(v).trim()).filter(Boolean);
     const t = $('fxToast');
-    t.textContent = `✨ ${ev.user || 'Czat'}: ${FX_NAMES[ev.effect] || ev.effect}`;
+    const fxn = window.VMi18n ? window.VMi18n.t('fx') : FX_NAMES;
+    t.textContent = `✨ ${ev.user || 'Chat'}: ${(fxn && fxn[ev.effect]) || FX_NAMES[ev.effect] || ev.effect}`;
     t.style.opacity = 1; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.style.opacity = 0; }, 4000);
     if (settings.motion !== 'reduced' && window.OverlayEffects) window.OverlayEffects.run($('effects'), ev.effect, colors, 6);
   }
@@ -313,8 +317,10 @@
     // większy alert potrzebuje więcej miejsca od krawędzi (gwiazdki, postać wyglądająca zza karty)
     document.documentElement.style.setProperty('--margin', (60 + (tier - 1) * 30) + 'px');
     $('tierStars').innerHTML = tier >= 3 ? Array.from({ length: tier }, (_, i) => `<i style="--i:${i}"></i>`).join('') : '';
-    $('tierName').textContent = R.name || '';
-    const labels = { ...LABELS._, ...(LABELS[themeId] || {}) };
+    const EN = window.VMi18n && window.VMi18n.lang() === 'en';
+    $('tierName').textContent = EN ? ({ 'DUŻE': 'BIG', 'OGROMNE': 'HUGE', 'LEGENDARNE': 'LEGENDARY' }[R.name] || R.name || '') : (R.name || '');
+    // napisy zapasowe (gdy postać nie ma własnego tekstu): po angielsku bez wersji postaci
+    const labels = EN ? { follow: VMi18n.t('lbl_follow'), sub: VMi18n.t('lbl_sub'), resub: VMi18n.t('lbl_resub'), gift: VMi18n.t('lbl_gift'), cheer: VMi18n.t('lbl_cheer'), raid: VMi18n.t('lbl_raid'), redeem: VMi18n.t('lbl_redeem') } : { ...LABELS._, ...(LABELS[themeId] || {}) };
     $('labelText').textContent = (v && v.label) || labels[ev.type] || ev.type;
     $('quote').textContent = v && v.line ? v.line : '';
     $('name').textContent = ev.user || '';

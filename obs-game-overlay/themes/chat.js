@@ -29,6 +29,8 @@
     const body = el('div', 'cbody');
     const name = el('div', 'cname', ev.user || '');
     for (const b of ev.badges || []) if (BADGES[b]) name.append(el('span', 'cbadge cb-' + b, BADGES[b]));
+    // oflagowana wiadomość, którą panel każe pokazać: wyraźny znacznik zamiast ukrycia
+    if (ev.flag) { m.classList.add('cflagged', 'cflag-' + ev.flag.level); const fb = el('span', 'cbadge cb-flag', '⚑'); fb.title = (ev.flag.reasons || []).join(' · '); name.append(fb); }
     const text = el('div', 'ctext');
     const frags = ev.fragments && ev.fragments.length ? ev.fragments : [{ t: 'text', v: ev.text || '' }];
     for (const f of frags) {
@@ -44,10 +46,10 @@
   function mountTicker(container, opts = {}) {
     container.classList.add('chat', 'chat-ticker');
     container.textContent = '';
-    const tag = el('div', 'ticker-tag'); tag.append(el('span', 'tdot'), el('span', 'ttext', opts.label || 'CZAT'));
+    const tag = el('div', 'ticker-tag'); tag.append(el('span', 'tdot'), el('span', 'ttext', opts.label || (window.VMi18n ? window.VMi18n.t('chat') : 'CZAT')));
     const lane = el('div', 'ticker-lane');
     container.append(tag, lane);
-    const items = [], seen = new Set(), GAP = 56;
+    const items = [], seen = new Set(), GAP = 16;   // odstęp między kafelkami
     const base = opts.speed || 140;            // px/s w 1920×1080
     let last = performance.now(), idleAt = 0, raf = 0;
     function frame(now) {
@@ -121,7 +123,7 @@
       const lab = el('div', 'calabel', info.label || ev.type);
       if (tier >= 3) lab.append(el('span', 'castars', '★'.repeat(tier)));
       body.append(lab, el('div', 'caname', ev.user || ''));
-      const det = AI.details(ev); if (det && det !== 'Dzięki!') body.append(el('div', 'cadet', det));
+      const det = AI.details(ev); if (det && det !== 'Dzięki!' && det !== 'Thanks!') body.append(el('div', 'cadet', det));
       if (info.line) body.append(el('div', 'caline', info.line));
       m.append(ic, body);
       container.appendChild(m);

@@ -101,6 +101,10 @@
 <script src="themes/tiers.js"></script>
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
+<script src="themes/voices-en.js"></script>
+<script src="themes/i18n.js"></script>
+<script src="themes/botcheck.js"></script>
+<script src="themes/testfeed.js"></script>
 </head>
 <body>
 <main>
@@ -217,6 +221,7 @@
       <button data-t="gift">Gift</button><button data-t="cheer">Bitsy</button><button data-t="raid">Raid</button><button data-t="redeem">Nagroda</button>
       <button data-t="chat">Czat</button><button data-t="effect">Efekt</button>
     </div>
+    <button id="galleryBtn">Galeria: wszystkie teksty powiadomień naraz ↗</button>
     <details>
       <summary>Ustawienia alertów</summary>
       <div class="checks" id="alertTypes"></div>
@@ -240,14 +245,28 @@
   <section>
     <h2>Wygląd</h2>
     <div class="row">
-      <label>Motyw
+      <label>Postać
+        <select id="persona"><option value="">bez postaci</option></select>
+      </label>
+      <label>Język streama
+        <select id="lang"><option value="pl">Polski</option><option value="en">English</option></select>
+      </label>
+    </div>
+    <label id="myrRow">Myr-35 mówi
+      <select id="myrRegister">
+        <option value="auto">losowo (głównie protokół, czasem człowiek, terminal, Nanite Syndrome)</option>
+        <option value="protocol">tylko protokół – „Ta jednostka…”</option><option value="human">tylko ludzko – „Ja…”</option>
+        <option value="terminal">tylko terminal – „> event…”</option><option value="syndrome">tylko Nanite Syndrome</option>
+      </select>
+    </label>
+    <div class="row">
+      <label>Styl (gdy bez postaci) / motyw gry
         <select id="theme">
           <option value="neon">Neon</option>
           <option value="glass">Glass</option>
           <option value="minimal">Minimal</option>
           <option value="retro">Retro pixel</option>
           <option value="esport">E-sport</option>
-          <optgroup label="Postacie" id="furThemeOpts"></optgroup>
           <optgroup label="Motywy gier" id="gameThemeOpts"></optgroup>
         </select>
       </label>
@@ -335,7 +354,12 @@
       </label>
     </div>
     <label class="check"><input id="botHide" type="checkbox"> nie pokazuj na ekranie wiadomości z flagą „podejrzane” (świeże konto, reklama widzów…)</label>
-    <div class="row"><button data-ct="chat">Test: wiadomość</button><button data-ct="chatbot">Test: podejrzana</button></div>
+    <div class="seg3">
+      <button data-ct="chat">Test: wiadomość</button><button id="botTest">Test: wiadomość bota</button><button id="botShow" aria-pressed="false">Pokazuj podejrzane (z ⚑)</button>
+      <button id="feedChat" aria-pressed="false">Stały napływ czatu</button><button id="feedAlerts" aria-pressed="false">Stały napływ alertów</button><button id="feedStop">Zatrzymaj</button>
+    </div>
+    <p class="hint" style="margin:0">Każda testowa wiadomość przechodzi przez ocenę czatu. Wynik widać od razu poniżej – podejrzane są ukryte na ekranie, chyba że włączysz „Pokazuj podejrzane”. W napływie co kilka wiadomości wpada bot.</p>
+    <div class="slist" id="testFlags"></div>
     <p class="hint" style="margin:0">W ramce i w rozmowie czat jest zawsze widoczny obok. Osobne źródło: <code>chat.html?mode=ticker</code>.</p>
   </section>
   <section data-feature="local">
@@ -599,16 +623,23 @@
   // pola ustawień zapisywane od razu
   const textFields = ['label', 'discordId', 'ignore', 'localUrl'];
   textFields.forEach(id => $(id).addEventListener('change', () => { s[id] = $(id).value.trim(); save(); }));
-  ['mode', 'theme', 'position'].forEach(id => $(id).addEventListener('change', () => { s[id] = $(id).value; save(); }));
+  ['mode', 'position'].forEach(id => $(id).addEventListener('change', () => { s[id] = $(id).value; save(); }));
+  // postać osobno od stylu: „bez postaci” wraca do zapamiętanego stylu, gra zostaje ta sama
+  const personaOf = th => { const d = window.OverlayGameThemes && String(th || '').startsWith('g-') ? window.OverlayGameThemes.byId(th.slice(2)) : null; return d && d.group === 'fursona' ? d.id : ''; };
+  $('theme').addEventListener('change', () => { s.baseTheme = $('theme').value; if (!personaOf(s.theme)) s.theme = s.baseTheme; save(); });
+  $('persona').addEventListener('change', () => { const v = $('persona').value; s.theme = v ? 'g-' + v : (s.baseTheme || 'neon'); save(); });
+  $('lang').addEventListener('change', () => { s.lang = $('lang').value; save(); });
+  $('myrRegister').addEventListener('change', () => { s.myrRegister = $('myrRegister').value; save(); });
   // lista motywów gier z themes/games.js
   try {
     const list = (window.OverlayGameThemes && window.OverlayGameThemes.list) || [];
     const games = list.filter(t => t.group !== 'fursona' && !t.hidden).sort((a, b) => a.name.localeCompare(b.name, 'pl'));
     for (const t of [...list.filter(t => t.group === 'fursona'), ...games]) {
       const o = document.createElement('option'); o.value = 'g-' + t.id; o.textContent = t.name;
-      $(t.group === 'fursona' ? 'furThemeOpts' : 'gameThemeOpts').appendChild(o);
+      $(t.group === 'fursona' ? 'persona' : 'gameThemeOpts').appendChild(o);
+      if (t.group === 'fursona') o.value = t.id;
     }
-    for (const id of ['furThemeOpts', 'gameThemeOpts']) if (!$(id).children.length) $(id).remove();
+    if (!$('gameThemeOpts').children.length) $('gameThemeOpts').remove();
   } catch {}
   $('reducedMotion').addEventListener('change', () => { s.motion = $('reducedMotion').checked ? 'reduced' : 'full'; save(); });
   $('gameMode').addEventListener('change', () => { s.gameMode = $('gameMode').value; s.gameThemes = s.gameMode !== 'off'; save(); });
@@ -622,7 +653,11 @@
     if (typeof syncChatUi === 'function') syncChatUi();
     if (document.activeElement !== $('game') && !$('game').value) $('game').value = s.game;
     for (const id of ['label', 'discordId', 'ignore', 'localUrl']) if (document.activeElement !== $(id)) $(id).value = s[id];
-    $('mode').value = s.mode; $('theme').value = s.theme; $('position').value = s.position;
+    $('mode').value = s.mode; $('position').value = s.position;
+    const pid = personaOf(s.theme);
+    $('persona').value = pid; $('theme').value = pid ? (s.baseTheme || 'neon') : s.theme;
+    $('lang').value = s.lang === 'en' ? 'en' : 'pl'; $('myrRegister').value = s.myrRegister || 'auto';
+    $('myrRow').hidden = pid !== 'myr';
     $('local').checked = s.local;
     $('gameMode').value = s.gameThemes === false ? 'off' : (s.gameMode || 'fuse-half');
     $('reducedMotion').checked = s.motion === 'reduced';
@@ -992,6 +1027,27 @@
     } catch { if (bc) bc.postMessage({ type: 'alert', event: fakeEvent(type, tier) }); }
   }
 
+  $('galleryBtn').onclick = () => { try { window.open(new URL('gallery.html', location.href).href, 'vmGallery', 'width=1100,height=900'); } catch {} };
+  // --- test czatu: bot, stały napływ, wynik oceny ---
+  const testFlags = [];
+  function showFlag(ev) {
+    testFlags.unshift(ev); testFlags.length = Math.min(testFlags.length, 6);
+    $('testFlags').innerHTML = testFlags.map(f => `<div class="flag ${f.flag.level === 'suspect' ? 'suspect' : ''}"><div class="fh"><b>${esc(f.user)}</b><span class="pill ${f.flag.level === 'suspect' ? 'off' : ''}">${f.flag.level === 'suspect' ? 'podejrzane' : 'do sprawdzenia'}</span></div>
+      <q>${esc(f.text)}</q><div class="fr">${(f.flag.reasons || []).map(esc).join(' · ')} → ${f.flag.level === 'suspect' && s.botHide !== false ? 'ukryta na ekranie' : 'widać na ekranie z ⚑'}</div></div>`).join('');
+  }
+  const feedSend = ev => {
+    if (!isRemote && bc) { bc.postMessage({ type: 'alert', event: ev }); return; }
+    const q = ev.type === 'chat' ? 'chat&msg=' + encodeURIComponent(ev.text) : ev.type;
+    fetch(window.vmHub(s.localUrl || DEFAULTS.localUrl) + '/test?type=' + q, { cache: 'no-store' }).catch(() => {});
+  };
+  const feedOpts = () => ({ send: feedSend, onFlag: showFlag, chat: $('feedChat').getAttribute('aria-pressed') === 'true', alerts: $('feedAlerts').getAttribute('aria-pressed') === 'true',
+    chatMs: 1600, alertMs: 9000, lang: () => s.lang || 'pl', sample: sampleMsg, ctx: () => ({ lang: s.lang || 'pl', gaming: true }) });
+  const refeed = () => { const o = feedOpts(); if (o.chat || o.alerts) window.VMTestFeed.start(o); else window.VMTestFeed.stop(); };
+  for (const id of ['feedChat', 'feedAlerts']) $(id).onclick = () => { $(id).setAttribute('aria-pressed', $(id).getAttribute('aria-pressed') !== 'true'); refeed(); };
+  $('feedStop').onclick = () => { $('feedChat').setAttribute('aria-pressed', false); $('feedAlerts').setAttribute('aria-pressed', false); refeed(); };
+  $('botTest').onclick = () => { window.VMTestFeed.configure(feedOpts()); window.VMTestFeed.bot(s.lang || 'pl').forEach((ev, i) => setTimeout(() => feedSend(ev), i * 700)); };
+  $('botShow').onclick = () => { s.botHide = s.botHide === false; save(); };
+
   // --- czat na ekranie, moderacja, statystyki, nagrywanie ---
   document.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => runTest(b.dataset.ct, 0));
   $('gameChat').onchange = () => { s.gameChat = $('gameChat').value; save(); };
@@ -1005,7 +1061,8 @@
   function syncChatUi() {
     $('gameChat').value = s.gameChat || 'ticker'; $('tickerPos').value = s.tickerPos || 'bottom';
     $('tickerSpeed').value = s.tickerSpeed || 140; $('tickerSpeedVal').textContent = (s.tickerSpeed || 140) + ' px/s';
-    $('botHide').checked = s.botHide !== false; $('alertsInChat').checked = s.alertsInChat !== false; $('autoRecord').checked = !!s.autoRecord; $('autoRecordStop').checked = s.autoRecordStop !== false;
+    $('botHide').checked = s.botHide !== false; $('alertsInChat').checked = s.alertsInChat !== false;
+    $('botShow').setAttribute('aria-pressed', s.botHide === false); $('autoRecord').checked = !!s.autoRecord; $('autoRecordStop').checked = s.autoRecordStop !== false;
   }
   const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const fmtMin = m => m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;

@@ -17,6 +17,70 @@
     `<svg class="${cls}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">${body}</svg>`;
   const IMG = name => `themes/fursona/${name}.webp`;
 
+
+  // ---------------------------------------------------------------- Myr-35: głowa protogena 3/4 z matrycą LED
+  // Matryca: diody co 3 jednostki (~500 w wizjerze). Klatki mimiki to osobne warstwy, przełączane w CSS:
+  // spokój, mrugnięcie, uśmiech ^^, mówienie (fm-talk – gdy mikrofon), zakłócenie (Nanite Syndrome).
+  function myrHead() {
+    const VIS = 'M70 38 C96 33 121 42 135 58 L147 72 C149 78 145 83 139 84 L99 91 C85 93 70 91 62 83 C55 75 55 48 70 38 Z';
+    const P = 3, cells = [];
+    for (let y = 40; y <= 89; y += P) for (let x = 60; x <= 147; x += P) cells.push([x, y]);
+    // czy punkt leży w wizjerze (przybliżenie konturu)
+    const inVisor = (x, y) => {
+      const top = 38 + Math.max(0, (70 - x)) * 0.5 - Math.min(1, Math.max(0, (x - 70) / 65)) * 4 + Math.max(0, x - 120) * 0.62;
+      const bot = 90 - Math.max(0, x - 100) * 0.16 - Math.max(0, 66 - x) * 0.9;
+      const left = 58 + Math.abs(y - 62) * 0.22;
+      return x >= left && y >= top + 2 && y <= bot - 1 && x <= 146 - Math.max(0, 70 - y) * 0.6;
+    };
+    const vis = cells.filter(([x, y]) => inVisor(x, y));
+    // oczy: bliższe (większe) i dalsze (zwężone perspektywą)
+    const eyes = [{ cx: 117, cy: 56, rx: 12, ry: 8.5 }, { cx: 83, cy: 54, rx: 7.5, ry: 7.5 }];
+    const eye = (x, y, f) => eyes.some(e => {
+      const dx = (x - e.cx) / e.rx, dy = (y - e.cy) / e.ry;
+      if (f === 'blink') return Math.abs(y - e.cy - 2) <= 1.6 && Math.abs(dx) <= 1.05;
+      if (f === 'happy') { const d = Math.hypot(dx, (y - e.cy - 4) / e.ry); return d <= 1.1 && d >= 0.55 && y <= e.cy + 3; }   // ^ ^
+      // spokój: owal ze ściętą górą, lekko pochylony do przodu (charakterystyczne „skośne” oczy protogena)
+      const tilt = dy - dx * 0.25;
+      return dx * dx + tilt * tilt <= 1 && y >= e.cy - e.ry * 0.55;
+    });
+    // usta: ząbkowana linia (spokój), szersza fala (mówienie), uniesione kąciki (uśmiech)
+    const mouthY = x => 77 - (x - 80) * 0.03;
+    const mouth = (x, y, f) => {
+      if (x < 78 || x > 140) return false;
+      const base = mouthY(x);
+      const tri = t => 2 * Math.abs(2 * (t - Math.floor(t + 0.5)));   // fala trójkątna 0…2
+      if (f === 'talk') return Math.abs(y - (base - 2 + 3 * tri(x / 9))) <= 1.6 || (Math.abs(y - base - 3) <= 1.6 && x > 94 && x < 128);
+      if (f === 'happy') return Math.abs(y - (base + 3 - Math.pow((x - 110) / 30, 2) * 6)) <= 1.6;
+      return Math.abs(y - (base - 1 + 2 * tri(x / 9))) <= 1.6;   // ząbkowana linia ust
+    };
+    const dots = list => list.map(([x, y]) => `M${x} ${y}h0`).join('');
+    const frame = (cls, f, mf) => `<path class="fm-f ${cls}" d="${dots(vis.filter(([x, y]) => eye(x, y, f) || mouth(x, y, mf)))}"/>`;
+    let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+    const glitch = `<path class="fm-f fm-glitch" d="${dots(vis.filter(([x, y]) => (eye(x, y, 'neutral') && rnd() > 0.35) || (Math.abs(y - 64 - Math.round(rnd() * 3) * 3) <= 1 && rnd() > 0.45) || rnd() > 0.93))}"/>`;
+    return svg(160, 120, `
+      <defs><clipPath id="fmVisClip"><path d="${VIS}"/></clipPath>
+        <linearGradient id="fmShell" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f0e3"/><stop offset="1" stop-color="#cfc6b3"/></linearGradient>
+        <linearGradient id="fmGlass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a1e24"/><stop offset=".55" stop-color="#0b0b0c"/><stop offset="1" stop-color="#050506"/></linearGradient></defs>
+      <g class="fm-ears" stroke="#0b0b0c" stroke-width="2.5">
+        <circle cx="40" cy="30" r="9" fill="#585f66"/><circle cx="57" cy="20" r="8" fill="#585f66"/>
+        <circle cx="76" cy="20" r="11" fill="#6e767d"/><circle cx="98" cy="18" r="10" fill="#6e767d"/>
+        <circle cx="76" cy="20" r="5" fill="#d9823f" stroke-width="1.5"/><circle cx="98" cy="18" r="4.5" fill="#d9823f" stroke-width="1.5"/>
+      </g>
+      <path d="M50 96 L56 116 H98 L104 94 Z" fill="#2a2e33" stroke="#0b0b0c" stroke-width="2.5"/>
+      <path d="M30 70 C24 44 40 24 72 22 C100 20 122 30 133 49 L151 70 C155 78 151 87 140 89 L97 97 C80 105 55 104 44 96 C34 89 32 80 30 70 Z" fill="url(#fmShell)" stroke="#0b0b0c" stroke-width="3"/>
+      <path d="M36 82 C44 92 58 96 72 96" fill="none" stroke="#d9823f" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="46" cy="62" r="10" fill="#6e767d" stroke="#0b0b0c" stroke-width="2.5"/><circle cx="46" cy="62" r="4" fill="#d9823f" class="fm-side"/>
+      <path d="M40 40 L54 34" stroke="#0b0b0c" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="${VIS}" fill="url(#fmGlass)" stroke="#0b0b0c" stroke-width="3"/>
+      <g clip-path="url(#fmVisClip)" stroke-linecap="round">
+        <path d="${dots(vis)}" stroke="#e08a3c" stroke-opacity=".13" stroke-width="1.7"/>
+        <g class="fm-leds" stroke="#ffad5c" stroke-width="2.7">
+          ${frame('fm-neutral', 'neutral', 'neutral')}${frame('fm-blink', 'blink', 'neutral')}${frame('fm-happy', 'happy', 'happy')}${frame('fm-talk', 'neutral', 'talk')}${glitch}
+        </g>
+        <path d="M74 42 C96 38 118 44 130 56" fill="none" stroke="#ffffff" stroke-opacity=".16" stroke-width="3"/>
+      </g>`, 'fm-head');
+  }
+
   const THEMES = [
     {
       id: 'vince', name: 'Vince', group: 'fursona', match: [],
@@ -82,17 +146,8 @@
       id: 'myr', name: 'Myr-35', group: 'fursona', match: [],
       accent: ['#d9823f', '#ede6d6'],
       label: 'MYR-35 // ZADANIE',
-      // wizjer z nanitów z dwiema parami okrągłych uszu i mrugającymi diodami
-      emblem: svg(120, 90, `
-        <circle cx="34" cy="16" r="9" fill="#6e767d" stroke="#0b0b0c" stroke-width="2.5"/>
-        <circle cx="50" cy="10" r="8" fill="#6e767d" stroke="#0b0b0c" stroke-width="2.5"/>
-        <circle cx="70" cy="10" r="8" fill="#6e767d" stroke="#0b0b0c" stroke-width="2.5"/>
-        <circle cx="86" cy="16" r="9" fill="#6e767d" stroke="#0b0b0c" stroke-width="2.5"/>
-        <path d="M14 34 Q14 18 40 18 H80 Q106 18 106 34 L112 52 Q100 76 60 82 Q20 76 8 52 Z" fill="#ede6d6" stroke="#0b0b0c" stroke-width="3"/>
-        <path d="M24 34 Q24 28 40 28 H80 Q96 28 96 34 L100 50 Q90 66 60 70 Q30 66 20 50 Z" fill="#0b0b0c"/>
-        <g class="fm-eyes"><rect x="38" y="40" width="14" height="6" rx="1" fill="#e08a3c"/><rect x="68" y="40" width="14" height="6" rx="1" fill="#e08a3c"/></g>
-        <rect x="56" y="58" width="8" height="3" fill="#e08a3c" opacity=".7" class="fm-led"/>
-        <path d="M8 52 L2 58 M112 52 L118 58" stroke="#0b0b0c" stroke-width="3"/>`, 'fm-visor'),
+      // głowa protogena w ujęciu 3/4: kremowa skorupa, dwie pary okrągłych uszu, wizjer-pysk z gęstą matrycą LED (mimika)
+      emblem: myrHead(),
       fx: null
     },
     {

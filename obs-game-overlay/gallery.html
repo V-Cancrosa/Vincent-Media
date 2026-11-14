@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Galeria powiadomień</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="themes/fonts.css">
+<link rel="stylesheet" href="themes/base.css">
+<link rel="stylesheet" href="themes/games.css">
+<link rel="stylesheet" href="themes/fursona.css">
+<link rel="stylesheet" href="themes/library.css">
+<link rel="stylesheet" href="themes/fusion.css">
+<link rel="stylesheet" href="themes/chat.css">
+<script src="version.js"></script>
+<script src="themes/games.js"></script>
+<script src="themes/fursona.js"></script>
+<script src="themes/library.js"></script>
+<script src="themes/fusion.js"></script>
+<script src="themes/voices.js"></script>
+<script src="themes/voices-games.js"></script>
+<script src="themes/voices-en.js"></script>
+<script src="themes/i18n.js"></script>
+<script src="themes/tiers.js"></script>
+<script src="themes/alertinfo.js"></script>
+<script src="themes/fit.js"></script>
+<script src="themes/client.js"></script>
+<style>
+  /*
+    Mikro-środowisko testowe: wszystkie teksty powiadomień aktywnej postaci i gry naraz, w prawdziwym wyglądzie karty.
+    Osobna strona – otwierana z panelu (Alerty → Galeria) albo w demo. Nie jest źródłem do OBS.
+  */
+  html, body { margin: 0; background: #12141a !important; color: #e7e9ee; font: 14px/1.4 Inter, system-ui, sans-serif; }
+  .bar { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 14px; background: #1b1d23; border-bottom: 1px solid #343844; }
+  .bar b { font-size: 15px; } .bar span { color: #9aa0ad; }
+  .bar button { background: #2e323d; color: #e7e9ee; border: 1px solid #343844; border-radius: 6px; padding: 6px 10px; font: inherit; cursor: pointer; }
+  .bar button[aria-pressed="true"] { background: #7c5cff; border-color: #7c5cff; }
+  main { padding: 10px 14px 40px; display: flex; flex-direction: column; gap: 18px; }
+  h2 { margin: 6px 0 0; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #9aa0ad; }
+  h3 { margin: 0; font-size: 12px; color: #9aa0ad; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr)); gap: 12px; }
+  /* komórka: karta w prawdziwym stylu, przeskalowana, z miejscem na to, co z niej wystaje */
+  .cell { position: relative; background: #0b0c10; border: 1px solid #262a33; border-radius: 10px; overflow: hidden; min-width: 0; }
+  .cell .tag { position: absolute; left: 10px; top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .cell .tag i { font-style: normal; font: 600 11px/1 'JetBrains Mono', monospace; padding: 4px 6px; border-radius: 4px; background: #1f232c; color: #b8bfcc; }
+  .cell .tag i.t { background: #3a2a10; color: #ffcf86; } .cell .tag i.g { background: #102a3a; color: #8fd3ff; } .cell .tag i.r { background: #2a103a; color: #d6a8ff; }
+  /* karta układa się w pełnej szerokości (jak na streamie), a dopiero potem całość jest zmniejszana do komórki */
+  .cell .inner { width: 900px; padding: 110px 30px 50px 50px; transform-origin: 0 0; }
+  .cell #wrap { position: relative; opacity: 1 !important; transform: none !important; animation: none !important; max-width: 760px !important; width: max-content; }
+  .cell #wrap * { animation-play-state: paused; }
+  .cell #fx, .cell #burst, .cell #timebar { display: none; }
+  .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 8px; }
+  .line { background: #181b22; border: 1px solid #262a33; border-radius: 8px; padding: 8px 10px; }
+  .line b { display: block; color: #fff; font-size: 13px; letter-spacing: .06em; } .line small { color: #9aa0ad; }
+  .chatbox { max-width: 420px; }
+  .empty { color: #9aa0ad; }
+</style>
+</head>
+<body class="theme-neon">
+<div class="bar">
+  <b id="title">Galeria powiadomień</b><span id="who"></span>
+  <button id="regen">Nowe imiona i liczby</button>
+  <button id="onlyBig" aria-pressed="false">Tylko duże zdarzenia</button>
+</div>
+<main id="out"></main>
+<script>
+(() => {
+  const C = window.VMClient, GT = window.OverlayGameThemes, VO = window.OverlayVoices, AI = window.OverlayAlertInfo, I = window.VMi18n;
+  const $ = id => document.getElementById(id);
+  const TYPES = ['follow', 'sub', 'resub', 'gift', 'cheer', 'raid', 'redeem'];
+  const NAMES = ['LunaFox', 'Kuba_Gra', 'PixelWilk', 'Nocny_Smok', 'herbatka99', 'MrówkaPancerna'];
+  let onlyBig = false, seed = 0;
+  const pickName = i => NAMES[(i + seed) % NAMES.length];
+  const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+  // wszystkie pule tekstów dla typu: postać (zwykłe + poziomy), gra (+ wariant), z oznaczeniem źródła
+  function pools(vi, type, lang) {
+    const data = I && lang === 'en' ? I.voices('en') : { V: VO.data, TIERS: VO.tiers, GAMEV: VO.games };
+    const out = [];
+    const who = data.V[vi.personaId] || data.V._;
+    const p = who && who[type];
+    if (p && !onlyBig) {
+      if (Array.isArray(p)) p.forEach(x => out.push({ x, tier: 1, src: 'postać' }));
+      else for (const [reg, arr] of Object.entries(p)) arr.forEach(x => out.push({ x, tier: 1, src: 'postać', reg }));
+    }
+    const tp = data.TIERS[vi.personaId];
+    if (tp && tp.big) {
+      if (!onlyBig) {} // Myr: jedna pula dużych zdarzeń z rejestrami
+      for (const [reg, arr] of Object.entries(tp.big)) arr.forEach(x => out.push({ x, tier: 4, src: 'postać', reg }));
+    } else for (const who2 of [tp, data.TIERS._]) {
+      if (!who2 || !who2[type]) continue;
+      for (const [t, arr] of Object.entries(who2[type])) arr.forEach(x => out.push({ x, tier: +t, src: who2 === tp ? 'postać' : 'wspólne' }));
+      break;
+    }
+    if (vi.gameId && data.GAMEV[vi.gameId]) {
+      for (const gid of [vi.variant, vi.gameId].filter((g, i, a) => g && data.GAMEV[g] && a.indexOf(g) === i)) {
+        const g = data.GAMEV[gid];
+        if (g[type] && !onlyBig) g[type].forEach(x => out.push({ x, tier: 1, src: 'gra', game: gid }));
+        if (g.big) g.big.forEach(x => out.push({ x, tier: 4, src: 'gra', game: gid, big: true }));
+      }
+    }
+    return out;
+  }
+
+  function cardHtml(r, ev, label, line, reg) {
+    const icon = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${AI.ICONS[ev.type] || AI.ICONS.follow}</svg>`;
+    const regCls = reg === 'syndrome' ? ' syndrome' : reg === 'terminal' ? ' terminal-voice' : '';
+    return `<div id="wrap" class="show${regCls}"><div id="backdrop" aria-hidden="true">${r.def && r.def.back || ''}</div>
+      <div id="card"><div id="icon" class="glyph">${icon}</div><div id="text">
+        <div id="label"><span class="dot"></span><span id="labelText">${esc(label)}</span></div>
+        <div id="name">${esc(ev.user)}</div><div id="meta"><span id="sub">${esc(AI.details(ev, C.settings().lang))}</span></div>
+        <div id="quote">${esc(line)}</div></div></div>
+      <div id="emblem" aria-hidden="true">${r.def && r.def.emblem || ''}</div></div>`;
+  }
+
+  function render() {
+    const s = C.settings(), lang = s.lang === 'en' ? 'en' : 'pl';
+    const r = C.applyTheme('');
+    const vi = GT.voiceInfo ? GT.voiceInfo(r) : { personaId: r.id };
+    const persona = r.persona || (r.def && r.def.group === 'fursona' ? r.def : null);
+    const game = r.game || (r.def && r.def.group !== 'fursona' ? r.def : null);
+    $('who').textContent = [persona ? persona.name : 'styl: ' + r.cls, game ? 'gra: ' + game.name + (vi.variant ? ' (' + vi.variant + ')' : '') : '', lang.toUpperCase()].filter(Boolean).join(' · ');
+    const out = $('out'); out.textContent = '';
+    let k = 0;
+    for (const type of TYPES) {
+      const items = pools(vi, type, lang);
+      const sec = document.createElement('section');
+      sec.innerHTML = `<h2>${esc(type)} · ${items.length}</h2>`;
+      const grid = document.createElement('div'); grid.className = 'grid';
+      if (!items.length) grid.innerHTML = '<p class="empty">brak tekstów – użyty będzie domyślny napis</p>';
+      for (const it of items) {
+        const tier = it.tier >= 3 ? it.tier : 1;
+        let ev = { type, user: pickName(k++), tier: 'Tier 1', reward: lang === 'en' ? 'Hydrate!' : 'Nawodnij się', cost: 500 };
+        if (window.OverlayTiers) ev = { ...ev, ...window.OverlayTiers.sample(type, Math.max(1, tier + (seed % 2))) };
+        const n = ev.count || ev.months || ev.amount || ev.viewers || '';
+        const ctx = { user: ev.user, n, reward: ev.reward };
+        let label = VO.fill(it.x[0], ctx), line = VO.fill(it.x[1], ctx);
+        if (it.reg === 'syndrome' && VO.glitch) line = VO.glitch(line);
+        const cell = document.createElement('div'); cell.className = 'cell';
+        cell.innerHTML = `<div class="tag" style="z-index:2"><i>${esc(it.src)}${it.game ? ' · ' + esc(it.game) : ''}</i>${it.tier >= 3 ? `<i class="t">poziom ${it.tier}+</i>` : ''}${it.reg ? `<i class="r">${esc(it.reg)}</i>` : ''}</div><div class="inner">` + cardHtml(r, ev, label, line, it.reg) + '</div>';
+        grid.appendChild(cell);
+      }
+      sec.appendChild(grid); out.appendChild(sec);
+    }
+    // ekrany przerw i przejścia: wszystkie zdania postaci / gry
+    const scenes = document.createElement('section');
+    scenes.innerHTML = `<h2>${lang === 'en' ? 'Screens and transitions' : 'Ekrany i przejścia'}</h2>`;
+    const list = document.createElement('div'); list.className = 'list';
+    const data = I && lang === 'en' ? I.voices('en') : { V: VO.data, GAMEV: VO.games, SCENES: VO.scenesDefault };
+    const add = (kind, src, arr, reg) => (arr || []).forEach(x => { const d = document.createElement('div'); d.className = 'line'; d.innerHTML = `<small>${esc(kind)} · ${esc(src)}${reg ? ' · ' + esc(reg) : ''}</small><b>${esc(x[0])}</b>${esc(x[1])}`; list.appendChild(d); });
+    for (const kind of ['prep', 'soon', 'start', 'late', 'brb', 'brbLate', 'talk', 'end']) {
+      const p = data.V[vi.personaId] && data.V[vi.personaId].scenes && data.V[vi.personaId].scenes[kind];
+      if (Array.isArray(p)) add(kind, 'postać', p); else if (p) for (const [reg, arr] of Object.entries(p)) add(kind, 'postać', arr, reg);
+      for (const gid of [vi.variant, vi.gameId]) { const g = gid && data.GAMEV[gid]; if (g && g.scenes && g.scenes[kind]) add(kind, 'gra · ' + gid, g.scenes[kind]); }
+    }
+    scenes.appendChild(list); out.appendChild(scenes);
+    // alert w czacie (układy z czatem)
+    const ch = document.createElement('section'); ch.innerHTML = `<h2>${lang === 'en' ? 'Alerts inside chat' : 'Alerty w czacie'}</h2>`;
+    const box = document.createElement('div'); box.className = 'chatbox'; ch.appendChild(box); out.appendChild(ch);
+    if (window.OverlayChat) {
+      const chat = window.OverlayChat.mount(box, { mode: 'panel', max: 10 });
+      ['follow', 'resub', 'raid'].forEach((t, i) => {
+        let ev = { type: t, user: pickName(i), tier: 'Tier 1' };
+        if (window.OverlayTiers) ev = { ...ev, ...window.OverlayTiers.sample(t, i === 1 ? 4 : 2) };
+        const v = VO.pickMix(vi, t, { user: ev.user, n: ev.months || ev.viewers || '' }, i === 1 ? 4 : 2);
+        chat.addAlert(ev, { tier: i === 1 ? 4 : 2, label: v.label, line: v.line });
+      });
+    }
+    // skala: karta mieści się w komórce
+    requestAnimationFrame(() => {
+      for (const cell of document.querySelectorAll('.cell')) {
+        const inner = cell.querySelector('.inner'), w = cell.querySelector('#wrap');
+        if (window.VMFit) VMFit.text(w.querySelector('#name'), { min: 0.55, lines: 2, container: w });
+        const need = w.offsetWidth + 60;
+        const sc = Math.min(0.9, cell.clientWidth / need);
+        inner.style.transform = `scale(${sc.toFixed(3)})`;
+        cell.style.height = Math.ceil(inner.offsetHeight * sc) + 'px';
+      }
+    });
+  }
+
+  $('regen').onclick = () => { seed++; render(); };
+  $('onlyBig').onclick = () => { onlyBig = !onlyBig; $('onlyBig').setAttribute('aria-pressed', onlyBig); render(); };
+  let t = null; const later = () => { clearTimeout(t); t = setTimeout(render, 150); };
+  try { new BroadcastChannel('obsGameOverlay').addEventListener('message', e => { if (e.data === 'update') later(); }); } catch (e) {}
+  window.addEventListener('storage', e => { if (/obsGameOverlay\.(v1|activeTheme)/.test(e.key || '')) later(); });
+  window.addEventListener('resize', later);
+  if (document.fonts) document.fonts.ready.then(later);
+  render();
+})();
+</script>
+</body>
+</html>

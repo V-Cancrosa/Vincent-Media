@@ -148,10 +148,28 @@
 .theme-g-myr #label .dot { border-radius: 0; width: 22px; height: 3px; background: #b5652b; box-shadow: none; animation: none; }
 .theme-g-myr #meta { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8b9198; }
 .theme-g-myr #timer { color: #ede6d6; background: #0b0b0c; padding: 0 8px; }
-.fm-visor { left: -26px; top: -58px; width: 112px; height: 84px; filter: drop-shadow(0 6px 10px rgba(0,0,0,.55)); animation: em-float 5s ease-in-out infinite; }
-.fm-eyes { animation: fm-blink 4.5s infinite; transform-origin: 60px 43px; transform-box: view-box; }
-@keyframes fm-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
-.fm-led { animation: em-blip 1.8s ease-in-out infinite; }
+.fm-head { left: -34px; top: -74px; width: 132px; height: 99px; filter: drop-shadow(0 6px 10px rgba(0,0,0,.55)); animation: em-float 5s ease-in-out infinite; }
+/* Myr-35: matryca LED – klatki mimiki przełączane krokowo (spokój → mrugnięcie → uśmiech ^^ → mrugnięcie), mówienie przy mikrofonie, zakłócenie przy Nanite Syndrome */
+.fm-leds { filter: drop-shadow(0 0 1.6px #ff8a2a) drop-shadow(0 0 4px rgba(255,138,42,.45)); }
+.fm-f { opacity: 0; }
+.fm-neutral { opacity: 1; animation: fm-n 11s steps(1) infinite; }
+.fm-blink { animation: fm-b 11s steps(1) infinite; }
+.fm-happy { animation: fm-h 11s steps(1) infinite; }
+.fm-glitch { animation: fm-g 11s steps(1) infinite; }
+@keyframes fm-n { 0% { opacity: 1; } 40% { opacity: 0; } 40.8% { opacity: 1; } 56% { opacity: 0; } 57.5% { opacity: 1; } 72% { opacity: 0; } 88% { opacity: 1; } 94% { opacity: 0; } 95.4% { opacity: 1; } }
+@keyframes fm-b { 0% { opacity: 0; } 56% { opacity: 1; } 57.5% { opacity: 0; } 94% { opacity: 1; } 95.4% { opacity: 0; } }
+@keyframes fm-h { 0% { opacity: 0; } 72% { opacity: 1; } 88% { opacity: 0; } }
+@keyframes fm-g { 0% { opacity: 0; } 40% { opacity: 1; } 40.8% { opacity: 0; } }
+.talking .fm-neutral, .talking .fm-happy, .talking .fm-blink { animation: fm-tn .34s steps(1) infinite; }
+.talking .fm-happy, .talking .fm-blink { animation: none; opacity: 0; }
+.talking .fm-talk { animation: fm-tt .34s steps(1) infinite; }
+@keyframes fm-tn { 0% { opacity: 0; } 50% { opacity: 1; } }
+@keyframes fm-tt { 0% { opacity: 1; } 50% { opacity: 0; } }
+.syndrome .fm-neutral, .syndrome .fm-happy, .syndrome .fm-blink, .syndrome .fm-talk { animation: none; opacity: 0; }
+.syndrome .fm-glitch { animation: fm-sg .18s steps(1) infinite; }
+@keyframes fm-sg { 0% { opacity: 1; } 50% { opacity: .2; } }
+.fm-side { animation: em-blip 1.8s ease-in-out infinite; }
+.reduced-motion .fm-f { animation: none !important; opacity: 0; } .reduced-motion .fm-neutral { opacity: 1; }
 
 /* ============================================================ ZARIN – Kerra-4 */
 .theme-g-zarin #card {

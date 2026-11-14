@@ -17,7 +17,21 @@
     if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return few;
     return many;
   };
-  function details(ev) {
+  function detailsEn(ev) {
+    const pl2 = (n, one, many) => (+n === 1 ? one : many);
+    switch (ev.type) {
+      case 'sub': return ev.tier || '';
+      case 'resub': return [`${ev.months} ${pl2(ev.months, 'month', 'months')}`, ev.message ? `"${ev.message}"` : ''].filter(Boolean).join(' · ');
+      case 'gift': return `${ev.count} gifted ${pl2(ev.count, 'sub', 'subs')}`;
+      case 'cheer': return [`${ev.amount} ${pl2(ev.amount, 'bit', 'bits')}`, ev.message ? `"${ev.message}"` : ''].filter(Boolean).join(' · ');
+      case 'raid': return `${ev.viewers} ${pl2(ev.viewers, 'viewer joins', 'viewers join')} the stream`;
+      case 'redeem': return [ev.reward, ev.cost ? `${ev.cost} pts` : '', ev.message ? `"${ev.message}"` : ''].filter(Boolean).join(' · ');
+      default: return 'Thanks!';
+    }
+  }
+  // lang: 'pl' | 'en' (domyślnie język streama z ustawień)
+  function details(ev, lang) {
+    if ((lang || (window.VMi18n ? window.VMi18n.lang() : 'pl')) === 'en') return detailsEn(ev);
     switch (ev.type) {
       case 'sub': return ev.tier || '';
       case 'resub': return [`${ev.months} ${pl(ev.months, 'miesiąc', 'miesiące', 'miesięcy')}`, ev.message ? `„${ev.message}”` : ''].filter(Boolean).join(' · ');

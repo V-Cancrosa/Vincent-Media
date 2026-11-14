@@ -22,6 +22,7 @@
     const acc = gt.fusionAccent ? gt.fusionAccent(r, ['#7c5cff', '#00e1ff']) : ['#7c5cff', '#00e1ff'];
     const root = document.documentElement.style;
     root.setProperty('--accent', s.accent || acc[0]); root.setProperty('--accent2', s.accent2 || acc[1]);
+    setTimeout(() => gt.markContrast && gt.markContrast(), 0);
     if (game) { root.setProperty('--g1', game.accent[0]); root.setProperty('--g2', game.accent[1]); }
     if (f.persona) { root.setProperty('--g1', f.persona.accent[0]); root.setProperty('--g2', f.persona.accent[1]); }
     root.setProperty('--tex', def ? gt.texture(def) : '');

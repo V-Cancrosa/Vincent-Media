@@ -98,6 +98,25 @@
     return fallback;
   };
 
+  // kontrast: na jasnym akcencie (np. radioaktywna zieleń) tekst ciemny, na ciemnym – biały.
+  // Ustawia --on-accent, --on-accent2, --on-g1 i klasę light-accent na <html>.
+  const lum = hex => {
+    const m = String(hex || '').trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i); if (!m) return null;
+    let h = m[1]; if (h.length === 3) h = h.split('').map(c => c + c).join('');
+    const c = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  GT.onColor = hex => { const L = lum(hex); return L != null && L > 0.4 ? '#101114' : '#ffffff'; };
+  GT.markContrast = function () {
+    const el = document.documentElement, cs = getComputedStyle(el), st = el.style;
+    let light = false;
+    for (const [v, on] of [['--accent', '--on-accent'], ['--accent2', '--on-accent2'], ['--g1', '--on-g1']]) {
+      const col = (st.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); if (!col) continue;
+      const c = GT.onColor(col); st.setProperty(on, c); if (v === '--accent' && c !== '#ffffff') light = true;
+    }
+    el.classList.toggle('light-accent', light);
+  };
+
   // dodatki w #wrap: odznaka gry + pasek energii (postać bazą) albo odznaka postaci (gra bazą)
   GT.applyFusion = function (wrap, r) {
     if (!wrap) return;

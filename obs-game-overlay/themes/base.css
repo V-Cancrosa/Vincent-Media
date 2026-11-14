@@ -104,7 +104,7 @@
     -webkit-mask-composite: xor; mask-composite: exclude;
   }
   .theme-neon #icon { border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow: 0 0 16px var(--accent); }
-  .theme-neon #mono { font-family: 'Orbitron', sans-serif; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.4); }
+  .theme-neon #mono { font-family: 'Orbitron', sans-serif; color: var(--on-accent, #fff); text-shadow: 0 2px 6px rgba(0,0,0,.4); }
   .theme-neon #name { font-family: 'Orbitron', sans-serif; font-weight: 800; text-shadow: 0 0 12px var(--accent), 0 0 2px #fff; letter-spacing: .02em; }
   .theme-neon #label { color: var(--accent2); font-weight: 700; }
   .theme-neon #timer { color: var(--accent2); font-weight: 700; }
@@ -121,7 +121,7 @@
     box-shadow: 0 10px 40px rgba(0,0,0,.35), 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
   }
   .theme-glass #icon { border-radius: 16px; background: linear-gradient(135deg, var(--accent), var(--accent2)); }
-  .theme-glass #mono { color: #fff; }
+  .theme-glass #mono { color: var(--on-accent, #fff); }
   .theme-glass #name { font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
   .theme-glass #label { font-weight: 600; font-size: 12px; }
   .theme-glass #meta { font-size: 15px; }
@@ -137,7 +137,7 @@
     text-shadow: 0 2px 8px rgba(0,0,0,.85), 0 0 2px rgba(0,0,0,.9);
   }
   .theme-minimal #icon { width: 64px; height: 64px; border-radius: 8px; background: var(--accent); box-shadow: 0 4px 14px rgba(0,0,0,.5); }
-  .theme-minimal #mono { color: #fff; font-size: 24px; }
+  .theme-minimal #mono { color: var(--on-accent, #fff); font-size: 24px; }
   .theme-minimal #name { font-weight: 800; font-size: 34px; }
   .theme-minimal #label { font-size: 11px; font-weight: 600; color: var(--accent); }
   .theme-minimal #label .dot { display: none; }
@@ -178,9 +178,9 @@
     padding-right: 44px;
   }
   .theme-esport #icon { width: 92px; height: 92px; background: var(--accent); clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%); }
-  .theme-esport #mono { font-family: 'Orbitron', sans-serif; color: #fff; }
+  .theme-esport #mono { font-family: 'Orbitron', sans-serif; color: var(--on-accent, #fff); }
   .theme-esport #text { padding: 8px 0 8px 18px; }
-  .theme-esport #label { background: var(--accent); color: #fff; align-self: flex-start; padding: 1px 10px; font-weight: 700; font-size: 12px; }
+  .theme-esport #label { background: var(--accent); color: var(--on-accent, #fff); align-self: flex-start; padding: 1px 10px; font-weight: 700; font-size: 12px; }
   .theme-esport #label .dot { background: #fff; box-shadow: none; }
   .theme-esport #name { font-weight: 700; font-size: 40px; text-transform: uppercase; letter-spacing: .03em; }
   .theme-esport #timer { color: var(--accent); font-weight: 700; }

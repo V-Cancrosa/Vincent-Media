@@ -13,6 +13,8 @@
 <script src="themes/fusion.js"></script>
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
+<script src="themes/voices-en.js"></script>
+<script src="themes/i18n.js"></script>
 <script src="themes/client.js"></script>
 <style>
   /*
@@ -149,7 +151,10 @@
   #t.off .flash .w { opacity: 1; animation: fl-out var(--reveal) ease-in forwards; }
   @keyframes fl-in { to { opacity: 1; } }
   @keyframes fl-out { 0% { opacity: 1; filter: blur(0); } 100% { opacity: 0; } }
-  .k-flash #txt { color: #1a1a1a; } .k-flash #txt .lab { text-shadow: none; }
+  .k-flash #txt { color: #1a1a1a; }
+  /* jasny akcent pod napisem (koło, pasy, korektor): ciemny tekst z jasną poświatą zamiast białego */
+  .light-accent .k-iris #txt, .light-accent .k-eq #txt { color: var(--on-accent, #101114); }
+  .light-accent .k-iris #txt .lab, .light-accent .k-eq #txt .lab { text-shadow: 0 0 18px rgba(255,255,255,.55), 0 2px 0 rgba(255,255,255,.35); } .k-flash #txt .lab { text-shadow: none; }
 
   /* ---------- eq: słupki korektora w rytm (Ragnar) ---------- */
   .eq { inset: 0; display: flex; gap: 6px; padding: 0 3px; }
@@ -246,10 +251,10 @@
     document.documentElement.style.setProperty('--reveal', reveal + 'ms');
     // napis: tekst ekranu w głosie postaci / gry (narrator w Darkest Dungeon itd.)
     const scene = ev.scene === 'brb-late' ? 'brbLate' : (ev.scene || 'start');
-    let label = SCENE_LABEL[scene] || '', line = '';
+    let label = (window.VMi18n ? VMi18n.t('sc_' + scene) : SCENE_LABEL[scene]) || SCENE_LABEL[scene] || '', line = '';
     if (scene === 'game' || scene === 'frame') {
       const det = C.read('obsGameOverlay.detected', {}) || {};
-      label = (det.local && det.local.game && det.local.game.name) || s.game || 'Teraz gram'; line = '';
+      label = (det.local && det.local.game && det.local.game.name) || s.game || (window.VMi18n ? VMi18n.t('nowPlaying') : 'Teraz gram'); line = '';
     } else if (VO && GT.voiceInfo) {
       const v = VO.pickMix(GT.voiceInfo(r), 'scene:' + scene, {});
       if (v && v.label) { label = v.label; line = v.line || ''; }

@@ -258,6 +258,21 @@
     end: [['Dzięki za dziś!', 'Do zobaczenia na następnym streamie.'], ['Koniec streama', 'Dziękuję, że byliście.']]
   };
 
+  // ---------------------------------------------------------------- język streama i rejestr Myr (panel: Język streama, Myr – rejestr)
+  function settings() { try { return JSON.parse(localStorage.getItem('obsGameOverlay.v1') || '{}') || {}; } catch (e) { return {}; } }
+  function curLang() {
+    try { const q = new URLSearchParams(location.search).get('lang'); if (q) return q === 'en' ? 'en' : 'pl'; } catch (e) {}
+    return settings().lang === 'en' ? 'en' : 'pl';
+  }
+  // zestaw tekstów: polski (ten plik + voices-games.js) albo angielski (voices-en.js)
+  function D(lang) {
+    const E = window.OverlayVoicesEN;
+    if ((lang || curLang()) === 'en' && E) return { V: E.V, TIERS: E.TIERS, SCENES: E.SCENES_DEFAULT, GAMEV: E.GAMEV, SAMPLES: E.SAMPLES, lang: 'en' };
+    return { V, TIERS, SCENES: SCENES_DEFAULT, GAMEV, SAMPLES, lang: 'pl' };
+  }
+  const REGISTERS = ['protocol', 'human', 'terminal', 'syndrome'];
+  function forcedRegister() { const r = settings().myrRegister; return REGISTERS.includes(r) ? r : ''; }
+
   const rand = a => a[Math.floor(Math.random() * a.length)];
   function pickRegister(w) {
     let r = Math.random();
@@ -276,7 +291,8 @@
   // Wybiera nagłówek i zdanie: kind = typ alertu (follow, sub…) albo 'scene:prep' itd.
   // poziom 3+ → teksty na duże zdarzenia (najpierw postaci, potem domyślne)
   function tierPool(themeId, kind, tier) {
-    for (const who of [TIERS[themeId], TIERS._]) {
+    const d = D();
+    for (const who of [d.TIERS[themeId], d.TIERS._]) {
       if (!who) continue;
       if (who.big) return who.big;                                  // Myr: jedna pula z rejestrami
       const k = who[kind]; if (!k) continue;
@@ -296,17 +312,18 @@
   }
 
   function pick(themeId, kind, ctx, tier) {
+    const d = D();
     const scene = kind.startsWith('scene:') ? kind.slice(6) : null;
-    const who = V[themeId];
+    const who = d.V[themeId];
     let pool = null, register = 'normal';
     if (who) pool = scene ? who.scenes && who.scenes[scene] : who[kind];
-    else if (scene && GAMEV[themeId] && GAMEV[themeId].scenes) pool = GAMEV[themeId].scenes[scene];   // motyw gry jako styl ekranu
+    else if (scene && d.GAMEV[themeId] && d.GAMEV[themeId].scenes) pool = d.GAMEV[themeId].scenes[scene];   // motyw gry jako styl ekranu
     if (!scene && tier >= 3) { const tp = tierPool(themeId, kind, tier); if (tp) pool = tp; }
     if (pool && !Array.isArray(pool)) {          // postać z rejestrami (Myr)
-      register = pickRegister(myrWeights(who && who.weights || { protocol: 1 }, scene ? 0 : tier));
+      register = forcedRegister() || pickRegister(myrWeights(who && who.weights || { protocol: 1 }, scene ? 0 : tier));
       pool = pool[register] || pool.protocol;
     }
-    if (!pool || !pool.length) pool = scene ? SCENES_DEFAULT[scene] : V._[kind];
+    if (!pool || !pool.length) pool = scene ? d.SCENES[scene] : d.V._[kind];
     if (!pool || !pool.length) return { label: '', line: '', register };
     const [label, line] = rand(pool);
     let out = { label: fill(label, ctx), line: fill(line, ctx), register };
@@ -422,8 +439,9 @@
   }
   // wariant (np. me2) ma własne teksty; czego nie ma, bierze z gry
   function pickGame(gameId, kind, ctx, tier, variant) {
-    const base = GAMEV[gameId]; if (!base) return null;
-    const vg = variant && GAMEV[variant] ? GAMEV[variant] : null;
+    const G = D().GAMEV;
+    const base = G[gameId]; if (!base) return null;
+    const vg = variant && G[variant] ? G[variant] : null;
     const scene = kind.startsWith('scene:') ? kind.slice(6) : null;
     const get = k => (vg && vg[k]) || base[k];
     let pool;
@@ -435,17 +453,18 @@
   }
   function pickMix(f, kind, ctx, tier) {
     const m = mixInfo(f);
-    if (m.gameId && GAMEV[m.gameId] && Math.random() < m.mix) {
+    if (m.gameId && D().GAMEV[m.gameId] && Math.random() < m.mix) {
       const g = pickGame(m.gameId, kind, ctx, tier, m.variant); if (g) return g;
     }
     return pick(m.personaId, kind, ctx, tier);
   }
   function sample(f) {
     const m = mixInfo(f);
-    const gsrc = m.variant && SAMPLES[m.variant] ? m.variant : m.gameId;
-    const src = m.gameId && SAMPLES[gsrc] && Math.random() < m.mix ? gsrc : (SAMPLES[m.personaId] ? m.personaId : '_');
-    return rand(SAMPLES[src]);
+    const SM = D().SAMPLES;
+    const gsrc = m.variant && SM[m.variant] ? m.variant : m.gameId;
+    const src = m.gameId && SM[gsrc] && Math.random() < m.mix ? gsrc : (SM[m.personaId] ? m.personaId : '_');
+    return rand(SM[src]);
   }
 
-  window.OverlayVoices = { pick, pickMix, sample, data: V, games: GAMEV, samples: SAMPLES, fill };
+  window.OverlayVoices = { pick, pickMix, sample, data: V, games: GAMEV, samples: SAMPLES, tiers: TIERS, scenesDefault: SCENES_DEFAULT, fill, glitch, set: D, lang: curLang, registers: REGISTERS };
 })();

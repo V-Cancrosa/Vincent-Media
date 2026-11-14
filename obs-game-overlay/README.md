@@ -35,7 +35,8 @@ W plikach są też Elden Ring, Minecraft, Fortnite, League of Legends, VALORANT 
 Długie nazwy gier i nicki nie są ucinane „…”: czcionka się zmniejsza, a w razie potrzeby tekst przechodzi do drugiej linijki.
 Mają animowane ozdobniki wystające nad panel i cząsteczki wokół niego. Cała grafika jest narysowana od zera (SVG i canvas), bez logotypów i grafik z gier – licencja CC0. Definicje są w `themes/games.js` i `themes/games.css`.
 
-**Motywy postaci:** Vince · Chip · Ragnar · Toro · Myr-35 · Zarin (w panelu w grupie *Postacie*, w adresie `theme=g-vince` itd.).
+**Motywy postaci:** Vince · Chip · Ragnar · Toro · Myr-35 · Zarin (w panelu: *Postać*; „bez postaci” wraca do wybranego stylu, a gra zostaje; w adresie `theme=g-vince` itd.).
+Myr-35 ma głowę protogena w ujęciu 3/4 z gęstą matrycą LED (mimika: spokój, mrugnięcie, uśmiech, mówienie przy mikrofonie, zakłócenia przy Nanite Syndrome). Domyślnie losuje rejestr; w panelu można go ustawić na stałe (protokół / człowiek / terminal / Nanite Syndrome).
 Kolory, czcionki i motywy pochodzą ze stron postaci. Każda postać ma swój napis nad nazwą gry, dopóki w panelu zostaje domyślny „Teraz gram”.
 Gdy gra ma własny motyw i opcja *gra ma własny motyw → włącz go sam* jest zaznaczona, motyw gry wygrywa z motywem postaci.
 Portrety w `themes/fursona/` należą do autorów ilustracji (patrz `themes/fursona/CREDITS.md`) i nie są na licencji CC0.
@@ -247,6 +248,7 @@ Ręcznie: OBS → *Narzędzia → Ustawienia serwera WebSocket* → włącz, ust
 `chat.html` pokazuje czat z Twitcha na nakładce (wymaga połączenia z Twitchem – patrz niżej):
 - `chat.html` – **dymki**: wiadomości wyskakują i po chwili znikają (do gry na pełnym ekranie). `?pos=br|bl|tr|tl`, `?life=12` (sekundy), `?width=560`.
 - `chat.html?mode=panel` – **czat na stałe** (do układu z grą w ramce).
+- Pasek czatu jest też na samej nakładce „Teraz gram” – czyli w każdej scenie z grą (wyłączysz w Czat → Na ekranie). Wiadomości to wyraźne kafelki z kolorem widza.
 - `chat.html?mode=ticker` – **pasek** u dołu ekranu, wiadomości jadą od prawej do lewej; przy większym ruchu pasek przyspiesza. `?pos=top`, `?speed=140`.
 
 Emotki, kolory nicków i odznaki (HOST, MOD, VIP, SUB) są pokazywane. Wygląd czatu łączy się z aktywnym motywem (i grą przy fuzji).
@@ -263,6 +265,16 @@ Emotki, kolory nicków i odznaki (HOST, MOD, VIP, SUB) są pokazywane. Wygląd c
 Komenda nie pojawia się w czacie na ekranie – zamiast niej widać krótkie potwierdzenie („LunaFox → styl: pixel ✓”).
 Efekty można też dać jako **nagrody za punkty kanału**: nagroda o nazwie zawierającej np. „Efekt: konfetti” uruchamia efekt bez limitu.
 Efekty pokazuje źródło `alerts.html`, więc musi być w scenie.
+
+## Język streama: polski albo angielski
+
+Panel → Wygląd → **Język streama**. Po angielsku jest wszystko, co widać na streamie: napisy nad grą („Now playing”), alerty i ich opisy, ekrany przerw i napisy końcowe, przejścia, pasek czatu i głosy postaci (każda zachowuje swój charakter – Chip dalej małymi literami, Myr w czterech rejestrach, narrator Darkest Dungeon po angielsku). Panel zostaje po polsku. Własny napis wpisany w panelu nie jest tłumaczony.
+
+## Testy: galeria, stały napływ, test bota
+
+- **Galeria powiadomień** (Na żywo → Alerty → *Galeria*) – wszystkie teksty aktywnej postaci i gry naraz, w prawdziwym wyglądzie karty: zwykłe, na duże zdarzenia, części gier, rejestry Myr; pod spodem teksty ekranów i alerty w czacie.
+- **Stały napływ czatu / alertów** (Czat → Na ekranie) – co chwilę wiadomość albo alert; co kilka wiadomości wpada bot.
+- **Test bota** – wiadomość w stylu bota przechodzi przez ocenę czatu, a wynik (poziom i powody) pojawia się od razu pod przyciskami. *Pokazuj podejrzane* wyświetla je na ekranie z ⚑ zamiast ukrywać.
 
 ## Archiwum, statystyki i podejrzane konta
 
