@@ -284,16 +284,27 @@ function Get-Images($m) {
     return , @($list | Select-Object -Unique)
 }
 
+# gry, które startują launcherem, a potem uruchamiają osobny program dla każdej części (Steam wciąż zgłasza launcher)
+$GameParts = @{
+    'masseffect.exe' = 'Mass Effect 1'; 'masseffect1.exe' = 'Mass Effect 1'; 'masseffect2.exe' = 'Mass Effect 2'; 'masseffect3.exe' = 'Mass Effect 3'
+    'masseffectandromeda.exe' = 'Mass Effect: Andromeda'
+}
 function Update-State {
     Import-Custom
     $fgPid = Get-ForegroundPid
     $procs = Get-CimInstance -ClassName Win32_Process -Property ProcessId, ExecutablePath, CommandLine, CreationDate -ErrorAction SilentlyContinue
     $found = New-Object Collections.ArrayList
     $fgPath = $null
+    $part = $null
     foreach ($p in $procs) {
         $path = $p.ExecutablePath
         if (-not $path) { continue }
         if ($p.ProcessId -eq $fgPid) { $fgPath = $path }
+        $pexe = [IO.Path]::GetFileName($path).ToLowerInvariant()
+        if ($GameParts.ContainsKey($pexe)) {
+            $pn = $GameParts[$pexe]; if ($path -match 'legendary' -and $pn -notmatch 'Andromeda') { $pn += ' (Legendary Edition)' }
+            $part = [pscustomobject]@{ Name = $pn; Exe = $pexe; Start = $p.CreationDate }
+        }
         $m = Find-Game $path $p.CommandLine
         if ($m) { [void]$found.Add([pscustomobject]@{ M = $m; Pid = $p.ProcessId; Start = $p.CreationDate }) }
     }
@@ -324,6 +335,16 @@ function Update-State {
         $pick = @($found | Where-Object { $_.Pid -eq $fgPid }) | Select-Object -First 1
         if (-not $pick) { $pick = @($found | Where-Object { $_.M.Name -eq $script:Current }) | Select-Object -First 1 }
         if (-not $pick) { $pick = @($found | Sort-Object Start -Descending) | Select-Object -First 1 }
+    }
+
+    # launcher → konkretna część (np. Mass Effect Legendary Edition → Mass Effect 2 (Legendary Edition))
+    if ($part) {
+        if ($pick -and $pick.M.Name -match 'mass effect') {
+            $m2 = $pick.M.PSObject.Copy(); $m2.Name = $part.Name; $m2.Exe = $part.Exe
+            $pick = [pscustomobject]@{ M = $m2; Start = $part.Start }
+        } elseif (-not $pick) {
+            $pick = [pscustomobject]@{ M = [pscustomobject]@{ Exe = $part.Exe; Id = ''; Name = $part.Name; Icon = ''; Steam = ''; Args = ''; Image = ''; Header = ''; Via = 'part' }; Start = $part.Start }
+        }
     }
 
     $game = $null
