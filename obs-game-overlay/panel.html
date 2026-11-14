@@ -977,6 +977,8 @@
     pill('obsLive', !!current, current ? 'NA ŻYWO: ' + current.replace(/^VM · /, '') : '');
     if (typeof renderStartScenes === 'function') try { renderStartScenes(); } catch {}
   }
+  // OBS niepołączony (np. hasło nie przyszło, bo wykrywacz jeszcze nie działał) – co 15 s spróbuj od nowa
+  setInterval(() => { if (feats().obs !== false && !isRemote && !$('obsPill').classList.contains('on')) obsStart(); }, 15000);
   async function obsStart() {
     if (obs) { obs.close(); obs = null; }
     if (feats().obs === false || !window.OverlayOBS) { pill('obsPill', false, '', 'WYŁ.'); return; }

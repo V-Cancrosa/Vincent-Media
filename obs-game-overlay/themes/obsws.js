@@ -135,8 +135,11 @@
       try {
         const r = await fetch(window.vmHub(s.localUrl) + '/obsws', { cache: 'no-store' });
         const j = await r.json();
-        if (j && j.ok) { url = url || j.url; password = password || j.password; }
-      } catch (e) {}
+        if (j && j.ok) { url = url || j.url; password = password || j.password; try { localStorage.setItem('obsGameOverlay.obsws', JSON.stringify({ url: j.url, password: j.password })); } catch (e) {} }
+      } catch (e) {
+        // wykrywacz nie działa: OBS i tak się połączy z ostatnio zapamiętanym hasłem
+        try { const c = JSON.parse(localStorage.getItem('obsGameOverlay.obsws') || 'null'); if (c) { url = url || c.url; password = password || c.password; } } catch (e2) {}
+      }
     }
     if (!url) url = 'ws://' + (/^https?:$/.test(location.protocol) && location.hostname ? location.hostname : 'localhost') + ':4455';
     // telefon: OBS jest na komputerze, z którego przyszła strona

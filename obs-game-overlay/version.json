@@ -1,5 +1,5 @@
 {
-  "version": "1.22.4",
+  "version": "1.22.5",
   "date": "2026-11-15",
   "notes": "Zakładka Start (stan, gra, sceny, biblioteka, szybki test), OBS sam łapie okno wykrytej gry, biblioteka gier i programów z uruchamianiem z panelu, prostszy panel (5 zakładek)"
 }

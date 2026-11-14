@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
   Vincent-Media – wykrywacz gier dla nakładki OBS.
 
@@ -23,7 +23,25 @@ if ($WaitStart -gt 0) { Start-Sleep -Seconds $WaitStart }
 $script:Mutex = New-Object Threading.Mutex($false, 'Local\VincentMediaDetector')
 $gotMutex = $false
 try { $gotMutex = $script:Mutex.WaitOne([TimeSpan]::FromSeconds([Math]::Max(1, $WaitStart * 6))) } catch [Threading.AbandonedMutexException] { $gotMutex = $true }
-if (-not $gotMutex) { exit 0 }
+# inna kopia trzyma blokadę: jeśli odpowiada – zostawiamy ją; jeśli nie (zawieszona po aktualizacji) – zamykamy ją i startujemy
+function Stop-StaleDetector {
+    $alive = $false
+    try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 -Uri "http://localhost:$Port/game"; $alive = $r.StatusCode -eq 200 } catch {}
+    if ($alive) { return $false }
+    $n = 0
+    try {
+        foreach ($p in @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe' OR Name='pwsh.exe'" -ErrorAction Stop | Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -match 'detector\.ps1' })) {
+            try { Stop-Process -Id $p.ProcessId -Force -ErrorAction Stop; $n++ } catch {}
+        }
+    } catch {}
+    if ($n) { Write-Host "Zamknięto zawieszony wykrywacz ($n)." -ForegroundColor Yellow; Start-Sleep -Milliseconds 800 }
+    return $true
+}
+if (-not $gotMutex) {
+    if (-not (Stop-StaleDetector)) { exit 0 }      # działa już poprawna kopia
+    try { $gotMutex = $script:Mutex.WaitOne([TimeSpan]::FromSeconds(5)) } catch [Threading.AbandonedMutexException] { $gotMutex = $true }
+    if (-not $gotMutex) { exit 0 }
+}
 
 $ErrorActionPreference = 'Stop'
 $Host.UI.RawUI.WindowTitle = 'Vincent-Media: wykrywacz gier'
@@ -45,8 +63,15 @@ $NeverGame = @('obs64.exe','obs32.exe','obs.exe','explorer.exe','powershell.exe'
 # Aplikacje Steama, które nie są grami.
 $SteamNotGames = @('228980','431960','250820','1070560','1391110','1628350')  # redist, Wallpaper Engine, SteamVR, Steam Linux Runtime...
 
+# dziennik także do pliku (data\detector.log) – przydaje się, gdy wykrywacz działa w tle bez okna
+$script:LogFile = Join-Path (Join-Path $PSScriptRoot 'data') 'detector.log'
 function Log([string]$msg, [string]$color = 'Gray') {
-    Write-Host ("[{0:HH:mm:ss}] {1}" -f (Get-Date), $msg) -ForegroundColor $color
+    $line = "[{0:HH:mm:ss}] {1}" -f (Get-Date), $msg
+    Write-Host $line -ForegroundColor $color
+    try {
+        if ((Test-Path $script:LogFile) -and (Get-Item $script:LogFile).Length -gt 1MB) { Move-Item $script:LogFile ($script:LogFile + '.old') -Force }
+        [IO.File]::AppendAllText($script:LogFile, ("{0:yyyy-MM-dd} {1}`r`n" -f (Get-Date), $line), [Text.Encoding]::UTF8)
+    } catch {}
 }
 function Get-Val($dict, [string]$key) {
     if ($null -ne $dict -and $dict.ContainsKey($key)) { return $dict[$key] }
@@ -1340,7 +1365,11 @@ function Restart-Detector {
     if ($Hidden) { Start-Process powershell.exe -ArgumentList ($a + '-Hidden') -WindowStyle Hidden }
     else { Start-Process powershell.exe -ArgumentList $a }
     try { $listener.Stop(); $listener.Close() } catch {}
-    exit 0
+    Stop-Censor
+    try { Save-Library -Force } catch {}
+    try { $script:Mutex.ReleaseMutex() } catch {}
+    # twarde wyjście: wątek cenzury ekranu nie może trzymać starego procesu (i portu) przy życiu
+    [Environment]::Exit(0)
 }
 
 # ---------------------------------------------------------------- HTTP
@@ -1407,7 +1436,7 @@ $CensorScript = {
         $exeOf = @{}; $times = New-Object Collections.Queue
         Add-Type -AssemblyName System.Web.Extensions
         $ser = New-Object Web.Script.Serialization.JavaScriptSerializer; $ser.MaxJsonLength = 16777216
-        while ($true) {
+        while (-not $C.quit) {
             if (-not $C.on -or (Get-Date) -gt $C.until) { $C.status = 'wyłączona'; $C.result = $null; Start-Sleep -Milliseconds 500; continue }
             try {
                 $h = [VMCensor.W]::GetForegroundWindow(); $procId = [uint32]0; [void][VMCensor.W]::GetWindowThreadProcessId($h, [ref]$procId)
@@ -1445,6 +1474,10 @@ $CensorScript = {
             } catch { $C.err = $_.Exception.Message; Start-Sleep -Milliseconds 500 }
         }
     } catch { $C.status = 'błąd'; $C.err = $_.Exception.Message }
+}
+function Stop-Censor {
+    $script:Censor.quit = $true
+    if ($script:CensorPS) { try { [void]$script:CensorPS.BeginStop($null, $null) } catch {} }
 }
 function Start-Censor {
     if ($script:CensorPS -and -not $script:CensorPS.InvocationStateInfo.State.ToString().StartsWith('Complet') -and $script:CensorPS.InvocationStateInfo.State -ne 'Failed') { return }
@@ -1743,8 +1776,13 @@ catch {
     $listener = New-Object Net.HttpListener
     $listener.Prefixes.Add("http://localhost:$Port/")
     try { $listener.Start() } catch {
-        Log "Nie mogę otworzyć portu $Port – może wykrywacz już działa w innym oknie? ($($_.Exception.Message))" 'Red'
-        exit 1
+        # port zajęty: zawieszona stara kopia? zamknij ją i spróbuj jeszcze raz
+        $retried = $false
+        if (Stop-StaleDetector) { try { $listener.Close() } catch {}; $listener = New-Object Net.HttpListener; $listener.Prefixes.Add("http://localhost:$Port/"); try { $listener.Start(); $retried = $true } catch {} }
+        if (-not $retried) {
+            Log "Nie mogę otworzyć portu $Port – może wykrywacz już działa w innym oknie? ($($_.Exception.Message))" 'Red'
+            [Environment]::Exit(1)
+        }
     }
 }
 Log "Nasłuchuję na http://localhost:$Port/" 'Green'
@@ -1772,8 +1810,11 @@ try {
             $task = $listener.GetContextAsync()
         }
     }
+} catch {
+    Log "Wykrywacz zatrzymał się przez błąd: $($_.Exception.Message)" 'Red'
 } finally {
     try { Save-Chatters -Force; Save-StreamSummary; Save-Library -Force } catch {}
-    $listener.Stop()
-    $listener.Close()
+    try { $listener.Stop(); $listener.Close() } catch {}
+    Stop-Censor
 }
+[Environment]::Exit(0)
