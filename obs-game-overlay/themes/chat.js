@@ -133,6 +133,7 @@
 
   // podejrzane wiadomości (świeże konto, reklama widzów…) nie trafiają na ekran, dopóki panel ich nie puści
   function allowed(ev) {
+    if (ev && ev.hidden) return false;      // polecenie pilota z czatu (!vm …) – nie na ekran
     const w = ev && ev.type === 'chat' ? words(ev) : null;
     if (w && window.VMWords.settings().mode === 'hide') return false;
     if (!ev.flag || ev.flag.level !== 'suspect') return true;
@@ -194,5 +195,14 @@
     if (container.dataset.skin !== sk) container.dataset.skin = sk;
     container.classList.toggle('chat-skin', sk !== 'theme' && !container.classList.contains('chat-ticker'));
   }
-  window.OverlayChat = { mount, styles: STYLES, allowed, skinOf, setSkin };
+  // układ czatu z panelu (Czat → Układ): dir 'v' | 'h' | 'off', side 'left'|'right' (pionowo) albo 'top'|'bottom' (poziomo)
+  function layoutOf(st) {
+    st = st || {};
+    const dir = ['v', 'h', 'off'].includes(st.chatDir) ? st.chatDir : 'v';
+    const ok = dir === 'h' ? ['top', 'bottom'] : ['left', 'right'];
+    return { dir, side: ok.includes(st.chatSide) ? st.chatSide : (dir === 'h' ? 'bottom' : 'right') };
+  }
+  // sceny, które mają własny czat (ramka, rozmowa, ekrany przerw) – nakładka „Teraz gram” wtedy go nie dubluje
+  const OWN_CHAT_SCENE = /^VM · (Gra – w ramce|Rozmowa|Przygotowania|Stream za|Zaraz zaczynamy|Spóźnienie|Przerwa|Koniec)/;
+  window.OverlayChat = { mount, styles: STYLES, allowed, skinOf, setSkin, layoutOf, OWN_CHAT_SCENE };
 })();

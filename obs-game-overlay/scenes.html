@@ -106,6 +106,15 @@
   .has-schat #hero.sheet { right: calc(470px + 4vw); width: 24vw; }
   .has-schat #hero.emblem { right: calc(470px + 5vw); width: 17vw; height: 17vw; }
   .has-schat.k-end #extra { right: calc(470px + 80px); width: 24vw; }
+  /* czat z lewej: kolumna po lewej, karta i reszta zostają po prawej */
+  .schat-left #schat { right: auto; left: 40px; }
+  .schat-left #hero.full, .schat-left #hero.photo, .schat-left #hero.photo.wide, .schat-left #hero.sheet, .schat-left #hero.emblem { right: 5vw; }
+  .schat-left.k-end #extra { right: 4vw; }
+  /* czat poziomo: pasek na całą szerokość u góry albo nad stopką */
+  .schat-h #schat { left: 0; right: 0; width: auto; top: auto; bottom: 74px; height: 58px; }
+  .schat-h.schat-top #schat { top: 0; bottom: auto; }
+  .schat-h #hero.full, .schat-h #hero.photo, .schat-h #hero.photo.wide, .schat-h #hero.sheet, .schat-h #hero.emblem { right: 5vw; }
+  .schat-h.k-end #extra { right: 4vw; }
   #recent { display: flex; gap: 26px; color: var(--scene-muted); font-size: 18px; }
   #recent b { color: var(--scene-ink); font-weight: 700; }
 
@@ -262,6 +271,7 @@
   function applyStyle(kind) {
     const fusion = GT.fromActive ? GT.fromActive(read(ACTIVE_KEY, null), settings, p.has('theme') ? settings.theme : null) : { cls: settings.theme || 'neon', def: null, game: null };
     const { cls, def, game } = fusion;
+    shownFusion = fusion;
     if (window.OverlayChat) window.OverlayChat.setSkin($('schat'), fusion, settings.chatSkin !== false);
     // głos i duża postać: postać (także gdy jest dodatkiem do gry), inaczej styl
     const heroDef = fusion.persona || def;
@@ -338,6 +348,7 @@
 
   // ---------------------------------------------------------------- treść
   let shownKind = null, bigShown = '';
+  let shownFusion = null;
   function setBig(text, animate) {
     if (text === bigShown) return;
     bigShown = text;
@@ -381,7 +392,12 @@
     if (window.VMFit) VMFit.text($('sub'), { min: 0.7, lines: 2, container: $('wrap') });
     if (kind === 'prep') tickChecklist();
     if (window.VMSocials) window.VMSocials.render($('socials'), settings.socials);
-    document.body.classList.toggle('has-schat', settings.sceneChat !== false && !!window.OverlayChat);
+    const SL = window.OverlayChat && window.OverlayChat.layoutOf ? window.OverlayChat.layoutOf(settings) : { dir: 'v', side: 'right' };
+    document.body.classList.toggle('has-schat', settings.sceneChat !== false && !!window.OverlayChat && SL.dir !== 'off');
+    document.body.classList.toggle('schat-left', SL.dir === 'v' && SL.side === 'left');
+    document.body.classList.toggle('schat-h', SL.dir === 'h');
+    document.body.classList.toggle('schat-top', SL.dir === 'h' && SL.side === 'top');
+    mountSchat(SL);
     renderRecent();
     layoutScreen(kind);
   }
@@ -398,17 +414,23 @@
     const side = kind === 'end' ? $('extra') : (vis(heroEl) ? (heroImg && heroImg.getBoundingClientRect().width ? heroImg : heroEl) : null);
     const left = side ? Math.round(W * 0.07) : 60;
     let right = side ? Math.round(side.getBoundingClientRect().left) - 36 : W - 60;
-    if (vis($('schat'))) right = Math.min(right, Math.round($('schat').getBoundingClientRect().left) - 40);
+    let leftEdge = null;
+    if (vis($('schat')) && !document.body.classList.contains('schat-h')) {
+      const r = $('schat').getBoundingClientRect();
+      if (document.body.classList.contains('schat-left')) leftEdge = Math.round(r.right) + 40; else right = Math.min(right, Math.round(r.left) - 40);
+    }
     let bottom = vis($('foot')) && $('foot').textContent.trim() ? Math.round($('foot').getBoundingClientRect().top) - 12 : H - 40;
     if (kind === 'prep' && vis($('extra'))) bottom = Math.min(bottom, Math.round($('extra').getBoundingClientRect().top) - 24);
+    if (vis($('schat')) && document.body.classList.contains('schat-h') && !document.body.classList.contains('schat-top')) bottom = Math.min(bottom, Math.round($('schat').getBoundingClientRect().top) - 12);
     const top = ALERT_BAND;
-    stage.style.inset = `${top}px ${W - right}px ${H - bottom}px ${left}px`;
+    const L0 = leftEdge != null ? Math.max(left, leftEdge) : left;
+    stage.style.inset = `${top}px ${W - right}px ${H - bottom}px ${L0}px`;
     stage.style.padding = '0';
     stage.style.justifyContent = side ? 'flex-start' : 'center';
     wrapEl.style.transformOrigin = side ? 'left center' : 'center';
     const base = kind === 'end' ? 1.55 : (+settings.sceneScale || 2.1);
     const ow = wrapEl.offsetWidth, oh = wrapEl.offsetHeight;
-    const f = ow && oh ? Math.min(1, (right - left) * 0.97 / (ow * base), (bottom - top) * 0.9 / (oh * base)) : 1;
+    const f = ow && oh ? Math.min(1, (right - L0) * 0.97 / (ow * base), (bottom - top) * 0.9 / (oh * base)) : 1;
     document.body.style.setProperty('--scale', (base * f).toFixed(3));
     alertRect = side ? [left, 18, right - left, top - 28] : [260, 18, W - 520, top - 28];
   }
@@ -498,8 +520,15 @@
   }
 
   // ---------------------------------------------------------------- czat na ekranie (w stylu postaci / gry)
-  const schat = window.OverlayChat ? window.OverlayChat.mount($('schat'), { mode: 'panel', max: 10 }) : null;
-  if (schat && window.VMClient) window.VMClient.events(ev => { if (ev && ev.type === 'chat') schat.add(ev); });
+  let schat = null, schatKey = '';
+  function mountSchat(L) {
+    if (!window.OverlayChat) return;
+    const k = L.dir; if (k === schatKey) return; schatKey = k;
+    const box = $('schat'); box.className = ''; box.textContent = ''; box.removeAttribute('data-skin');
+    schat = L.dir === 'off' ? null : window.OverlayChat.mount(box, L.dir === 'h' ? { mode: 'ticker' } : { mode: 'panel', max: 10 });
+    if (shownFusion) window.OverlayChat.setSkin(box, shownFusion, settings.chatSkin !== false);
+  }
+  if (window.VMClient) window.VMClient.events(ev => { if (ev && ev.type === 'chat' && schat) schat.add(ev); });
 
   // ---------------------------------------------------------------- start
   const wrap = $('wrap');

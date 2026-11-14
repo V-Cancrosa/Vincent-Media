@@ -66,9 +66,13 @@ $SteamNotGames = @('228980','431960','250820','1070560','1391110','1628350')  # 
 
 # dziennik także do pliku (data\detector.log) – przydaje się, gdy wykrywacz działa w tle bez okna
 $script:LogFile = Join-Path (Join-Path $PSScriptRoot 'data') 'detector.log'
+# ostatnie linijki także w pamięci – panel pokazuje je w «terminalu» (Więcej → Wykrywacz), gdy okno jest schowane
+$script:LogBuf = New-Object Collections.ArrayList; $script:LogSeq = 0
 function Log([string]$msg, [string]$color = 'Gray') {
     $line = "[{0:HH:mm:ss}] {1}" -f (Get-Date), $msg
     Write-Host $line -ForegroundColor $color
+    $script:LogSeq++; [void]$script:LogBuf.Add([pscustomobject]@{ n = $script:LogSeq; t = $line; c = $color })
+    while ($script:LogBuf.Count -gt 300) { $script:LogBuf.RemoveAt(0) }
     try {
         if ((Test-Path $script:LogFile) -and (Get-Item $script:LogFile).Length -gt 1MB) { Move-Item $script:LogFile ($script:LogFile + '.old') -Force }
         [IO.File]::AppendAllText($script:LogFile, ("{0:yyyy-MM-dd} {1}`r`n" -f (Get-Date), $line), [Text.Encoding]::UTF8)
@@ -379,7 +383,7 @@ function Get-RenPyName([string]$path) {
 $LibraryFile = Join-Path $DataDir 'library.json'
 # uwaga: nie «$Library» – wczytanie update.ps1 -Library (dot-source) nadpisałoby tę zmienną przełącznikiem
 $script:GameLib = @{}
-if (Test-Path $LibraryFile) { try { $lj = (Get-Content $LibraryFile -Raw -Encoding UTF8) | ConvertFrom-Json; foreach ($pp in $lj.PSObject.Properties) { $script:GameLib[$pp.Name] = $pp.Value } } catch {} }
+if (Test-Path $LibraryFile) { try { $lj = (Get-Content $LibraryFile -Raw -Encoding UTF8) | ConvertFrom-Json; foreach ($pp in $lj.PSObject.Properties) { if ($pp.Value -and $pp.Value.PSObject.Properties['id']) { $script:GameLib[$pp.Name] = $pp.Value } } } catch {} }
 $script:LibDirty = $false; $script:LibSaved = Get-Date; $script:LibCurrent = ''; $script:LibTick = Get-Date
 function Save-Library([switch]$Force) {
     if (-not $script:LibDirty) { return }
@@ -452,6 +456,74 @@ function Get-GameArt([string]$id) {
     return [pscustomobject]@{ logo = "/art?id=$id&k=logo"; hero = "/art?id=$id&k=hero"; header = "/art?id=$id&k=header"; cover = "/art?id=$id&k=cover" }
 }
 
+# ---------------------------------------------------------------- gry z innych launcherów (Epic, GOG, Ubisoft, EA, Battle.net, Riot, Xbox…)
+# Każdy launcher trzyma listę gier gdzie indziej: manifesty Epic, rejestr GOG/Ubisoft, wpisy «Odinstaluj» wydawców, foldery XboxGames.
+$script:OtherGames = $null; $script:OtherGamesAt = [DateTime]::MinValue
+$GamePublishers = '(?i)electronic arts|blizzard|riot games|paradox interactive|amazon game|rockstar games|bethesda|cd projekt|square enix|bandai namco|sega|capcom|konami|2k games|take-two|activision|focus (home|entertainment)|devolver|xbox game studios|warner bros|deep silver|thq|team17|frontier developments|annapurna|hooded horse|raw fury|humble games|505 games|nacon|kalypso|daedalic|ubisoft'
+$NotAGame = '(?i)launcher|redistributable|anti-?cheat|easyanticheat|battleye|vanguard|^ea app|^origin$|ubisoft connect|uplay|battle\.net|update|helper|runtime|directx|visual c\+\+|\bsdk\b|overlay|installer|service|companion|toolkit|driver'
+function Get-OtherGames {
+    if ($script:OtherGames -and ((Get-Date) - $script:OtherGamesAt).TotalMinutes -lt 10) { return $script:OtherGames }
+    $list = New-Object Collections.ArrayList; $seen = @{}
+    $add = { param($id, $name, $src, $launch, $exe)
+        $n = ([string](Clean $name)).Trim(); if (-not $n -or $n -match $NotAGame -or $seen.ContainsKey($n.ToLowerInvariant())) { return }
+        $seen[$n.ToLowerInvariant()] = 1
+        [void]$list.Add([pscustomobject]@{ id = $id; name = $n; source = $src; launch = [string]$launch; exe = [string]$exe; kind = 'game' }) }
+    # Epic Games
+    try {
+        foreach ($f in @(Get-ChildItem (Join-Path $env:ProgramData 'Epic\EpicGamesLauncher\Data\Manifests') -Filter '*.item' -ErrorAction Stop)) {
+            try {
+                $j = [IO.File]::ReadAllText($f.FullName) | ConvertFrom-Json
+                $exe = if ($j.InstallLocation -and $j.LaunchExecutable) { Join-Path $j.InstallLocation $j.LaunchExecutable } else { '' }
+                & $add ('epic:' + $j.AppName) $j.DisplayName 'Epic' ("com.epicgames.launcher://apps/$($j.AppName)?action=launch&silent=true") $exe
+            } catch {}
+        }
+    } catch {}
+    # GOG Galaxy
+    foreach ($k in @(Get-ChildItem 'HKLM:\SOFTWARE\WOW6432Node\GOG.com\Games' -ErrorAction SilentlyContinue)) {
+        try { $p = Get-ItemProperty $k.PSPath -ErrorAction Stop; & $add ('gog:' + $p.gameID) $p.gameName 'GOG' '' ([string]$p.exe) } catch {}
+    }
+    # Ubisoft Connect
+    foreach ($k in @(Get-ChildItem 'HKLM:\SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs' -ErrorAction SilentlyContinue)) {
+        try { $p = Get-ItemProperty $k.PSPath -ErrorAction Stop; $dir = ([string]$p.InstallDir).TrimEnd('/', '\'); if ($dir -and (Test-Path $dir)) { & $add ('ubi:' + $k.PSChildName) (Split-Path $dir -Leaf) 'Ubisoft' ("uplay://launch/$($k.PSChildName)/0") '' } } catch {}
+    }
+    # EA, Battle.net, Riot, Paradox, Rockstar… – wpisy «Odinstaluj» wydawców gier
+    foreach ($root in 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall', 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall', 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall') {
+        foreach ($k in @(Get-ChildItem $root -ErrorAction SilentlyContinue)) {
+            try {
+                $p = Get-ItemProperty $k.PSPath -ErrorAction Stop
+                if (-not $p.DisplayName -or [int]$p.SystemComponent -eq 1 -or [string]$p.Publisher -notmatch $GamePublishers) { continue }
+                if ([string]$p.UninstallString -match '(?i)steam\.exe|steamapps') { continue }    # Steam liczymy osobno
+                $exe = ([string]$p.DisplayIcon -replace ',\s*-?\d+$', '').Trim('"')
+                if ($exe -notmatch '(?i)\.exe$' -or -not (Test-Path -LiteralPath $exe)) { $exe = '' }
+                $src = switch -Regex ([string]$p.Publisher) { 'Electronic Arts' { 'EA' } 'Blizzard' { 'Battle.net' } 'Riot' { 'Riot' } 'Paradox' { 'Paradox' } 'Rockstar' { 'Rockstar' } 'Ubisoft' { 'Ubisoft' } default { [string]$p.Publisher } }
+                & $add ('reg:' + $k.PSChildName) $p.DisplayName $src '' $exe
+            } catch {}
+        }
+    }
+    # Xbox / Microsoft Store (foldery XboxGames na każdym dysku)
+    foreach ($d in @(Get-PSDrive -PSProvider FileSystem -ErrorAction SilentlyContinue)) {
+        $xb = Join-Path $d.Root 'XboxGames'
+        foreach ($g in @(Get-ChildItem $xb -Directory -ErrorAction SilentlyContinue)) { if ($g.Name -ne 'GameSave') { & $add ('xbox:' + $g.Name) $g.Name 'Xbox' '' '' } }
+    }
+    $script:OtherGames = @($list); $script:OtherGamesAt = Get-Date
+    return $script:OtherGames
+}
+# ikona programu (PNG) – z pliku .exe; gry Steam dostają okładkę przez /art
+$script:IconCache = @{}
+function Get-ExeIconPng([string]$path) {
+    if (-not $path -or -not (Test-Path -LiteralPath $path)) { return $null }
+    if ($script:IconCache.ContainsKey($path)) { return $script:IconCache[$path] }
+    $bytes = $null
+    try {
+        Add-Type -AssemblyName System.Drawing
+        $ic = [System.Drawing.Icon]::ExtractAssociatedIcon($path)
+        $bmp = $ic.ToBitmap(); $ms = New-Object IO.MemoryStream
+        $bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png); $bytes = $ms.ToArray(); $bmp.Dispose(); $ic.Dispose(); $ms.Dispose()
+    } catch {}
+    $script:IconCache[$path] = $bytes
+    return $bytes
+}
+
 function Update-Library($m, [string]$path) {
     if (-not $m.Steam -and $path) { $sid = Get-SteamIdFromPath $path; if ($sid) { $m = $m.PSObject.Copy(); $m.Steam = $sid } }
     $id = if ($m.Steam) { 'steam:' + $m.Steam } elseif ($path) { 'exe:' + $path.ToLowerInvariant() } else { '' }
@@ -494,6 +566,14 @@ function Update-AppSeen([string]$path) {
 function Start-LibraryItem([string]$id) {
     $e = $script:GameLib[$id]
     if (-not $e -and $id -match '^steam:(\d+)$') { Start-Process ("steam://rungameid/" + $Matches[1]); Log "Uruchamiam: $id (Steam)" 'Cyan'; return '' }
+    if (-not $e) {
+        $o = @(Get-OtherGames | Where-Object { $_.id -eq $id }) | Select-Object -First 1
+        if ($o) {
+            if ($o.launch) { Start-Process $o.launch; Log "Uruchamiam: $($o.name) ($($o.source))" 'Cyan'; return '' }
+            if ($o.exe -and (Test-Path -LiteralPath $o.exe)) { Start-Process -FilePath $o.exe -WorkingDirectory (Split-Path $o.exe); Log "Uruchamiam: $($o.name)" 'Cyan'; return '' }
+            return "tę grę uruchom z aplikacji $($o.source)"
+        }
+    }
     if (-not $e) { return 'nie ma takiej pozycji w bibliotece' }
     if ($e.steam) { Start-Process ("steam://rungameid/" + $e.steam); Log "Uruchamiam: $($e.name) (Steam)" 'Cyan'; return '' }
     if ($e.path -and (Test-Path -LiteralPath $e.path)) { Start-Process -FilePath $e.path -WorkingDirectory (Split-Path $e.path); Log "Uruchamiam: $($e.name)" 'Cyan'; return '' }
@@ -696,6 +776,14 @@ function Invoke-ChatCommand($login, $user, [string]$text) {
     return $null
 }
 function New-ChatEvent($login, $user, [string]$color, [string]$text, $fragments, $badges, [bool]$test = $false, [string]$userId = '', [double]$fakeAge = -2) {
+    # pilot przez czat Twitcha: «!vm przerwa», «!vm scena Moja scena», «!vm gra Townscaper» – tylko z konta streamera
+    # (działa z aplikacji Twitch na telefonie przez internet, bez Wi-Fi i bez otwierania portów); panel w OBS wykonuje polecenie
+    if ($text -match '^\s*!vm\s+(.+)$' -and (@($badges) -contains 'broadcaster')) {
+        $c = $Matches[1].Trim()
+        Add-Event ([pscustomobject]@{ type = 'control'; cmd = $c; user = $user })
+        Log "Pilot z czatu: $c" 'Cyan'
+        return [pscustomobject]@{ type = 'chat'; user = $user; login = $login; text = $text; fragments = @(); badges = @($badges); color = ''; style = ''; command = $true; reply = ''; test = $test; flag = $null; hidden = $true }
+    }
     $reply = Invoke-ChatCommand $login $user $text
     $v = $script:Viewers[$login]
     # flaga: nowe konto, link, tekst bota, «fajnie grasz» gdy nikt nie gra (panel → Czat i statystyki)
@@ -1355,7 +1443,7 @@ function Update-Updater {
         if (Test-Path $RestartFlag) { Remove-Item $RestartFlag -Force -ErrorAction SilentlyContinue; $script:RestartPending = $true }
     }
     if ($script:UP.auto -and $now -ge $script:UP.nextCheck) {
-        $script:UP.nextCheck = $now.AddHours(6)
+        $script:UP.nextCheck = $now.AddMinutes(10)      # automatyczna aktualizacja: sprawdzenie co 10 minut
         Invoke-UpdateCheck -Install
     }
 }
@@ -1621,6 +1709,10 @@ function Invoke-Request($ctx) {
                 Log ("Automatyczne aktualizacje: " + $(if ($script:UP.auto) { 'włączone' } else { 'wyłączone' }))
                 Send-Json $ctx (Get-UpdateStatus)
             }
+            '/log' {
+                $after = 0; if ($q.ContainsKey('after')) { [void][int]::TryParse([string]$q['after'], [ref]$after) }
+                Send-Json $ctx ([pscustomobject]@{ last = $script:LogSeq; lines = @($script:LogBuf | Where-Object { $_.n -gt $after }) })
+            }
             '/events' {
                 # bez «after» zwracamy tylko numer ostatniego zdarzenia – nowa nakładka nie odtwarza starych alertów
                 $after = -1
@@ -1650,7 +1742,15 @@ function Invoke-Request($ctx) {
                 $list = @($script:GameLib.Values | Where-Object { $all -or -not $_.hidden } | Sort-Object { [string]$_.last } -Descending)
                 # zainstalowane gry Steam, których jeszcze nie uruchamiałeś (do wyboru z listy)
                 $inst = @()
-                try { $inst = @(Get-SteamInstalled | Where-Object { -not $script:GameLib.ContainsKey($_.id) } | Sort-Object name | ForEach-Object { [pscustomobject]@{ id = $_.id; name = $_.name; steam = $_.steam; kind = ''; installed = $true } }) } catch {}
+                $steamIds = @{}
+                try { foreach ($g in @(Get-SteamInstalled)) { $steamIds[$g.id] = 1 } } catch {}
+                try { $inst = @(Get-SteamInstalled | Where-Object { -not $script:GameLib.ContainsKey($_.id) } | ForEach-Object { [pscustomobject]@{ id = $_.id; name = $_.name; steam = $_.steam; kind = 'game'; source = 'Steam'; installed = $true } }) } catch {}
+                try { $inst += @(Get-OtherGames | Where-Object { -not $script:GameLib.ContainsKey($_.id) } | ForEach-Object { [pscustomobject]@{ id = $_.id; name = $_.name; steam = ''; kind = 'game'; source = $_.source; installed = $true; exe = $_.exe } }) } catch {}
+                # zapisane pozycje: czy nadal są zainstalowane (gra Steam z listy Steama, program – plik istnieje)
+                $list = @($list | ForEach-Object {
+                    $x = $_.PSObject.Copy()
+                    $ok = if ($x.steam) { $steamIds.ContainsKey('steam:' + $x.steam) } elseif ($x.path) { Test-Path -LiteralPath $x.path } else { $true }
+                    $x | Add-Member -NotePropertyName installed -NotePropertyValue ([bool]$ok) -Force; $x })
                 Send-Json $ctx ([pscustomobject]@{ items = $list; installed = $inst; current = $script:LibCurrent; error = $script:LibErr })
               } catch { Send-Json $ctx ([pscustomobject]@{ items = @(); installed = @(); current = ''; error = $_.Exception.Message }) }
             }
@@ -1665,6 +1765,18 @@ function Invoke-Request($ctx) {
                 if (-not $r) { Send-Json $ctx @{ at = 0; status = $script:Censor.status; error = $script:Censor.err }; return }
                 if (([string]$q['since']) -eq [string]$r.at) { Send-Json $ctx @{ at = $r.at; same = $true }; return }
                 Send-Raw $ctx ([string]$script:Censor.json) 'application/json'
+            }
+            '/icon' {
+                $id = [string]$q['id']; $res = $ctx.Response
+                $e = $script:GameLib[$id]
+                $path = if ($e -and $e.path) { [string]$e.path } else { '' }
+                if (-not $path) { $o = @(Get-OtherGames | Where-Object { $_.id -eq $id }) | Select-Object -First 1; if ($o) { $path = $o.exe } }
+                $sid = if ($e -and $e.steam) { [string]$e.steam } elseif ($id -match '^steam:(\d+)$') { $Matches[1] } else { '' }
+                if ($sid) { $res.StatusCode = 302; $res.RedirectLocation = "/art?id=$sid&k=cover"; $res.OutputStream.Close(); return }
+                $png = Get-ExeIconPng $path
+                if (-not $png) { $res.StatusCode = 404; $res.OutputStream.Close(); return }
+                $res.ContentType = 'image/png'; $res.Headers['Cache-Control'] = 'max-age=86400'; $res.Headers['Access-Control-Allow-Origin'] = '*'
+                $res.ContentLength64 = $png.Length; $res.OutputStream.Write($png, 0, $png.Length); $res.OutputStream.Close()
             }
             '/art' {
                 $f = Get-SteamArtFile ([string]$q['id']) ([string]$q['k'])

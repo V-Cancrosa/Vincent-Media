@@ -128,6 +128,19 @@
   #bar .socials { margin-left: auto; display: grid; grid-template-columns: repeat(2, auto); gap: 8px 24px; font-size: 17px; opacity: .95; }
   .l-talk #bar { flex-wrap: wrap; } .l-talk #bar .socials { margin-left: 0; width: 100%; grid-template-columns: repeat(3, auto); justify-content: start; }
 
+  /* układ czatu: poziomo – pasek na całą szerokość (u góry / u dołu); pionowo z lewej – lustrzane odbicie */
+  .cl-h #chat.chat-ticker { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: auto; height: 58px; max-height: none; z-index: 5; }
+  .cl-h.cl-top #chat.chat-ticker { top: 0; bottom: auto; border-top: 0; border-bottom: 2px solid var(--accent); transform: translateY(-100%); }
+  .cl-h.cl-top #chat.chat-ticker.on { transform: none; }
+  .l-game-frame.cl-h #bar { height: 130px; }
+  .l-game-frame.cl-h.cl-top #gameFrame, .l-game-frame.cl-h.cl-top #avatar { top: 70px; }
+  .l-game-frame.cl-h.cl-top #bar { top: 905px; }
+  .l-game-frame.cl-h #avatar { height: 370px; }
+  .mirror.l-game-frame #gameFrame, .mirror.l-game-frame #bar { left: 440px; }
+  .mirror.l-game-frame #avatar, .mirror.l-game-frame #chat { left: 40px; }
+  .mirror.l-talk #avatar { left: 1030px; }
+  .mirror.l-talk #col { left: 80px; }
+
   /* rozmowa: temat, pasek i czat w jednej kolumnie – długi temat przesuwa resztę w dół, nic nie nachodzi */
   #col { display: none; }
   .l-talk #col { display: flex; flex-direction: column; gap: 22px; position: absolute; left: 1000px; top: 90px; width: 840px; height: 950px; }
@@ -167,25 +180,34 @@
   if (BGFX) BGFX.attach($('bgfx'));
   if (layout === 'talk') { const col = $('col'); col.append($('topic'), $('bar'), $('chat')); }
   // czat: w ramce i w rozmowie na stałe; na pełnym ekranie gry pasek u dołu/góry (domyślnie), dymki albo nic
+  const chatLay = s => (window.OverlayChat && window.OverlayChat.layoutOf ? window.OverlayChat.layoutOf(s) : { dir: 'v', side: 'right' });
   let chat = { add() {} }, chatMode = '';
   // pasek czatu (ticker) pokazuje sama nakładka „Teraz gram” (overlay.html) – jest w każdej scenie z grą;
   // tutaj tylko dymki (gdy wybrane) i miejsce na pasek przy avatarze
   function mountChat(s) {
-    const mode = layout === 'game-full' ? (['ticker', 'bubbles', 'off'].includes(s.gameChat) ? s.gameChat : 'ticker') : 'panel';
-    const pos = s.tickerPos === 'top' ? 'top' : 'bottom';
-    document.body.classList.toggle('ticker-top', mode === 'ticker' && pos === 'top');
-    document.body.classList.toggle('ticker-bottom', mode === 'ticker' && pos === 'bottom');
-    if (mode === chatMode) return;
-    chatMode = mode;
-    const box = $('chat'); box.className = ''; box.textContent = '';
-    chat = mode === 'off' || mode === 'ticker' ? { add() {} } : window.OverlayChat.mount(box, { mode, life: 14 });
+    // pełny ekran: czat pokazuje nakładka „Teraz gram” (overlay.html); tutaj ramka i rozmowa – pionowo (panel) albo poziomo (pasek)
+    const L = chatLay(s);
+    const mode = layout === 'game-full' || L.dir === 'off' ? 'off' : L.dir === 'h' ? 'ticker' : 'panel';
+    if (mode + L.side === chatMode) return;
+    chatMode = mode + L.side;
+    const box = $('chat'); box.className = ''; box.textContent = ''; box.removeAttribute('data-skin');
+    // rozmowa: pasek wychodzi z kolumny i leży na całej szerokości ekranu
+    if (layout === 'talk') { if (mode === 'ticker') document.body.appendChild(box); else $('col').appendChild(box); }
+    chat = mode === 'off' ? { add() {} } : window.OverlayChat.mount(box, mode === 'ticker' ? { mode: 'ticker' } : { mode, life: 14 });
   }
   mountChat(C.settings());
 
   let th = null, avatarKey = '';
+  // układ czatu z panelu: pionowo z lewej → ramka/rozmowa w lustrzanym odbiciu; poziomo u góry → ramka niżej
+  function rects(s) {
+    const L = chatLay(s), mirror = L.dir === 'v' && L.side === 'left', y = L.dir === 'h' && L.side === 'top' ? 70 : 40;
+    if (layout === 'game-frame') return { game: [mirror ? 440 : 40, y, 1440, 810], avatar: [mirror ? 40 : 1510, y, 370, 370] };
+    if (layout === 'talk') return { avatar: [mirror ? 1030 : 110, 150, 780, 780] };
+    return RECTS[layout];
+  }
   function holes(s) {
     // okna w tle: gra (ramka) i kamerka/VTuber
-    const r = RECTS[layout], hs = [];
+    const r = rects(s), hs = [];
     if (r.game) hs.push(r.game);
     if (r.avatar && (s.avatarMode === 'camera' || s.avatarMode === 'vtuber')) hs.push(r.avatar);
     if (!hs.length) { $('bg').style.clipPath = ''; return; }
@@ -238,8 +260,10 @@
   let fxKey = '';
   function render() {
     const s = C.settings();
-    th = C.applyTheme('l-' + layout + (document.body.classList.contains('talking') ? ' talking' : '') + (document.body.classList.contains('hype') ? ' hype' : ''));
-    if (window.OverlayChat && chatMode !== 'ticker') window.OverlayChat.setSkin($('chat'), th, C.settings().chatSkin !== false);
+    const L = chatLay(s);
+    th = C.applyTheme('l-' + layout + (document.body.classList.contains('talking') ? ' talking' : '') + (document.body.classList.contains('hype') ? ' hype' : '') +
+      ` cl-${L.dir} cl-${L.side}` + (L.dir === 'v' && L.side === 'left' ? ' mirror' : ''));
+    if (window.OverlayChat) window.OverlayChat.setSkin($('chat'), th, C.settings().chatSkin !== false);
     if (BGFX) {
       const k = th.cls + (th.game ? th.game.id : '') + (th.variant || '') + th.reduced;
       if (k !== fxKey) { fxKey = k; const base = GT.fusionFx ? GT.fusionFx(th) : th.def && th.def.fx; BGFX.set(base && !th.reduced && layout !== 'game-full' ? { ...base, count: Math.round(base.count * 2) } : null); }
@@ -249,7 +273,7 @@
     mountChat(s);
     // pełny ekran: avatar stoi nad kartą „Teraz gram”, gdy karta jest w tym samym rogu; pasek czatu podnosi oba
     if (layout === 'game-full') {
-      const tick = chatMode === 'ticker' && s.tickerPos !== 'top' ? 62 : 0;
+      const tick = 0;
       const pos = s.position || 'bl';
       const card = s.visible !== false && pos === 'bl' ? Math.round(130 * (+s.scale || 1)) + 24 : 0;
       document.body.style.setProperty('--av-bottom', (40 + tick + card) + 'px');

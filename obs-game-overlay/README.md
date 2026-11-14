@@ -160,6 +160,16 @@ Nazwy z tego pliku mają pierwszeństwo przed bazą Discorda, więc możesz w ni
 Jeśli wpiszesz ręcznie tę samą nazwę co wykryta gra, Twój podtytuł i okładka mają pierwszeństwo.
 Licznik czasu przy wykrytej grze liczy od uruchomienia gry, przy wpisanej ręcznie – od chwili jej ustawienia.
 
+## Co nowego w 1.23
+
+- **Kto prowadzi:** przy każdym starcie OBS panel pyta, która postać prowadzi stream (portrety, nie lista). W *Wyglądzie* zmienisz ją tak samo.
+- **Gra obok postaci („Sąsiedzi”):** gra nie miesza się z postacią. Dostaje własną tabliczkę przyczepioną do karty (logo albo emblemat, pełne kolory gry), wstążkę z pasami w swoich kolorach i swoje cząsteczki.
+- **Czat na każdej scenie pionowo albo poziomo:** *Czat → Układ*. Pionowo z lewej albo z prawej (gra w ramce i rozmowa odbijają się lustrzanie), poziomo u góry albo u dołu. Prędkość paska dobiera się sama.
+- **Co dziś?:** kafelki z ikoną i nazwą, rozwijane po kliknięciu, w dwóch działach: Gry i Programy. Gry ze Steam, Epic, GOG, Ubisoft, EA, Battle.net, Riot, Xbox i od innych wydawców są na liście same. Te, których już nie ma na dysku, są przygaszone.
+- **Wykrywacz:** panel sam go uruchamia, kiedy jest potrzebny. Jego dziennik widać na żywo w *Więcej → Wykrywacz – podgląd na żywo*, więc okno PowerShella może być schowane. Aktualizacje sprawdzają się co 10 minut i instalują same.
+- **Pilot przez czat Twitcha** zamiast Wi-Fi: napisz na swoim czacie (np. z telefonu) `!vm przerwa`, `!vm start`, `!vm koniec`, `!vm gra`, `!vm ramka`, `!vm rozmowa`, `!vm scena <nazwa>`, `!vm gra <tytuł>`, `!vm auto`, `!vm ukryj`, `!vm pokaz` albo `!vm test`. Działa tylko z konta streamera, a polecenie nie pojawia się na ekranie.
+- **Więcej:** zamiast podzakładek jedna strona ze zwijanymi grupami.
+
 ## Start: wszystko na co dzień w jednej zakładce
 
 Panel otwiera się na zakładce **Start**:

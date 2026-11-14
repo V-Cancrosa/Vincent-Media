@@ -86,7 +86,8 @@
 
   // cząsteczki: gra (z domieszką koloru postaci) albo sam styl; przy 50:50 więcej
   GT.fusionFx = function (r) {
-    const extra = r.persona ? [r.persona.accent[0]] : (r.def && r.game ? [r.def.accent[0]] : []);
+    // sąsiedzi (patch): cząsteczki tylko w kolorach gry – bez domieszki postaci
+    const extra = r.mode === 'patch' ? [] : r.persona ? [r.persona.accent[0]] : (r.def && r.game ? [r.def.accent[0]] : []);
     const src = r.game ? r.game.fx : (r.def ? r.def.fx : null);
     if (!src) return null;
     const fx = { ...src, colors: [...src.colors, ...extra] };

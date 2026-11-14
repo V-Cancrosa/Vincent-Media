@@ -55,8 +55,45 @@
   .bigbtns button { padding: 12px 8px; font-size: 13px; font-weight: 600; white-space: normal; }
   .bigbtns.small button { padding: 8px 6px; font-weight: 500; }
   .bigbtns button[aria-pressed="true"] { background: #e91916; border-color: #e91916; color: #fff; }
-  .soc { display: inline-flex; gap: .4em; align-items: center; white-space: nowrap; } .soc-ic { width: 1.2em; height: 1.2em; flex: none; } #socPrev a { color: inherit; text-decoration: none; } #socPrev a:hover b { text-decoration: underline; }
-  .lib select { grid-column: 1 / -1; font-size: 12px; padding: 4px 6px; }
+  .soc { display: inline-flex; gap: .4em; align-items: center; white-space: nowrap; } .soc-ic { width: 1.2em; height: 1.2em; flex: none; } #socPrev { display: flex; flex-wrap: wrap; gap: 6px 14px; } #socPrev > * { flex: none; min-width: 0; } #socPrev a { color: inherit; text-decoration: none; } #socPrev a:hover b { text-decoration: underline; }
+  .hostgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+  .hostgrid button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 4px 8px; border-radius: 10px; font-weight: 700; font-size: 12px; }
+  .hostgrid .hp { width: 60px; height: 60px; border-radius: 50%; overflow: hidden; background: #14161b; display: grid; place-items: center; border: 2px solid var(--line); }
+  .hostgrid .hp img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; }
+  .hostgrid .hp svg { width: 92%; height: 92%; } .hostgrid .hp > div, .hostgrid .hp > svg { position: static !important; transform: none !important; }
+  .hostgrid button[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, #1d2027); }
+  .hostgrid button[aria-pressed="true"] .hp { border-color: var(--accent); box-shadow: 0 0 12px var(--accent); }
+  .hostgrid.big { grid-template-columns: repeat(3, 1fr); } .hostgrid.big .hp { width: 78px; height: 78px; }
+  .hostpick { position: fixed; inset: 0; z-index: 50; background: rgba(8,9,12,.92); display: grid; place-items: center; padding: 14px; }
+  .hostbox { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 12px; } .hostbox h2 { text-align: center; font-size: 15px; color: #fff; letter-spacing: .06em; }
+  .posgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; max-width: 220px; aspect-ratio: 16 / 9; padding: 6px; border: 1px solid var(--line); border-radius: 8px; background: #101216; }
+  .posgrid button { padding: 0; border-radius: 4px; min-height: 0; font-size: 11px; }
+  .posgrid button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chipset { gap: 6px; }
+  .chipset .check { padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: #1d2027; font-size: 12px; cursor: pointer; user-select: none; }
+  .chipset .check input { display: none; }
+  .chipset .check:has(input:checked) { background: color-mix(in srgb, var(--accent) 28%, #1d2027); border-color: var(--accent); color: #fff; }
+  .acc > h2 { cursor: pointer; user-select: none; justify-content: flex-start; gap: 6px; } .acc > h2 .pill { margin-left: auto; }
+  .seg3 button { white-space: normal; min-width: 0; } .acc > h2::before { content: '▾ '; color: var(--muted); }
+  .acc.shut > h2::before { content: '▸ '; } .acc.shut > :not(h2) { display: none !important; } .acc.shut { padding-bottom: 8px; }
+  .term { background: #07080a; border: 1px solid #23262e; border-radius: 6px; padding: 8px 10px; height: 220px; overflow-y: auto; font: 12px/1.45 'Cascadia Mono', Consolas, 'JetBrains Mono', monospace; color: #c8ccd4; display: flex; flex-direction: column; }
+  .term.small { height: auto; gap: 2px; color: #7dff9a; }
+  .term .l-Green { color: #5ee08a; } .term .l-Red { color: #ff6b6b; } .term .l-Yellow, .term .l-DarkYellow { color: #ffd166; } .term .l-Cyan { color: #5ad6ff; } .term .l-DarkCyan { color: #3fa7c9; } .term .l-DarkGray, .term .tdim { color: #6b7080; } .term .l-Magenta { color: #ff7ae0; }
+  .lgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 5px; }
+  .lsec + .lsec { margin-top: 8px; }
+  .lib { display: block !important; padding: 0 !important; border-radius: 8px; overflow: hidden; }
+  .lib.open { grid-column: 1 / -1; }
+  .lib.gone { opacity: .55; }
+  .lhead { display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 8px; background: none; border: 0; border-radius: 0; text-align: left; font: inherit; color: inherit; min-width: 0; }
+  .lhead b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
+  .lhead em { font-style: normal; font-size: 10px; color: var(--ok); white-space: nowrap; } .lhead em.run { color: #ff5a5a; }
+  .lic { position: relative; flex: none; width: 26px; height: 26px; border-radius: 6px; overflow: hidden; background: #2e323d; display: grid; place-items: center; }
+  .lic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+  .lic i { font-style: normal; font-weight: 800; font-size: 13px; color: var(--muted); }
+  .lbody { padding: 4px 8px 8px; display: flex; flex-direction: column; gap: 6px; }
+  .lbody small { color: var(--muted); font-size: 11px; }
+  .lbtn { display: flex; gap: 6px; flex-wrap: wrap; } .lbtn button { padding: 6px 10px; }
+  .lib select { font-size: 12px; padding: 4px 6px; }
   .scgroup { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; margin-bottom: 8px; }
   .scgroup button { padding: 10px 8px; font-size: 13px; font-weight: 600; white-space: normal; }
   .scgroup button[aria-pressed="true"] { background: #e91916; border-color: #e91916; color: #fff; }
@@ -147,6 +184,10 @@
     <button class="pv-toggle" id="pvToggle" title="Zwiń / rozwiń podgląd" aria-pressed="true">▴</button>
   </nav>
   </div>
+  <div class="hostpick" id="hostPick" hidden>
+    <div class="hostbox"><h2>Kto dziś prowadzi stream?</h2><div class="hostgrid big" id="hostGrid"></div>
+    <button class="auto" id="hostKeep">Zostaw: <b id="hostCur"></b></button></div>
+  </div>
   <div class="tab" data-tab="start">
   <section>
     <h2>Teraz</h2>
@@ -180,8 +221,7 @@
     <h2>Co dziś? <span class="pill" id="pickPill"></span></h2>
     <div class="row"><input id="libFilter" type="search" placeholder="Szukaj gry albo programu…" autocomplete="off"><button class="auto" id="libAuto" title="Wróć do automatycznego wykrywania">↺ auto</button></div>
     <div class="slist" id="libList"></div>
-    <details id="libInstBox"><summary id="libInstSum">Zainstalowane ze Steama</summary><div class="slist" id="libInst"></div></details>
-    <p class="hint" style="margin:0"><b>Wybierz</b> = ta gra jest na nakładce (niezależnie od wykrywania), a obok wybierasz jej motyw. ▶ uruchamia grę. Gry i programy, które uruchamiasz, dopisują się same.</p>
+    <p class="hint" style="margin:0">Kliknij grę: <b>Wybierz</b> = jest na nakładce, ▶ uruchamia, niżej jej motyw. Gry z Steam, Epic, GOG, Ubisoft, EA, Battle.net i Xbox są tu same; programy dopisują się, gdy ich używasz.</p>
   </section>
   <section>
     <h2>Sceny</h2>
@@ -249,7 +289,7 @@
     <label>Sociale z ikonami (ekrany, gra w ramce, rozmowa, pasek czatu) – puste = Twoje konta, „-” = bez
       <input id="socials" type="text" placeholder="telegram: @…, bluesky: @….bsky.social, instagram: @…, x: @…, reddit: u/…, github: …">
     </label>
-    <div class="row" id="socPrev" style="flex-wrap:wrap;gap:6px 16px;font-size:13px"></div>
+    <div id="socPrev" style="font-size:13px"></div>
     <label class="check"><input id="sceneHero" type="checkbox"> duża postać / emblemat obok odliczania</label>
     <details>
       <summary>Przejścia między ekranami</summary>
@@ -323,8 +363,10 @@
   <div class="tab" data-tab="look">
   <section>
     <h2>Wygląd</h2>
+    <div class="sclabel">Kto prowadzi</div>
+    <div class="hostgrid" id="personaGrid"></div>
     <div class="row">
-      <label>Postać
+      <label hidden>Postać
         <select id="persona"><option value="">bez postaci</option></select>
       </label>
       <label>Język streama
@@ -338,8 +380,22 @@
         <option value="terminal">tylko terminal – „> event…”</option><option value="syndrome">tylko Nanite Syndrome</option>
       </select>
     </label>
+    <div class="sclabel">Gdzie stoi karta „Teraz gram”</div>
+    <div class="posgrid" id="posGrid"></div>
+    <div class="sclabel">Gra obok postaci</div>
+    <div class="seg3" id="modeSeg"><button data-m="patch">Sąsiedzi</button><button data-m="off">Tylko postać</button><button data-m="game">Tylko gra</button></div>
+    <p class="hint" style="margin:0" id="modeHint"></p>
+    <div class="sclabel">Na karcie</div>
+    <div class="checks chipset">
+      <label class="check"><input id="timer" type="checkbox"> ⏱ licznik czasu</label>
+      <label class="check"><input id="icon" type="checkbox"> ▣ ikona gry</label>
+      <label class="check"><input id="showLabel" type="checkbox"> Aa napis nad nazwą</label>
+      <label class="check"><input id="reducedMotion" type="checkbox"> ◌ mniej animacji</label>
+    </div>
+    <details>
+      <summary>Więcej opcji karty</summary>
     <div class="row">
-      <label>Styl (gdy bez postaci) / motyw gry
+      <label>Bez postaci (awaryjnie) / motyw gry na stałe
         <select id="theme">
           <option value="neon">Neon</option>
           <option value="glass">Glass</option>
@@ -349,7 +405,7 @@
           <optgroup label="Motywy gier" id="gameThemeOpts"></optgroup>
         </select>
       </label>
-      <label>Pozycja
+      <label hidden>Pozycja
         <select id="position">
           <option value="tl">Lewy górny</option>
           <option value="tc">Góra środek</option>
@@ -378,14 +434,9 @@
       </label>
     </div>
     <div class="checks">
-      <label class="check"><input id="timer" type="checkbox"> licznik czasu</label>
-      <label class="check"><input id="icon" type="checkbox"> ikona</label>
-      <label class="check"><input id="showLabel" type="checkbox"> napis</label>
-    </div>
-    <div class="checks">
-      <label style="flex-basis:100%">Gdy gra ma własny motyw
+      <label style="flex-basis:100%">Tryb łączenia z grą (pełna lista)
         <select id="gameMode">
-          <option value="patch">Łatka – postać prowadzi, gra naszyta na wierzch (logo, wstążka, cząsteczki)</option>
+          <option value="patch">Sąsiedzi – postać prowadzi, gra obok ze swoimi elementami (logo, tabliczka, wstążka, cząsteczki)</option>
           <option value="fuse-half">Fuzja pół na pół (50:50) – wymieszane kolory i teksty</option>
           <option value="game">Sam motyw gry</option>
           <option value="off">Ignoruj motywy gier</option>
@@ -395,8 +446,8 @@
           </optgroup>
         </select>
       </label>
-      <label class="check"><input id="reducedMotion" type="checkbox"> ogranicz animacje</label>
     </div>
+    </details>
   </section>
   <section>
     <h2>Avatar / kamerka</h2>
@@ -418,6 +469,17 @@
   <div class="tab" data-tab="chat">
   <section>
     <h2>Czat na ekranie</h2>
+    <div class="sclabel">Układ – na każdej scenie</div>
+    <div class="seg3" id="chatDirSeg"><button data-d="v">▮ Pionowo</button><button data-d="h">▬ Poziomo</button><button data-d="off">Bez czatu</button></div>
+    <div class="seg3" id="chatSideSeg"></div>
+    <div class="sclabel">Wygląd</div>
+    <div class="checks chipset">
+      <label class="check" title="ciągle ignoruje style i kolory wybrane przez widzów (!styl, !kolor), dopóki nie wyłączysz"><input id="themeOnly" type="checkbox"> tylko motyw (bez !styl)</label>
+      <label class="check" title="terminal Myr, karteczki Chipa, playlista Ragnara, lampiony Toro, adnotacje Vince'a, tabliczki Zarin; bez postaci – pergamin, komunikator, EVA"><input id="chatSkin" type="checkbox"> styl postaci / gry</label>
+      <label class="check" title="kolumna albo pasek także na ekranach przerw"><input id="sceneChat" type="checkbox"> też na przerwach</label>
+      <label class="check" title="wiadomości z flagą „podejrzane” (świeże konto, reklama widzów…) nie trafiają na ekran"><input id="botHide" type="checkbox"> ukryj podejrzane</label>
+    </div>
+    <div hidden>
     <label>Gra na pełnym ekranie – jak pokazać czat
       <select id="gameChat">
         <option value="ticker">pasek przewijany w bok (jak w wiadomościach) – nie zasłania gry</option>
@@ -433,17 +495,14 @@
         <input id="tickerSpeed" type="range" min="70" max="320" step="10">
       </label>
     </div>
-    <label class="check"><input id="themeOnly" type="checkbox"> <b>tylko motyw postaci / gry</b> – tymczasowo ignoruj style i kolory wybrane przez widzów (!styl, !kolor); po wyłączeniu wracają</label>
-    <label class="check"><input id="chatSkin" type="checkbox"> czat w stylu postaci albo gry (terminal Myr, karteczki Chipa, playlista Ragnara, lampiony Toro, adnotacje Vince'a, tabliczki Zarin; bez postaci – pergamin DD, komunikator ME, EVA z C&amp;C)</label>
-    <label class="check"><input id="sceneChat" type="checkbox"> czat także na ekranach przerw (kolumna z prawej)</label>
-    <label class="check"><input id="botHide" type="checkbox"> nie pokazuj na ekranie wiadomości z flagą „podejrzane” (świeże konto, reklama widzów…)</label>
+    </div>
+    <div class="sclabel">Testy</div>
     <div class="seg3">
       <button data-ct="chat">Test: wiadomość</button><button id="botTest">Test: wiadomość bota</button><button id="botShow" aria-pressed="false">Pokazuj podejrzane (z ⚑)</button>
       <button id="feedChat" aria-pressed="false">Stały napływ czatu</button><button id="feedAlerts" aria-pressed="false">Stały napływ alertów</button><button id="feedStop">Zatrzymaj</button>
     </div>
-    <p class="hint" style="margin:0">Każda testowa wiadomość przechodzi przez ocenę czatu. Wynik widać od razu poniżej – podejrzane są ukryte na ekranie, chyba że włączysz „Pokazuj podejrzane”. W napływie co kilka wiadomości wpada bot.</p>
     <div class="slist" id="testFlags"></div>
-    <p class="hint" style="margin:0">W ramce i w rozmowie czat jest zawsze widoczny obok. Osobne źródło: <code>chat.html?mode=ticker</code>.</p>
+    <p class="hint" style="margin:0">Testy przechodzą przez ocenę bota – wynik pojawia się wyżej. Najedź na przełącznik, żeby zobaczyć, co robi.</p>
   </section>
   <section>
     <h2>Napisz na czat (test)</h2>
@@ -600,7 +659,20 @@
     </ul>
   </section>
 
-  <section id="remoteSec">
+  <section data-feature="local">
+    <h2>Wykrywacz – podgląd na żywo <span id="logPill" class="pill off"></span></h2>
+    <div class="term" id="detLog"><span class="tdim">Łączę z wykrywaczem…</span></div>
+    <p class="hint" style="margin:0">Wykrywacz działa w tle, bez okna PowerShella – tu widać wszystko, co robi. Pełny dziennik: <code>detector\data\detector.log</code>.</p>
+  </section>
+
+  <section data-feature="twitch">
+    <h2>Pilot z telefonu – przez czat Twitcha</h2>
+    <p class="hint" style="margin:0">Bez Wi‑Fi i bez otwierania portów: napisz na swoim czacie (np. z aplikacji Twitch na telefonie) – działa tylko z Twojego konta, a polecenie nie pojawia się na ekranie.</p>
+    <div class="term small"><span>!vm przerwa · !vm start · !vm koniec · !vm przygotowania · !vm spoznienie</span><span>!vm gra · !vm ramka · !vm rozmowa</span><span>!vm scena &lt;nazwa sceny OBS&gt;</span><span>!vm gra &lt;nazwa gry z listy&gt; · !vm auto</span><span>!vm ukryj · !vm pokaz · !vm test</span></div>
+    <div class="status" id="ctlStatus"></div>
+  </section>
+
+  <section id="remoteSec" hidden>
     <h2>Pilot z telefonu <span id="rmPill" class="pill off">WYŁ.</span></h2>
     <div class="status" id="rmStatus">Sprawdzam…</div>
     <div id="rmOn" hidden>
@@ -630,6 +702,7 @@
     <label class="check"><input id="upAuto" type="checkbox"> aktualizuj automatycznie (co 6 godzin, gdy działa wykrywacz)</label>
   </section>
   <section>
+    <h2>Link bez panelu</h2>
     <details>
       <summary>Link bez panelu (statyczny)</summary>
       <p class="hint">Gotowy URL z obecnymi ustawieniami – możesz wkleić go jako źródło przeglądarki, jeśli nie chcesz używać panelu.</p>
@@ -1181,15 +1254,19 @@
   }
   // wykrywacz nie działa: uruchomienie przez adres vincentmedia:// (dodaje go instalator za zgodą)
   // panel w OBS otwiera się razem z OBS: gdy wykrywacz nie odpowiada, raz uruchom go sam (adres vincentmedia://)
-  let detAuto = false;
-  setTimeout(() => { if (!detAuto && s.local && !isRemote && s.detAutoStart !== false && !$('lcPill').classList.contains('on')) { detAuto = true; $('detStart').click(); } }, 6000);
+  // wykrywacz potrzebny, a nie działa → panel sam go uruchamia (co 30 s, dopóki nie wstanie)
+  let detTry = 0;
+  setInterval(() => {
+    if (!s.local || isRemote || s.detAutoStart === false || $('lcPill').classList.contains('on')) { detTry = 0; return; }
+    if (detTry++ % 5 === 0) $('detStart').click();
+  }, 6000);
   $('detStart').onclick = () => {
     const f = document.createElement('iframe'); f.style.display = 'none'; f.src = 'vincentmedia://start'; document.body.appendChild(f);
     setTimeout(() => f.remove(), 3000);
     $('detStartMsg').hidden = false;
     $('detStartMsg').textContent = 'Uruchamiam… Jeśli po kilku sekundach nadal nie działa: Menu Start → Vincent-Media → Wykrywacz gier (albo uruchom instalator jeszcze raz i zgódź się na „uruchamianie z OBS”).';
   };
-  $('stStatus').addEventListener('click', e => { const d = e.target.closest('[data-goto]'); if (!d) return; showTab('more'); const tab = document.querySelector('.tab[data-tab="more"]'); showSub(tab, d.dataset.goto === 'twPill' ? 'Twitch' : d.dataset.goto === 'obsPill' ? 'OBS' : 'Wykrywacz'); });
+  $('stStatus').addEventListener('click', e => { const d = e.target.closest('[data-goto]'); if (!d) return; openGroup(d.dataset.goto === 'twPill' ? 'Twitch' : d.dataset.goto === 'obsPill' ? 'OBS' : 'Lokalny wykrywacz'); });
   let capLast = '', capBusy = false;
   const CAP_NAME = 'VM · Gra (automatycznie)';
   const CAP_SCENES = { 'VM · Gra – pełny ekran': 'full', 'VM · Gra – w ramce': 'frame' };
@@ -1219,7 +1296,10 @@
       return;
     }
     const kind = s.captureKind === 'game' ? 'game_capture' : 'window_capture';
-    const key = kind + '|' + g.window + '|' + capTargets().join('|') + '|' + (s.captureExclude || []).join('|'); if (key === capLast) return;
+    // ramka gry zależy od układu czatu (pionowo z lewej → ramka po prawej; poziomo u góry → ramka niżej)
+    const CL = window.OverlayChat && window.OverlayChat.layoutOf ? window.OverlayChat.layoutOf(s) : { dir: 'v', side: 'right' };
+    const fx0 = CL.dir === 'v' && CL.side === 'left' ? 440 : 40, fy0 = CL.dir === 'h' && CL.side === 'top' ? 70 : 40;
+    const key = kind + '|' + g.window + '|' + capTargets().join('|') + '|' + (s.captureExclude || []).join('|') + '|' + fx0 + ',' + fy0; if (key === capLast) return;
     capBusy = true;
     try {
       const inputs = (await obs.call('GetInputList')).inputs || [];
@@ -1239,13 +1319,14 @@
       for (const sc of capTargets()) {
         const mode = CAP_SCENES[sc] || 'full';
         const items = (await obs.call('GetSceneItemList', { sceneName: sc })).sceneItems || [];
-        if (items.some(i => i.sourceName === CAP_NAME)) { placed++; continue; }
-        const id = made ? (await obs.call('CreateSceneItem', { sceneName: sc, sourceName: CAP_NAME })).sceneItemId
+        const have = items.find(i => i.sourceName === CAP_NAME);
+        if (have && mode !== 'frame') { placed++; continue; }
+        const id = have ? have.sceneItemId : made ? (await obs.call('CreateSceneItem', { sceneName: sc, sourceName: CAP_NAME })).sceneItemId
           : (await obs.call('CreateInput', { sceneName: sc, inputName: CAP_NAME, inputKind: kind, inputSettings: settings })).sceneItemId;
         made = true; placed++;
         const kx = vs.baseWidth / 1920, ky = vs.baseHeight / 1080, fr = mode === 'frame';
-        await obs.call('SetSceneItemIndex', { sceneName: sc, sceneItemId: id, sceneItemIndex: 0 });    // na sam dół – pod nakładkami
-        await obs.call('SetSceneItemTransform', { sceneName: sc, sceneItemId: id, sceneItemTransform: { positionX: fr ? 40 * kx : 0, positionY: fr ? 40 * ky : 0,
+        if (!have) await obs.call('SetSceneItemIndex', { sceneName: sc, sceneItemId: id, sceneItemIndex: 0 });    // na sam dół – pod nakładkami
+        await obs.call('SetSceneItemTransform', { sceneName: sc, sceneItemId: id, sceneItemTransform: { positionX: fr ? fx0 * kx : 0, positionY: fr ? fy0 * ky : 0,
           boundsType: 'OBS_BOUNDS_SCALE_INNER', boundsAlignment: 0, boundsWidth: fr ? 1440 * kx : vs.baseWidth, boundsHeight: fr ? 810 * ky : vs.baseHeight } });
       }
       await obs.call('SetInputSettings', { inputName: CAP_NAME, inputSettings: settings });
@@ -1317,29 +1398,39 @@
       `<option value="none"${tf === 'none' ? ' selected' : ''}>bez motywu gry (sama postać)</option>`;
   };
   const isPicked = e => s.mode === 'manual' && s.game && s.game.toLowerCase() === String(e.name).toLowerCase();
+  // kafelek: ikona + nazwa; kliknięcie rozwija (Wybierz, uruchom, ukryj, motyw)
+  let libOpen = '';
+  const SRC_NAME = { steam: 'Steam' };
   function libRow(e, inst) {
     const ago = t => { const m = Math.round((Date.now() - new Date(t)) / 60000); return !t ? '' : m < 2 ? 'teraz' : m < 60 ? m + ' min temu' : m < 1440 ? Math.round(m / 60) + ' h temu' : Math.round(m / 1440) + ' dni temu'; };
-    const meta = inst ? 'Steam · zainstalowana' : e.live ? 'uruchomione teraz' : [e.steam ? 'Steam' : e.kind === 'make' || e.kind === 'app' ? 'program' : e.kind === 'vn' ? 'visual novel' : 'gra', ago(e.last), e.minutes >= 1 ? Math.round(e.minutes / 6) / 10 + ' h' : '', e.id === libData.current ? 'uruchomiona' : ''].filter(Boolean).join(' · ');
-    return `<div class="lib ${isPicked(e) ? 'cur' : ''}" data-id="${esc(e.id)}"><div><b>${esc(e.name)}</b><small>${esc(meta)}</small></div>
-      <button class="${isPicked(e) ? '' : 'primary'}" data-pick="${esc(e.id)}">${isPicked(e) ? '✓ Na nakładce' : 'Wybierz'}</button>${e.live ? '<span></span><span></span>' : `<button data-run="${esc(e.id)}" title="Uruchom">▶</button>`}${e.live ? '' : inst ? '<span></span>' : `<button data-hide="${esc(e.id)}" title="Ukryj na liście">✕</button>`}
-      <select data-theme="${esc(e.id)}">${themeOpts(e.name)}</select></div>`;
+    const src = e.source || (e.steam ? 'Steam' : '');
+    const running = e.live || e.id === libData.current;
+    const meta = [running ? '● uruchomione' : '', src, e.installed === false ? 'niezainstalowana' : '', inst ? '' : ago(e.last), e.minutes >= 1 ? Math.round(e.minutes / 6) / 10 + ' h' : ''].filter(Boolean).join(' · ');
+    const open = libOpen === e.id, picked = isPicked(e);
+    const icon = e.live && !e.steam ? '' : hubUrl() + '/icon?id=' + encodeURIComponent(e.id);
+    return `<div class="lib ${picked ? 'cur' : ''} ${open ? 'open' : ''} ${e.installed === false ? 'gone' : ''}" data-id="${esc(e.id)}">
+      <button class="lhead" data-open="${esc(e.id)}"><span class="lic">${icon ? `<img src="${esc(icon)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<i>${esc(String(e.name).slice(0, 1).toUpperCase())}</i></span>
+        <b>${esc(e.name)}</b>${picked ? '<em>✓ na nakładce</em>' : running ? '<em class="run">●</em>' : ''}</button>
+      ${open ? `<div class="lbody"><small>${esc(meta)}</small>
+        <div class="lbtn"><button class="${picked ? '' : 'primary'}" data-pick="${esc(e.id)}">${picked ? '✓ Na nakładce' : 'Wybierz'}</button>${e.live || e.installed === false ? '' : `<button data-run="${esc(e.id)}" title="Uruchom">▶ Uruchom</button>`}${e.live || inst ? '' : `<button data-hide="${esc(e.id)}" title="Ukryj na liście">✕</button>`}</div>
+        <select data-theme="${esc(e.id)}">${themeOpts(e.name)}</select></div>` : ''}</div>`;
   }
   function renderLibrary() { try { renderLibrary0(); } catch (e) { $('libList').innerHTML = `<p class="hint" style="margin:0;color:var(--warn)">Błąd listy: ${esc(e.message)}</p>`; } }
   function renderLibrary0() {
     const f = ($('libFilter').value || '').trim().toLowerCase(), ok = e => e && e.name && (!f || String(e.name).toLowerCase().includes(f));
-    // uruchomiona teraz gra zawsze na górze – także gdy wykrywacz jeszcze jej nie zapisał
+    // jedna lista: uruchomiona teraz, ostatnio używane, potem zainstalowane (Steam, Epic, GOG, Ubisoft, EA, Battle.net, Xbox…)
     const all = libData.items.slice();
     if (libLive && !all.some(e => String(e.name).toLowerCase() === libLive.name.toLowerCase())) all.unshift(libLive);
-    const items = all.filter(ok), inst = libData.installed.filter(ok);
-    $('libList').innerHTML = items.length ? items.slice(0, 40).map(e => libRow(e, false)).join('')
-      : `<p class="hint" style="margin:0">${f ? 'Nic nie pasuje.' : 'Jeszcze pusto – wybierz grę z zainstalowanych poniżej albo uruchom grę lub program, a dopisze się sama.'}</p>`;
-    $('libInstSum').textContent = `Zainstalowane ze Steama (${libData.installed.length})`;
-    $('libInstBox').hidden = !libData.installed.length;
-    $('libInst').innerHTML = inst.slice(0, 80).map(e => libRow(e, true)).join('');
-    if (f && inst.length && !items.length) $('libInstBox').open = true;
+    const inst = libData.installed.filter(e => !all.some(a => a.id === e.id || String(a.name).toLowerCase() === String(e.name).toLowerCase())).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    const list = all.concat(inst.map(e => ({ ...e, _inst: true }))).filter(ok);
+    const isProg = e => e.kind === 'app' || e.kind === 'make';
+    const games = list.filter(e => !isProg(e)), progs = list.filter(isProg);
+    const sec = (title, arr, n) => `<div class="lsec"><div class="sclabel">${title} (${arr.length})</div><div class="lgrid">${arr.slice(0, n).map(e => libRow(e, !!e._inst)).join('')}</div>${arr.length > n ? `<p class="hint" style="margin:4px 0 0">…i ${arr.length - n} więcej – wpisz nazwę w wyszukiwarce.</p>` : ''}</div>`;
+    $('libList').innerHTML = (libErr ? `<p class="hint" style="margin:0;color:var(--warn)">Wykrywacz: ${esc(libErr)}</p>` : '') +
+      (list.length ? sec('Gry', games, f ? 60 : 30) + (progs.length ? sec('Programy', progs, f ? 40 : 16) : '')
+        : `<p class="hint" style="margin:0">${f ? 'Nic nie pasuje.' : 'Jeszcze pusto – uruchom grę albo program, a dopisze się sam.'}</p>`);
     pill('pickPill', s.mode === 'manual' && !!s.game, s.mode === 'manual' && s.game ? 'WYBRANA RĘCZNIE' : '', 'AUTOMATYCZNIE');
     $('libAuto').setAttribute('aria-pressed', s.mode !== 'manual');
-    if (libErr) $('libList').insertAdjacentHTML('afterbegin', `<p class="hint" style="margin:0;color:var(--warn)">Wykrywacz: ${esc(libErr)}</p>`);
   }
   async function startLibrary() {
     if (!s.local || document.querySelector('.tab[data-tab="start"]').hidden) return;
@@ -1379,7 +1470,8 @@
     if (sel.value) s.themeFor[k] = sel.value; else delete s.themeFor[k];
     save();
   };
-  for (const id of ['libList', 'libInst']) { $(id).addEventListener('click', libClick); $(id).addEventListener('change', libTheme); }
+  $('libList').addEventListener('click', e => { const o = e.target.closest('[data-open]'); if (o) { libOpen = libOpen === o.dataset.open ? '' : o.dataset.open; renderLibrary(); return; } libClick(e); });
+  $('libList').addEventListener('change', libTheme);
   document.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => (b.dataset.qt === 'bot' ? $('botTest').click() : runTest(b.dataset.qt, 0)));
   // aktywna scena podświetlona (scena OBS albo ekran przerwy)
   function markStartScenes() { for (const b of document.querySelectorAll('#stScenes [data-go]')) { const v = b.dataset.go.slice(2); b.setAttribute('aria-pressed', b.dataset.go[0] === 'o' ? obsCurrent === v : s.scene === v && (!obsCurrent || obsCurrent === OBS_SCENE_FOR[v])); } }
@@ -1563,7 +1655,7 @@
     mic: () => (checks.mic && checks.mic.fix === 'micdup' ? obs.call('RemoveInput', { inputName: MIC_NAME }).then(() => { s.autoMic = false; save(); $('autoMic').checked = false; }) : ensureMic()),
     censor: () => censorAddLayer(),
     scenes: () => { showTab('more'); },
-    twitch: () => { showTab('more'); const tab = document.querySelector('.tab[data-tab="more"]'); showSub(tab, 'Twitch'); }
+    twitch: () => openGroup('Twitch')
   };
   // wykrywacz nie odpowiada: ostatnie linijki jego dziennika (detector\data\detector.log), jeśli OBS pozwala czytać pliki
   async function detLogTail() {
@@ -1607,7 +1699,12 @@
           const inputs = (await obs.call('GetInputList')).inputs || [];
           const has = [sp.mic1, sp.mic2, sp.mic3, sp.mic4].some(Boolean) || inputs.some(i => /input_capture$/.test(i.inputKind));
           const micInputs = inputs.filter(i => /input_capture$/.test(i.inputKind));
-          const dup = inputs.some(i => i.inputName === MIC_NAME) && (micInputs.length > 1 || [sp.mic1, sp.mic2, sp.mic3, sp.mic4].some(Boolean));
+          // dubel tylko wtedy, gdy inne źródło łapie to samo urządzenie (VM · Mikrofon = domyślny mikrofon Windows)
+          let dup = false;
+          if (inputs.some(i => i.inputName === MIC_NAME)) {
+            const others = micInputs.filter(i => i.inputName !== MIC_NAME).map(i => i.inputName).concat([sp.mic1, sp.mic2, sp.mic3, sp.mic4].filter(Boolean));
+            for (const n of others) { try { const d = ((await obs.call('GetInputSettings', { inputName: n })).inputSettings || {}).device_id; if (!d || d === 'default') dup = true; } catch {} }
+          }
           c.mic = dup ? { ok: false, msg: `mikrofon może być podwójnie: „${MIC_NAME}” i ${[sp.mic1, ...micInputs.map(i => i.inputName)].filter(n => n && n !== MIC_NAME).join(', ')} – Napraw usuwa „${MIC_NAME}”`, fix: 'micdup' }
             : has ? { ok: true } : { ok: false, msg: 'OBS nie ma mikrofonu' };
         } catch { c.mic = { ok: false, msg: 'nie mogę sprawdzić' }; }
@@ -1642,6 +1739,106 @@
   $('stChecks').addEventListener('click', e => { const b = e.target.closest('[data-fix]'); if (!b) return; b.textContent = '…'; try { FIX[b.dataset.fix](); } catch {} setTimeout(selfTest, 2500); });
   setInterval(() => { if (!document.querySelector('.tab[data-tab="start"]').hidden) selfTest(); }, 6000);
   setTimeout(selfTest, 2500);
+
+
+  // --- kto prowadzi: portrety zamiast listy; przy każdym starcie OBS (nowa sesja panelu) pytanie „Kto dziś prowadzi?” ---
+  const HOST_IMG = { vince: 'themes/fursona/vince.webp', chip: 'themes/fursona/chip.webp', ragnar: 'themes/fursona/ragnar.webp', toro: 'themes/fursona/toro.webp' };
+  const hosts = () => ((window.OverlayGameThemes && window.OverlayGameThemes.list) || []).filter(t => t.group === 'fursona');
+  const hostBtn = t => `<button data-host="${esc(t.id)}" aria-pressed="${s.theme === 'g-' + t.id}"><span class="hp">${HOST_IMG[t.id] ? `<img src="${HOST_IMG[t.id]}" alt="">` : (t.emblem || '')}</span>${esc(t.name)}</button>`;
+  function renderHosts() {
+    const list = hosts();
+    $('personaGrid').innerHTML = list.map(hostBtn).join('');
+    $('hostGrid').innerHTML = list.map(hostBtn).join('');
+    const cur = list.find(t => s.theme === 'g-' + t.id); $('hostCur').textContent = cur ? cur.name : '—'; $('hostKeep').hidden = !cur;
+  }
+  function pickHost(id) {
+    const sel = $('persona'); if (![...sel.options].some(o => o.value === id)) return;
+    sel.value = id; sel.dispatchEvent(new Event('change'));
+    try { sessionStorage.setItem('vm.hostPicked', '1'); } catch {}
+    $('hostPick').hidden = true; renderHosts();
+  }
+  for (const id of ['personaGrid', 'hostGrid']) $(id).addEventListener('click', e => { const b = e.target.closest('[data-host]'); if (b) pickHost(b.dataset.host); });
+  $('hostKeep').onclick = () => { try { sessionStorage.setItem('vm.hostPicked', '1'); } catch {} $('hostPick').hidden = true; };
+  setTimeout(() => {
+    renderHosts();
+    let asked = false; try { asked = !!sessionStorage.getItem('vm.hostPicked'); } catch {}
+    if (!asked && !isRemote && /^file:/.test(location.protocol)) $('hostPick').hidden = false;
+  }, 0);
+  // pozycja karty: siatka 3×2 zamiast listy
+  const POS = [['tl', '↖'], ['tc', '↑'], ['tr', '↗'], ['bl', '↙'], ['bc', '↓'], ['br', '↘']];
+  const renderPos = () => { $('posGrid').innerHTML = POS.map(([v, a]) => `<button data-pos="${v}" aria-pressed="${s.position === v}" title="${esc($('position').querySelector(`option[value="${v}"]`).textContent)}">${a}</button>`).join(''); };
+  $('posGrid').addEventListener('click', e => { const b = e.target.closest('[data-pos]'); if (!b) return; $('position').value = b.dataset.pos; $('position').dispatchEvent(new Event('change')); setTimeout(renderPos, 50); });
+  // gra obok postaci: trzy przyciski (pełna lista trybów w „Więcej opcji karty”)
+  const MODE_HINT = { patch: 'Postać prowadzi. Gra stoi obok ze swoimi elementami – tabliczka z logo, wstążka w jej kolorach, cząsteczki – bez mieszania kolorów.', off: 'Tylko motyw postaci, gra tylko z nazwy.', game: 'Na czas gry karta w całości w motywie gry.' };
+  const renderMode = () => { const m = s.gameThemes === false ? 'off' : (s.gameMode || 'patch'); for (const b of $('modeSeg').children) b.setAttribute('aria-pressed', b.dataset.m === m); $('modeHint').textContent = MODE_HINT[m] || 'Tryb eksperymentalny (wybrany w „Więcej opcji karty”).'; };
+  $('modeSeg').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (!b) return; $('gameMode').value = b.dataset.m; $('gameMode').dispatchEvent(new Event('change')); setTimeout(renderMode, 50); });
+  setTimeout(() => { renderPos(); renderMode(); }, 0);
+  setInterval(() => { if (!document.querySelector('.tab[data-tab="look"]').hidden) { renderPos(); renderMode(); renderHosts(); } }, 2000);
+
+
+  // --- układ czatu: pionowo / poziomo / bez, plus strona; jedno ustawienie dla wszystkich scen ---
+  const SIDES = { v: [['left', '◧ Z lewej'], ['right', 'Z prawej ◨']], h: [['top', '⬒ Na górze'], ['bottom', '⬓ Na dole']] };
+  const chatDir = () => (['v', 'h', 'off'].includes(s.chatDir) ? s.chatDir : 'v');
+  function renderChatLayout() {
+    const d = chatDir();
+    for (const b of $('chatDirSeg').children) b.setAttribute('aria-pressed', b.dataset.d === d);
+    const side = s.chatSide && (SIDES[d] || []).some(([v]) => v === s.chatSide) ? s.chatSide : (d === 'h' ? 'bottom' : 'right');
+    $('chatSideSeg').hidden = d === 'off';
+    $('chatSideSeg').innerHTML = (SIDES[d] || []).map(([v, t]) => `<button data-side="${v}" aria-pressed="${v === side}">${t}</button>`).join('');
+  }
+  $('chatDirSeg').addEventListener('click', e => { const b = e.target.closest('[data-d]'); if (!b) return; s.chatDir = b.dataset.d; s.chatSide = b.dataset.d === 'h' ? 'bottom' : 'right'; save(); renderChatLayout(); });
+  $('chatSideSeg').addEventListener('click', e => { const b = e.target.closest('[data-side]'); if (!b) return; s.chatSide = b.dataset.side; save(); renderChatLayout(); });
+  setTimeout(renderChatLayout, 0);
+
+
+  // --- terminal wykrywacza: dziennik na żywo (wykrywacz może działać schowany) ---
+  let logLast = 0;
+  async function pollLog() {
+    const open = !document.querySelector('.tab[data-tab="more"]').hidden;
+    if (!s.local || isRemote || !open) return;
+    try {
+      const j = await (await fetch(hubUrl() + '/log?after=' + logLast, { cache: 'no-store' })).json();
+      const box = $('detLog'); if (logLast === 0) box.textContent = '';
+      if (j.last < logLast) { logLast = 0; box.textContent = ''; }
+      const stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
+      for (const l of arr(j.lines)) { const d = document.createElement('div'); d.className = 'l-' + (l.c || 'Gray'); d.textContent = l.t; box.appendChild(d); }
+      while (box.childElementCount > 400) box.firstElementChild.remove();
+      logLast = j.last; if (stick) box.scrollTop = box.scrollHeight;
+      pill('logPill', true, 'DZIAŁA');
+    } catch { pill('logPill', false, '', 'NIE ODPOWIADA'); if (logLast === 0) $('detLog').innerHTML = '<span class="tdim">Wykrywacz nie odpowiada – panel spróbuje go uruchomić.</span>'; }
+  }
+  setInterval(pollLog, 1500);
+
+  // --- pilot przez czat Twitcha: polecenia „!vm …” od streamera wykonuje panel w OBS ---
+  let ctlLast = null;
+  const SCREEN_CMD = { przerwa: 'brb', brb: 'brb', start: 'start', zaczynamy: 'start', koniec: 'end', end: 'end', przygotowania: 'prep', prep: 'prep', spoznienie: 'late', late: 'late', za: 'soon', soon: 'soon' };
+  const SCENE_CMD = { gra: 'VM · Gra – pełny ekran', ramka: 'VM · Gra – w ramce', rozmowa: 'VM · Rozmowa' };
+  const plain = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').trim();
+  async function runControl(cmd) {
+    const [w, ...rest] = String(cmd).trim().split(/\s+/), arg = rest.join(' '), k = plain(w);
+    const say = t => { $('ctlStatus').textContent = new Date().toLocaleTimeString().slice(0, 5) + ' · !vm ' + cmd + ' → ' + t; };
+    if (SCREEN_CMD[k] && !arg) { const b = document.querySelector(`#sceneBtns button[data-s="${SCREEN_CMD[k]}"]`); if (b) { b.click(); return say('ekran'); } }
+    if (k === 'gra' && arg) {
+      const all = libData.items.concat(libData.installed);
+      const it = all.find(e => plain(e.name) === plain(arg)) || all.find(e => plain(e.name).includes(plain(arg)));
+      s.game = it ? it.name : arg; s.gameSteam = it && it.steam || ''; s.mode = 'manual'; s.since = Date.now(); s.visible = true; save(); return say('gra: ' + s.game);
+    }
+    if (k === 'auto') { s.mode = 'auto'; save(); return say('wykrywanie automatyczne'); }
+    if (k === 'ukryj' || k === 'pokaz') { s.visible = k === 'pokaz'; save(); return say(k === 'pokaz' ? 'karta widoczna' : 'karta ukryta'); }
+    if (k === 'test') { runTest('follow', 0); return say('test alertu'); }
+    const target = k === 'scena' ? obsSceneList.find(n => plain(n) === plain(arg)) || obsSceneList.find(n => plain(n).includes(plain(arg))) : SCENE_CMD[k];
+    if (target && obs) { goScene(KIND_FOR_OBS[target] || 'game', () => obs.setSceneCut(target).catch(() => {})); return say('scena ' + target); }
+    say('nie znam tego polecenia');
+  }
+  async function pollControl() {
+    if (!s.local || isRemote || feats().twitch === false) return;
+    try {
+      const j = await (await fetch(hubUrl() + '/events' + (ctlLast != null ? '?after=' + ctlLast : ''), { cache: 'no-store' })).json();
+      if (ctlLast != null) for (const ev of arr(j.events)) if (ev && ev.type === 'control') runControl(ev.cmd);
+      ctlLast = j.last;
+    } catch {}
+  }
+  setInterval(pollControl, 1500);
 
   // --- czat na ekranie, moderacja, statystyki, nagrywanie ---
   document.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => runTest(b.dataset.ct, 0));
@@ -1781,10 +1978,22 @@
   // --- podzakładki (zakładki w zakładkach) ---
   const SUBS = {
     live: [['Gra', ['Gra']], ['Ekrany', ['Ekrany', 'Sceny OBS']], ['Alerty', ['Alerty']]],
-    look: [['Karta', ['Wygląd']], ['Avatar', ['Avatar / kamerka']]],
+
     chat: [['Na ekranie', ['Czat na ekranie']], ['Moderacja', ['Napisz na czat (test)', 'Słowa zakazane', 'Cenzura ekranu', 'Podejrzane konta']], ['Statystyki', ['Statystyki streamów']], ['Nagrywanie', ['Nagrywanie']]],
-    more: [['Twitch', ['Twitch']], ['OBS', ['OBS (WebSocket)']], ['Wykrywacz', ['Wykrywanie gier', 'Lokalny wykrywacz']], ['Funkcje', ['Funkcje']], ['Telefon', ['Pilot z telefonu']], ['Wersja', ['Wersja']], ['Discord', ['Discord (Lanyard)']], ['Źródła', ['Źródła w OBS', '']]]
   };
+  // Więcej: zamiast podzakładek jedna strona ze zwijanymi grupami (kliknięcie nagłówka rozwija)
+  const ACC_OPEN = ['Wykrywacz – podgląd na żywo'];
+  function initAcc() {
+    for (const sec of document.querySelectorAll('.tab[data-tab="more"] > section')) {
+      if (sec.classList.contains('acc')) continue;
+      sec.classList.add('acc'); if (!ACC_OPEN.includes(h2name(sec))) sec.classList.add('shut');
+      const h = sec.querySelector(':scope > h2'); if (h) h.addEventListener('click', () => sec.classList.toggle('shut'));
+    }
+  }
+  function openGroup(title) {
+    showTab('more'); initAcc();
+    for (const sec of document.querySelectorAll('.tab[data-tab="more"] > section')) if (h2name(sec).startsWith(title)) { sec.classList.remove('shut'); setTimeout(() => sec.scrollIntoView({ block: 'start' }), 50); }
+  }
   const SUB_KEY = 'obsGameOverlay.panelSub';
   const subState = (() => { try { return JSON.parse(localStorage.getItem(SUB_KEY)) || {}; } catch { return {}; } })();
   const h2name = sec => { const h = sec.querySelector(':scope > h2'); return h ? h.firstChild.textContent.trim() : ''; };
@@ -1805,6 +2014,7 @@
     subState[tab.dataset.tab] = name;
     try { localStorage.setItem(SUB_KEY, JSON.stringify(subState)); } catch {}
   }
+  setTimeout(initAcc, 0);
   function updateSubs() {
     for (const tab of document.querySelectorAll('.tab')) {
       const btns = [...tab.querySelectorAll('.subtabs button')]; if (!btns.length) continue;

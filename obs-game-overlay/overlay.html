@@ -31,8 +31,13 @@
   /* pasek czatu na ekranie gry (w każdej scenie z tą nakładką) */
   #ticker { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; }
   .tk-top #ticker { top: 0; bottom: auto; }
-  .tk-top #ticker .chat-ticker { border-top: 0; border-bottom: 2px solid var(--accent); transform: translateY(-100%); }
-  .tk-top #ticker .chat-ticker.on { transform: none; }
+  .tk-top #ticker.chat-ticker { border-top: 0; border-bottom: 2px solid var(--accent); transform: translateY(-100%); }
+  .tk-top #ticker.chat-ticker.on { transform: none; }
+  /* pionowo: kolumna przy krawędzi, nad grą; karta po tej samej stronie – kolumna kończy się wyżej */
+  #ticker.vchat { top: 110px; bottom: 110px; left: auto; right: 30px; width: 440px; display: flex; }
+  #ticker.vchat.vs-left { left: 30px; right: auto; }
+  .pos-bl #ticker.vchat.vs-left, .pos-br #ticker.vchat.vs-right { bottom: 300px; }
+  .pos-tl #ticker.vchat.vs-left, .pos-tr #ticker.vchat.vs-right { top: 300px; }
 </style>
 </head>
 <body class="theme-neon pos-bl">
@@ -405,20 +410,28 @@
 
   // ---- synchronizacja z panelem ----
   // ---- pasek czatu: kafelki jadą od prawej; karta odsuwa się, gdy pasek jest widoczny ----
-  let tickerChat = null, tickKey = null;
+  let tickerChat = null, tickKey = null, obsScene = '';
+  const lay = () => (window.OverlayChat && window.OverlayChat.layoutOf ? window.OverlayChat.layoutOf(settings) : { dir: 'h', side: 'bottom' });
   function setGap(on) {
-    const r = document.documentElement.style, top = settings.tickerPos === 'top';
-    r.setProperty('--tb', on && !top ? '62px' : '0px'); r.setProperty('--tt', on && top ? '62px' : '0px');
+    const r = document.documentElement.style, L = lay(), top = L.dir === 'h' && L.side === 'top';
+    r.setProperty('--tb', on && L.dir === 'h' && !top ? '62px' : '0px'); r.setProperty('--tt', on && top ? '62px' : '0px');
   }
+  // czat na scenach z grą: poziomo (pasek u góry / u dołu) albo pionowo (kolumna z lewej / prawej, wiadomości znikają po chwili)
   function mountTicker() {
-    const want = window.OverlayChat && settings.overlayTicker !== false && p.get('ticker') !== '0' && !['bubbles', 'off'].includes(settings.gameChat);
-    const key = (want ? 1 : 0) + '|' + (settings.tickerPos || '') + '|' + (settings.tickerSpeed || '') + '|' + (window.VMi18n ? VMi18n.lang() : '');
-    document.body.classList.toggle('tk-top', settings.tickerPos === 'top');
+    const L = lay();
+    const ownChat = obsScene && window.OverlayChat && window.OverlayChat.OWN_CHAT_SCENE.test(obsScene);
+    const want = window.OverlayChat && settings.overlayTicker !== false && p.get('ticker') !== '0' && L.dir !== 'off' && !ownChat;
+    const key = (want ? 1 : 0) + '|' + L.dir + L.side + '|' + (window.VMi18n ? VMi18n.lang() : '');
+    document.body.classList.toggle('tk-top', L.dir === 'h' && L.side === 'top');
     if (key === tickKey) return; tickKey = key;
-    const box = document.getElementById('ticker'); box.className = ''; box.textContent = ''; setGap(false);
-    tickerChat = want ? window.OverlayChat.mount(box, { mode: 'ticker', speed: +settings.tickerSpeed || 140, onVisible: setGap }) : null;
+    const box = document.getElementById('ticker'); box.className = ''; box.textContent = ''; box.removeAttribute('data-skin'); setGap(false);
+    if (!want) { tickerChat = null; return; }
+    if (L.dir === 'h') tickerChat = window.OverlayChat.mount(box, { mode: 'ticker', onVisible: setGap });
+    else { box.classList.add('vchat', 'vs-' + L.side); tickerChat = window.OverlayChat.mount(box, { mode: 'panel', fade: true, life: 25, max: 8 }); }
+    applyStyle(current());
   }
   if (window.VMClient) window.VMClient.events(ev => { if (ev && ev.type === 'chat' && tickerChat) tickerChat.add(ev); });
+  try { new BroadcastChannel('obsGameOverlay').addEventListener('message', e => { const m = e.data; if (m && m.type === 'scene' && m.name !== obsScene) { obsScene = m.name; mountTicker(); } }); } catch {}
 
   function reload() {
     const prevId = dcId(), prevMode = settings.mode;
