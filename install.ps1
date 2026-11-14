@@ -77,6 +77,26 @@ $Urls = [ordered]@{
 Add-Type -AssemblyName System.Web.Extensions
 $Json = New-Object Web.Script.Serialization.JavaScriptSerializer
 $Json.MaxJsonLength = [int]::MaxValue
+# PowerShell potrafi opakować słowniki i tablice we własne obiekty (PSObject) – JavaScriptSerializer zapętla się
+# na nich („odwołanie cykliczne … PSParameterizedProperty”). Przed zapisem zamieniamy wszystko na zwykłe słowniki i listy.
+function ConvertTo-Plain($o) {
+    if ($null -eq $o) { return $null }
+    if ($o -is [Management.Automation.PSObject]) { $o = $o.PSObject.BaseObject }
+    if ($o -is [string] -or $o -is [ValueType]) { return $o }
+    if ($o -is [Collections.IDictionary]) {
+        $d = New-Object 'Collections.Generic.Dictionary[string,object]'
+        foreach ($k in @($o.Keys)) { $d[[string]$k] = ConvertTo-Plain $o[$k] }
+        return $d
+    }
+    if ($o -is [Collections.IEnumerable]) {
+        $l = New-Object 'Collections.Generic.List[object]'
+        foreach ($x in $o) { $l.Add((ConvertTo-Plain $x)) }
+        return , $l.ToArray()
+    }
+    return $o
+}
+function To-Json($o) { return $Json.Serialize((ConvertTo-Plain $o)) }
+$Json.MaxJsonLength = [int]::MaxValue
 $Json.RecursionLimit = 512
 
 function Read-Ini([string]$path) {
@@ -298,7 +318,7 @@ if (-not (Test-Path $ObsDir)) {
 
                 $coll['sources'] = $sources.ToArray()
                 $coll['scene_order'] = $order.ToArray()
-                [IO.File]::WriteAllText($collPath, $Json.Serialize($coll), (New-Object Text.UTF8Encoding $false))
+                [IO.File]::WriteAllText($collPath, (To-Json $coll), (New-Object Text.UTF8Encoding $false))
                 Say 'Sceny i źródła dodane.' 'Green'
                 Say "W scenach «${Prefix}Gra – …» dodaj swoje przechwytywanie gry i przesuń je na sam dół listy źródeł." 'Yellow'
                 Say 'Kamerka / VTuber: w panelu (Wygląd → Avatar) wybierz tryb, a źródło kamerki ustaw pod układem w miejscu okna.' 'DarkGray'
@@ -315,7 +335,7 @@ if (-not (Test-Path $ObsDir)) {
                     $dd['title'] = 'Vincent-Media'; $dd['url'] = $Urls.panel; $dd['uuid'] = [guid]::NewGuid().ToString()
                     [void]$docks.Add($dd)
                 }
-                Set-IniValue $ini 'BasicWindow' 'ExtraBrowserDocks' ($Json.Serialize($docks.ToArray()))
+                Set-IniValue $ini 'BasicWindow' 'ExtraBrowserDocks' (To-Json $docks.ToArray())
                 Save-Ini $ini
                 Say 'Dok «Vincent-Media» dodany (OBS: menu Doki).' 'Green'
                 Say "Kopie zapasowe: $bk1" 'DarkGray'
@@ -337,10 +357,10 @@ if (-not (Test-Path $ObsDir)) {
                             $chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'.ToCharArray()
                             $ws['server_password'] = -join (1..20 | ForEach-Object { $chars[(Get-Random -Maximum $chars.Length)] })
                         }
-                        [IO.File]::WriteAllText($wsCfg, $Json.Serialize($ws), (New-Object Text.UTF8Encoding $false))
+                        [IO.File]::WriteAllText($wsCfg, (To-Json $ws), (New-Object Text.UTF8Encoding $false))
                         $dataDir = Join-Path $InstallDir 'detector\data'
                         New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
-                        [IO.File]::WriteAllText((Join-Path $dataDir 'obs-ws.json'), $Json.Serialize(@{ port = $ws['server_port']; password = $ws['server_password'] }), (New-Object Text.UTF8Encoding $false))
+                        [IO.File]::WriteAllText((Join-Path $dataDir 'obs-ws.json'), (To-Json @{ port = $ws['server_port']; password = $ws['server_password'] }), (New-Object Text.UTF8Encoding $false))
                         Say "OBS WebSocket włączony (port $($ws['server_port'])). Hasło zapisane dla nakładek." 'Green'
                     }
                 }
