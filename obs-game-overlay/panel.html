@@ -43,6 +43,15 @@
   .srow { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: #1d2027; cursor: pointer; }
   .srow small { color: var(--muted); grid-column: 1 / -1; } .srow .dl { display: flex; gap: 4px; } .srow .dl a { font-size: 11px; color: var(--accent); }
   .spark { width: 100%; height: 46px; display: block; }
+  .now { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; background: #14161b; border: 1px solid var(--line); }
+  .now b { font-size: 18px; color: #fff; } .now small { color: var(--muted); }
+  .bigbtns { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
+  .bigbtns button { padding: 12px 8px; font-size: 13px; font-weight: 600; white-space: normal; }
+  .bigbtns.small button { padding: 8px 6px; font-weight: 500; }
+  .bigbtns button[aria-pressed="true"] { background: #e91916; border-color: #e91916; color: #fff; }
+  .lib { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #1d2027; }
+  .lib.cur { border-color: var(--ok); } .lib small { display: block; color: var(--muted); font-size: 11px; } .lib b { color: #fff; }
+  .lib button { padding: 6px 10px; }
   .tests { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
   .twcode { font: 700 26px/1.2 ui-monospace, 'Cascadia Mono', Consolas, monospace; letter-spacing: .14em; color: #fff; background: #14161b; border: 1px dashed var(--accent); border-radius: 8px; padding: 10px; text-align: center; user-select: all; }
   code { font-size: 11px; background: #14161b; padding: 1px 5px; border-radius: 4px; }
@@ -116,13 +125,48 @@
     </div>
   </section>
   <nav class="tabs" role="tablist" aria-label="Sekcje panelu">
-    <button role="tab" data-tab="live">Na żywo</button>
+    <button role="tab" data-tab="start">Start</button>
+    <button role="tab" data-tab="live">Sterowanie</button>
     <button role="tab" data-tab="look">Wygląd</button>
     <button role="tab" data-tab="chat">Czat</button>
-    <button role="tab" data-tab="conn">Połączenia</button>
-    <button role="tab" data-tab="set">Ustawienia</button>
+    <button role="tab" data-tab="more">Więcej</button>
     <button class="pv-toggle" id="pvToggle" title="Zwiń / rozwiń podgląd" aria-pressed="true">▴</button>
   </nav>
+  </div>
+  <div class="tab" data-tab="start">
+  <section>
+    <h2>Teraz</h2>
+    <div class="stats" id="stStatus"></div>
+    <div class="now"><b id="stGame">—</b><small id="stGameSub"></small></div>
+    <label class="check"><input id="autoCapture" type="checkbox"> OBS sam łapie okno wykrytej gry</label>
+    <div class="row">
+      <label>Sposób
+        <select id="captureKind">
+          <option value="window">przechwytywanie okna (działa prawie zawsze)</option>
+          <option value="game">przechwytywanie gry (wydajniejsze, nie każda gra)</option>
+        </select>
+      </label>
+    </div>
+    <div class="status" id="capStatus"></div>
+  </section>
+  <section>
+    <h2>Scena</h2>
+    <div class="bigbtns" id="stScenes">
+      <button data-go="s:prep">Przygotowania</button><button data-go="s:start">Zaraz zaczynamy</button>
+      <button data-go="o:VM · Gra – pełny ekran">Gra</button><button data-go="o:VM · Gra – w ramce">Gra w ramce</button>
+      <button data-go="s:brb">Przerwa</button><button data-go="o:VM · Rozmowa">Rozmowa</button>
+      <button data-go="s:end">Koniec</button>
+    </div>
+  </section>
+  <section data-feature="local">
+    <h2>Moje gry i programy</h2>
+    <div class="slist" id="libList"></div>
+    <p class="hint" style="margin:0">Każda wykryta gra i program (np. Blender) trafia tu sama. ▶ uruchamia ją – przez Steam albo z pliku.</p>
+  </section>
+  <section>
+    <h2>Szybki test</h2>
+    <div class="bigbtns small"><button data-qt="follow">Follow</button><button data-qt="sub">Sub</button><button data-qt="raid">Raid</button><button data-qt="chat">Czat</button><button data-qt="bot">Bot</button></div>
+  </section>
   </div>
   <div class="tab" data-tab="live">
   <section>
@@ -1040,6 +1084,89 @@
   }
 
   $('galleryBtn').onclick = () => { try { window.open(new URL('gallery.html', location.href).href, 'vmGallery', 'width=1100,height=900'); } catch {} };
+  // --- START: stan, gra, automatyczne przechwytywanie, sceny, biblioteka, szybki test ---
+  const hubUrl = () => window.vmHub(s.localUrl || DEFAULTS.localUrl);
+  function startStatus() {
+    const box = $('stStatus'); if (!box) return;
+    box.innerHTML = [['lcPill', 'Wykrywacz'], ['obsPill', 'OBS'], ['twPill', 'Twitch']].map(([id, n]) => {
+      const p = $(id); const on = p && p.classList.contains('on');
+      return `<div class="stat" data-goto="${id}"><b style="color:${on ? 'var(--ok)' : 'var(--warn)'}">${on ? '✓' : '!'}</b><span>${n}: ${esc(p ? p.textContent : '')}</span></div>`;
+    }).join('');
+  }
+  $('stStatus').addEventListener('click', e => { const d = e.target.closest('[data-goto]'); if (!d) return; showTab('more'); const tab = document.querySelector('.tab[data-tab="more"]'); showSub(tab, d.dataset.goto === 'twPill' ? 'Twitch' : d.dataset.goto === 'obsPill' ? 'OBS' : 'Wykrywacz'); });
+  let capLast = '', capBusy = false;
+  const CAP_NAME = 'VM · Gra (automatycznie)';
+  const CAP_SCENES = { 'VM · Gra – pełny ekran': 'full', 'VM · Gra – w ramce': 'frame' };
+  // wykryta gra → źródło „VM · Gra (automatycznie)” w scenach z grą: okno tej gry (dopasowanie po pliku .exe)
+  async function startGame() {
+    let g = null;
+    try { const j = await (await fetch(hubUrl() + '/game', { cache: 'no-store' })).json(); g = j && j.game; } catch {}
+    $('stGame').textContent = g ? g.name : (s.game || 'nic nie wykryto');
+    $('stGameSub').textContent = g ? [g.via === 'steam' ? 'Steam' : g.via === 'renpy' ? "Ren'Py" : g.via === 'app' ? 'program' : '', g.exe].filter(Boolean).join(' · ') : (s.game ? 'wpisana ręcznie' : 'uruchom grę albo wpisz ją w Sterowanie → Gra');
+    if (!g || !g.window || !obs || s.autoCapture === false || isRemote || capBusy) {
+      if (s.autoCapture !== false && g && !g.window) $('capStatus').textContent = 'Gra wykryta, ale nie widzę jej okna – może jest zminimalizowana.';
+      return;
+    }
+    const kind = s.captureKind === 'game' ? 'game_capture' : 'window_capture';
+    const key = kind + '|' + g.window; if (key === capLast) return;
+    capBusy = true;
+    try {
+      const inputs = (await obs.call('GetInputList')).inputs || [];
+      const ex = inputs.find(i => i.inputName === CAP_NAME);
+      if (ex && ex.inputKind !== kind) await obs.call('RemoveInput', { inputName: CAP_NAME });
+      let made = !!(ex && ex.inputKind === kind);
+      const settings = kind === 'game_capture' ? { capture_mode: 'window', window: g.window, priority: 2 } : { window: g.window, priority: 2, cursor: false };
+      const vs = await obs.call('GetVideoSettings');
+      let placed = 0;
+      for (const [sc, mode] of Object.entries(CAP_SCENES)) {
+        if (!obsSceneList.includes(sc)) continue;
+        const items = (await obs.call('GetSceneItemList', { sceneName: sc })).sceneItems || [];
+        if (items.some(i => i.sourceName === CAP_NAME)) { placed++; continue; }
+        const id = made ? (await obs.call('CreateSceneItem', { sceneName: sc, sourceName: CAP_NAME })).sceneItemId
+          : (await obs.call('CreateInput', { sceneName: sc, inputName: CAP_NAME, inputKind: kind, inputSettings: settings })).sceneItemId;
+        made = true; placed++;
+        const kx = vs.baseWidth / 1920, ky = vs.baseHeight / 1080, fr = mode === 'frame';
+        await obs.call('SetSceneItemIndex', { sceneName: sc, sceneItemId: id, sceneItemIndex: 0 });    // na sam dół – pod nakładkami
+        await obs.call('SetSceneItemTransform', { sceneName: sc, sceneItemId: id, sceneItemTransform: { positionX: fr ? 40 * kx : 0, positionY: fr ? 40 * ky : 0,
+          boundsType: 'OBS_BOUNDS_SCALE_INNER', boundsAlignment: 0, boundsWidth: fr ? 1440 * kx : vs.baseWidth, boundsHeight: fr ? 810 * ky : vs.baseHeight } });
+      }
+      await obs.call('SetInputSettings', { inputName: CAP_NAME, inputSettings: settings });
+      capLast = key;
+      $('capStatus').textContent = `OBS łapie: ${g.name} (${kind === 'game_capture' ? 'gra' : 'okno'}) w ${placed} scenach. W swoich scenach dodaj istniejące źródło „${CAP_NAME}”.`;
+    } catch (e) { $('capStatus').textContent = 'OBS odmówił: ' + e.message; }
+    capBusy = false;
+  }
+  $('autoCapture').onchange = () => { s.autoCapture = $('autoCapture').checked; capLast = ''; save(); };
+  $('captureKind').onchange = () => { s.captureKind = $('captureKind').value; capLast = ''; save(); };
+  $('stScenes').addEventListener('click', e => {
+    const b = e.target.closest('[data-go]'); if (!b) return;
+    const [t, v] = [b.dataset.go.slice(0, 1), b.dataset.go.slice(2)];
+    if (t === 's') { const btn = document.querySelector(`#sceneBtns button[data-s="${v}"]`); if (btn) btn.click(); return; }
+    if (!obs) { $('capStatus').textContent = 'Brak połączenia z OBS.'; return; }
+    goScene(v.includes('Rozmowa') ? 'talk' : 'game', () => obs.setSceneCut(v).catch(() => {}));
+  });
+  async function startLibrary() {
+    if (!s.local || document.querySelector('.tab[data-tab="start"]').hidden) return;
+    let j; try { j = await (await fetch(hubUrl() + '/library', { cache: 'no-store' })).json(); } catch { $('libList').innerHTML = '<p class="hint" style="margin:0">Wykrywacz nie działa – uruchom go z menu Start.</p>'; return; }
+    const ago = t => { const m = Math.round((Date.now() - new Date(t)) / 60000); return !t ? '' : m < 2 ? 'teraz' : m < 60 ? m + ' min temu' : m < 1440 ? Math.round(m / 60) + ' h temu' : Math.round(m / 1440) + ' dni temu'; };
+    const items = (j.items || []).slice(0, 12);
+    $('libList').innerHTML = items.length ? items.map(e => `<div class="lib ${e.id === j.current ? 'cur' : ''}"><div><b>${esc(e.name)}</b><small>${esc([e.steam ? 'Steam' : e.kind === 'make' ? 'program' : e.kind === 'vn' ? 'visual novel' : 'gra', ago(e.last), e.minutes >= 1 ? Math.round(e.minutes / 6) / 10 + ' h' : ''].filter(Boolean).join(' · '))}</small></div>
+      <button data-run="${esc(e.id)}" title="Uruchom">▶</button><button data-hide="${esc(e.id)}" title="Ukryj na liście">✕</button></div>`).join('')
+      : '<p class="hint" style="margin:0">Jeszcze pusto – uruchom grę albo program, a pojawi się tutaj.</p>';
+  }
+  $('libList').addEventListener('click', async e => {
+    const r = e.target.closest('[data-run]'), h = e.target.closest('[data-hide]');
+    if (r) { r.textContent = '…'; try { const j = await (await fetch(hubUrl() + '/library/launch?id=' + encodeURIComponent(r.dataset.run), { cache: 'no-store' })).json(); r.textContent = j.ok ? '✓' : '!'; if (!j.ok) r.title = j.error; } catch { r.textContent = '!'; } }
+    if (h) { try { await fetch(hubUrl() + '/library/edit?hidden=1&id=' + encodeURIComponent(h.dataset.hide), { cache: 'no-store' }); } catch {} startLibrary(); }
+  });
+  document.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => (b.dataset.qt === 'bot' ? $('botTest').click() : runTest(b.dataset.qt, 0)));
+  // aktywna scena podświetlona (scena OBS albo ekran przerwy)
+  const markStartScenes = () => { for (const b of document.querySelectorAll('#stScenes [data-go]')) { const v = b.dataset.go.slice(2); b.setAttribute('aria-pressed', b.dataset.go[0] === 'o' ? obsCurrent === v : s.scene === v && /^VM · (Przygotowania|Zaraz|Spóźnienie|Przerwa|Koniec)/.test(obsCurrent)); } };
+  const startTick = () => { if (document.querySelector('.tab[data-tab="start"]').hidden) return; startStatus(); startGame(); markStartScenes(); };
+  setInterval(startTick, 3000); setInterval(startLibrary, 15000);
+  document.querySelector('.tabs button[data-tab="start"]').addEventListener('click', () => setTimeout(() => { startTick(); startLibrary(); }, 50));
+  setTimeout(() => { startTick(); startLibrary(); }, 800);
+
   // --- test czatu: bot, stały napływ, wynik oceny ---
   const testFlags = [];
   function showFlag(ev) {
@@ -1074,7 +1201,8 @@
     $('gameChat').value = s.gameChat || 'ticker'; $('tickerPos').value = s.tickerPos || 'bottom';
     $('tickerSpeed').value = s.tickerSpeed || 140; $('tickerSpeedVal').textContent = (s.tickerSpeed || 140) + ' px/s';
     $('botHide').checked = s.botHide !== false; $('alertsInChat').checked = s.alertsInChat !== false;
-    $('botShow').setAttribute('aria-pressed', s.botHide === false); $('autoRecord').checked = !!s.autoRecord; $('autoRecordStop').checked = s.autoRecordStop !== false;
+    $('botShow').setAttribute('aria-pressed', s.botHide === false);
+    $('autoCapture').checked = s.autoCapture !== false; $('captureKind').value = s.captureKind === 'game' ? 'game' : 'window'; $('autoRecord').checked = !!s.autoRecord; $('autoRecordStop').checked = s.autoRecordStop !== false;
   }
   const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const fmtMin = m => m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;
@@ -1178,6 +1306,13 @@
   setPv((() => { try { return localStorage.getItem(PV_KEY) !== '0'; } catch { return true; } })());
 
   // --- zakładki ---
+  // „Połączenia” i „Ustawienia” w jednej zakładce „Więcej” – mniej przycisków na górze
+  (() => {
+    const conn = document.querySelector('.tab[data-tab="conn"]'), set = document.querySelector('.tab[data-tab="set"]');
+    if (!conn || !set) return;
+    while (set.firstChild) conn.appendChild(set.firstChild);
+    set.remove(); conn.dataset.tab = 'more';
+  })();
   const TAB_KEY = 'obsGameOverlay.panelTab';
   function showTab(name) {
     for (const b of document.querySelectorAll('.tabs button[data-tab]')) b.setAttribute('aria-selected', b.dataset.tab === name);
@@ -1185,15 +1320,14 @@
     try { localStorage.setItem(TAB_KEY, name); } catch {}
   }
   for (const b of document.querySelectorAll('.tabs button[data-tab]')) b.onclick = () => showTab(b.dataset.tab);
-  showTab((() => { try { return localStorage.getItem(TAB_KEY) || 'live'; } catch { return 'live'; } })());
+  showTab((() => { try { const t = localStorage.getItem(TAB_KEY) || 'start'; return t === 'conn' || t === 'set' ? 'more' : t; } catch { return 'start'; } })());
 
   // --- podzakładki (zakładki w zakładkach) ---
   const SUBS = {
     live: [['Gra', ['Gra']], ['Ekrany', ['Ekrany', 'Sceny OBS']], ['Alerty', ['Alerty']]],
     look: [['Karta', ['Wygląd']], ['Avatar', ['Avatar / kamerka']]],
     chat: [['Na ekranie', ['Czat na ekranie']], ['Moderacja', ['Podejrzane konta']], ['Statystyki', ['Statystyki streamów']], ['Nagrywanie', ['Nagrywanie']]],
-    conn: [['Gra', ['Wykrywanie gier', 'Lokalny wykrywacz']], ['OBS', ['OBS (WebSocket)']], ['Twitch', ['Twitch']], ['Discord', ['Discord (Lanyard)']]],
-    set: [['Funkcje', ['Funkcje']], ['Telefon', ['Pilot z telefonu']], ['Wersja', ['Wersja']], ['Źródła', ['Źródła w OBS', '']]]
+    more: [['Twitch', ['Twitch']], ['OBS', ['OBS (WebSocket)']], ['Wykrywacz', ['Wykrywanie gier', 'Lokalny wykrywacz']], ['Funkcje', ['Funkcje']], ['Telefon', ['Pilot z telefonu']], ['Wersja', ['Wersja']], ['Discord', ['Discord (Lanyard)']], ['Źródła', ['Źródła w OBS', '']]]
   };
   const SUB_KEY = 'obsGameOverlay.panelSub';
   const subState = (() => { try { return JSON.parse(localStorage.getItem(SUB_KEY)) || {}; } catch { return {}; } })();

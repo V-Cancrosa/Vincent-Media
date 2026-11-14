@@ -266,6 +266,26 @@ if (-not ('VMGameDetector.Win' -as [type])) {
 [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
 '@
 }
+# okno gry dla OBS: «tytuł:klasa:plik.exe» (tak zapisuje je źródło przechwytywania okna / gry)
+if (-not ('VMGameDetector.Win2' -as [type])) {
+    Add-Type -Namespace VMGameDetector -Name Win2 -MemberDefinition @'
+[DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder s, int n);
+'@
+}
+function Get-WindowSpec([int]$procId) {
+    if (-not $procId) { return $null }
+    try {
+        $pr = Get-Process -Id $procId -ErrorAction Stop
+        $h = $pr.MainWindowHandle
+        if ($h -eq [IntPtr]::Zero) { return $null }
+        $sb = New-Object Text.StringBuilder 256
+        [void][VMGameDetector.Win2]::GetClassName($h, $sb, 256)
+        $exe = [IO.Path]::GetFileName($pr.Path)
+        $enc = { param($t) ([string]$t).Replace('#', '#22').Replace(':', '#3A') }
+        return [pscustomobject]@{ spec = (& $enc $pr.MainWindowTitle) + ':' + (& $enc $sb.ToString()) + ':' + (& $enc $exe); title = $pr.MainWindowTitle; exe = $exe }
+    } catch { return $null }
+}
+
 function Get-ForegroundPid {
     $h = [VMGameDetector.Win]::GetForegroundWindow()
     $fgPid = [uint32]0
@@ -323,6 +343,41 @@ function Get-RenPyName([string]$path) {
     if (-not $n.Trim()) { $n = $leaf }
     return $n.Trim()
 }
+# ---------------------------------------------------------------- biblioteka: każda wykryta gra / program, do uruchamiania z panelu
+$LibraryFile = Join-Path $DataDir 'library.json'
+$script:Library = @{}
+if (Test-Path $LibraryFile) { try { $lj = (Get-Content $LibraryFile -Raw -Encoding UTF8) | ConvertFrom-Json; foreach ($pp in $lj.PSObject.Properties) { $script:Library[$pp.Name] = $pp.Value } } catch {} }
+$script:LibDirty = $false; $script:LibSaved = Get-Date; $script:LibCurrent = ''; $script:LibTick = Get-Date
+function Save-Library([switch]$Force) {
+    if (-not $script:LibDirty) { return }
+    if (-not $Force -and ((Get-Date) - $script:LibSaved).TotalSeconds -lt 30) { return }
+    $script:LibDirty = $false; $script:LibSaved = Get-Date
+    try { [IO.File]::WriteAllText($LibraryFile, ([pscustomobject]$script:Library | ConvertTo-Json -Depth 4 -Compress), $Utf8NoBom) } catch {}
+}
+function Update-Library($m, [string]$path) {
+    $id = if ($m.Steam) { 'steam:' + $m.Steam } elseif ($path) { 'exe:' + $path.ToLowerInvariant() } else { '' }
+    if (-not $id) { return }
+    $now = Get-Date
+    $e = $script:Library[$id]
+    if (-not $e) {
+        $e = [pscustomobject]@{ id = $id; name = $m.Name; path = $path; exe = $m.Exe; steam = [string]$m.Steam; kind = [string]$m.Kind; first = $now.ToString('o'); last = ''; plays = 0; minutes = 0; hidden = $false }
+        $script:Library[$id] = $e
+        Log "Biblioteka: zapisano $($m.Name)" 'DarkCyan'
+    }
+    if (-not $e.path -and $path) { $e.path = $path }
+    if ($script:LibCurrent -ne $id) { $e.plays = [int]$e.plays + 1; $script:LibCurrent = $id; $script:LibTick = $now }
+    $e.minutes = [Math]::Round([double]$e.minutes + ($now - $script:LibTick).TotalMinutes, 1); $script:LibTick = $now
+    $e.last = $now.ToString('o'); $script:LibDirty = $true
+    Save-Library
+}
+function Start-LibraryItem([string]$id) {
+    $e = $script:Library[$id]
+    if (-not $e) { return 'nie ma takiej pozycji w bibliotece' }
+    if ($e.steam) { Start-Process ("steam://rungameid/" + $e.steam); Log "Uruchamiam: $($e.name) (Steam)" 'Cyan'; return '' }
+    if ($e.path -and (Test-Path -LiteralPath $e.path)) { Start-Process -FilePath $e.path -WorkingDirectory (Split-Path $e.path); Log "Uruchamiam: $($e.name)" 'Cyan'; return '' }
+    return 'nie znaleziono pliku programu'
+}
+
 function Update-State {
     Import-Custom
     $fgPid = Get-ForegroundPid
@@ -338,11 +393,11 @@ function Update-State {
         foreach ($gp in $GameParts) {
             if ($pexe -notmatch $gp.Re) { continue }
             $pn = $gp.Name; if ($path -match 'legendary' -and $pn -match '^Mass Effect \d') { $pn += ' (Legendary Edition)' }
-            $part = [pscustomobject]@{ Name = $pn; Exe = $pexe; Start = $p.CreationDate; Family = $gp.Family }
+            $part = [pscustomobject]@{ Name = $pn; Exe = $pexe; Start = $p.CreationDate; Family = $gp.Family; Pid = $p.ProcessId; Path = $path }
             break
         }
         $m = Find-Game $path $p.CommandLine
-        if ($m) { [void]$found.Add([pscustomobject]@{ M = $m; Pid = $p.ProcessId; Start = $p.CreationDate }) }
+        if ($m) { [void]$found.Add([pscustomobject]@{ M = $m; Pid = $p.ProcessId; Start = $p.CreationDate; Path = $path }) }
     }
 
     # ostatnie okna na pierwszym planie (do «Dodaj jako grę» w panelu)
@@ -365,7 +420,10 @@ function Update-State {
         $same = @($found | Where-Object { $_.M.Steam -eq $steam.Steam }) | Select-Object -First 1
         $m = [pscustomobject]@{ Exe = ''; Id = ''; Name = $steam.Name; Icon = ''; Steam = $steam.Steam; Image = ''; Header = $steam.Header; Via = 'steam' }
         if ($same) { $m.Exe = $same.M.Exe; $m.Id = $same.M.Id; $m.Icon = $same.M.Icon; if ($same.M.Via -eq 'my-games') { $m.Name = $same.M.Name; $m.Image = $same.M.Image } }
-        $pick = [pscustomobject]@{ M = $m; Start = $(if ($same) { $same.Start } else { $null }) }
+        # okno gry ze Steama: proces z listy albo – gdy go nie znamy – okno na pierwszym planie z folderu steamapps
+        $spid = 0; $spath = ''
+        if ($same) { $spid = $same.Pid; $spath = $same.Path } elseif ($fgPath -and $fgPath -match '\\steamapps\\common\\') { $spid = $fgPid; $spath = $fgPath }
+        $pick = [pscustomobject]@{ M = $m; Start = $(if ($same) { $same.Start } else { $null }); Pid = $spid; Path = $spath }
     }
     if (-not $pick -and $found.Count) {
         $pick = @($found | Where-Object { $_.Pid -eq $fgPid }) | Select-Object -First 1
@@ -377,9 +435,9 @@ function Update-State {
     if ($part) {
         if ($pick -and $pick.M.Name -match $part.Family) {
             $m2 = $pick.M.PSObject.Copy(); $m2.Name = $part.Name; $m2.Exe = $part.Exe
-            $pick = [pscustomobject]@{ M = $m2; Start = $part.Start }
+            $pick = [pscustomobject]@{ M = $m2; Start = $part.Start; Pid = $part.Pid; Path = $part.Path }
         } elseif (-not $pick) {
-            $pick = [pscustomobject]@{ M = [pscustomobject]@{ Exe = $part.Exe; Id = ''; Name = $part.Name; Icon = ''; Steam = ''; Args = ''; Image = ''; Header = ''; Via = 'part' }; Start = $part.Start }
+            $pick = [pscustomobject]@{ M = [pscustomobject]@{ Exe = $part.Exe; Id = ''; Name = $part.Name; Icon = ''; Steam = ''; Args = ''; Image = ''; Header = ''; Via = 'part' }; Start = $part.Start; Pid = $part.Pid; Path = $part.Path }
         }
     }
 
@@ -397,7 +455,12 @@ function Update-State {
             start  = [long]([DateTimeOffset]$start).ToUnixTimeMilliseconds()
             images = (Get-Images $m)
             kind   = [string]$m.Kind
+            window = ''
+            path   = [string]$pick.Path
         }
+        $ws = Get-WindowSpec ([int]$pick.Pid)
+        if ($ws) { $game.window = $ws.spec }
+        try { Update-Library $m ([string]$pick.Path) } catch {}
         if ($script:Current -ne $m.Name) {
             $from = $m.Via; if ($m.Exe) { $from += ", $($m.Exe)" }
             Log "Gra: $($m.Name)   ($from)" 'Cyan'
@@ -408,6 +471,7 @@ function Update-State {
         $script:FirstSeen.Remove($script:Current)
         $script:Current = $null
     }
+    if (-not $game) { $script:LibCurrent = '' }
     $script:State = [pscustomobject]@{ game = $game; recent = @($script:Recent) }
 }
 
@@ -1364,6 +1428,23 @@ function Invoke-Request($ctx) {
                 Add-Event ([pscustomobject]@{ type = 'transition'; scene = [string]$q['scene']; style = [string]$q['style']; tid = [guid]::NewGuid().ToString('N') })
                 Send-Json $ctx @{ ok = $true }
             }
+            '/library' {
+                $all = ([string]$q['all']) -eq '1'
+                $list = @($script:Library.Values | Where-Object { $all -or -not $_.hidden } | Sort-Object { [string]$_.last } -Descending)
+                Send-Json $ctx ([pscustomobject]@{ items = $list; current = $script:LibCurrent })
+            }
+            '/library/launch' {
+                $err = Start-LibraryItem ([string]$q['id'])
+                Send-Json $ctx @{ ok = -not $err; error = $err }
+            }
+            '/library/edit' {
+                $e = $script:Library[[string]$q['id']]
+                if (-not $e) { Send-Json $ctx @{ ok = $false } 404; return }
+                if ($q.ContainsKey('name') -and ([string]$q['name']).Trim()) { $e.name = ([string]$q['name']).Trim() }
+                if ($q.ContainsKey('hidden')) { $e.hidden = ([string]$q['hidden']) -eq '1' }
+                $script:LibDirty = $true; Save-Library -Force
+                Send-Json $ctx @{ ok = $true }
+            }
             '/archive' { Send-Json $ctx (Get-ArchiveList) }
             '/archive/stream' {
                 $id = [string]$q['id']
@@ -1480,7 +1561,7 @@ try {
         }
     }
 } finally {
-    try { Save-Chatters -Force; Save-StreamSummary } catch {}
+    try { Save-Chatters -Force; Save-StreamSummary; Save-Library -Force } catch {}
     $listener.Stop()
     $listener.Close()
 }

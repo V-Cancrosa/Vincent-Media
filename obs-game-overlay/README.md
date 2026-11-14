@@ -160,6 +160,17 @@ Nazwy z tego pliku mają pierwszeństwo przed bazą Discorda, więc możesz w ni
 Jeśli wpiszesz ręcznie tę samą nazwę co wykryta gra, Twój podtytuł i okładka mają pierwszeństwo.
 Licznik czasu przy wykrytej grze liczy od uruchomienia gry, przy wpisanej ręcznie – od chwili jej ustawienia.
 
+## Start: wszystko na co dzień w jednej zakładce
+
+Panel otwiera się na zakładce **Start**:
+- **stan** wykrywacza, OBS i Twitcha (kliknięcie prowadzi do ustawień),
+- **wykryta gra** i **automatyczne przechwytywanie**: panel sam tworzy źródło `VM · Gra (automatycznie)` w scenach „Gra – pełny ekran” i „Gra – w ramce” (na samym dole, w ramce dopasowane do okna 1440×810) i przestawia je na okno właśnie wykrytej gry (dopasowanie po pliku .exe). Domyślnie *przechwytywanie okna*; *przechwytywanie gry* do wyboru. Do własnych scen dodaj to samo źródło jako *istniejące* – też będzie podążać za grą,
+- **sceny** jednym kliknięciem (z przejściem),
+- **Moje gry i programy** – każda wykryta gra i program (np. Blender) zapisuje się sama (`detector\data\library.json`, z czasem grania); ▶ uruchamia ją przez Steam albo z pliku, ✕ ukrywa na liście,
+- **szybki test** alertów, czatu i bota.
+
+Reszta jest w zakładkach **Sterowanie** (gra ręcznie, ekrany, alerty), **Wygląd**, **Czat** i **Więcej** (Twitch, OBS, wykrywacz, funkcje, telefon, wersja).
+
 ## Panel i pilot z telefonu
 
 Panel ma zakładki **Na żywo** (gra, ekrany przerw, alerty testowe), **Wygląd**, **Połączenia** i **Ustawienia**.

@@ -1,5 +1,5 @@
 {
-  "version": "1.18.1",
+  "version": "1.19.0",
   "date": "2026-11-15",
-  "notes": "Myr-35: głowa według wzoru protogena; przejścia z wypowiedziami postaci i gier (także powrót do gry) i wyborem długości: krótkie, zwykłe, długie do przeczytania"
+  "notes": "Zakładka Start (stan, gra, sceny, biblioteka, szybki test), OBS sam łapie okno wykrytej gry, biblioteka gier i programów z uruchamianiem z panelu, prostszy panel (5 zakładek)"
 }
