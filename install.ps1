@@ -392,7 +392,7 @@ Step 'Pilot z telefonu'
 Say 'Panel można otwierać na telefonie w domowej sieci Wi‑Fi (zmiana gry, ekrany przerw, alerty testowe).' 'Gray'
 Say 'Wymaga jednej zgody administratora (wpis w zaporze tylko dla sieci prywatnych). Panel jest chroniony kluczem.' 'DarkGray'
 if (Ask 'Włączyć pilota z telefonu?' $true) {
-    try { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $det 'enable-remote.ps1') } catch {   # Windows domyślnie blokuje skrypty – omijamy to tylko dla tego wywołania Say "Nie udało się: $($_.Exception.Message)" 'Yellow' }
+    try { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $det 'enable-remote.ps1') } catch { Say "Nie udało się: $($_.Exception.Message)" 'Yellow' }   # Windows domyślnie blokuje skrypty – omijamy to tylko dla tego wywołania
 }
 
 $startup = Join-Path ([Environment]::GetFolderPath('Startup')) 'Vincent-Media wykrywacz.lnk'
