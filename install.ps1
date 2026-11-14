@@ -78,7 +78,7 @@ Add-Type -AssemblyName System.Web.Extensions
 $Json = New-Object Web.Script.Serialization.JavaScriptSerializer
 $Json.MaxJsonLength = [int]::MaxValue
 # PowerShell potrafi opakować słowniki i tablice we własne obiekty (PSObject) – JavaScriptSerializer zapętla się
-# na nich („odwołanie cykliczne … PSParameterizedProperty”). Przed zapisem zamieniamy wszystko na zwykłe słowniki i listy.
+# na nich («odwołanie cykliczne … PSParameterizedProperty»). Przed zapisem zamieniamy wszystko na zwykłe słowniki i listy.
 function ConvertTo-Plain($o) {
     if ($null -eq $o) { return $null }
     $b = $o.PSObject.BaseObject
