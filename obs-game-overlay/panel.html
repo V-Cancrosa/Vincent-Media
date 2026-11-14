@@ -1288,7 +1288,9 @@
 
   // --- Co dziś? lista gier i programów: wybór gry i jej motywu ---
   const GT = window.OverlayGameThemes;
-  let libData = { items: [], installed: [], current: '' };
+  let libData = { items: [], installed: [], current: '' }, libLive = null, libErr = '';
+  // Windows PowerShell 5.1 bywa, że zapisze tablicę jako {"value":[…],"Count":n} albo jeden element bez tablicy
+  const arr = v => Array.isArray(v) ? v : v && Array.isArray(v.value) ? v.value : v && typeof v === 'object' ? [v] : [];
   const themeOpts = (name) => {
     const tf = (s.themeFor || {})[String(name).toLowerCase()] || '';
     const auto = GT && GT.find ? GT.find(name) : null;
@@ -1300,14 +1302,18 @@
   const isPicked = e => s.mode === 'manual' && s.game && s.game.toLowerCase() === String(e.name).toLowerCase();
   function libRow(e, inst) {
     const ago = t => { const m = Math.round((Date.now() - new Date(t)) / 60000); return !t ? '' : m < 2 ? 'teraz' : m < 60 ? m + ' min temu' : m < 1440 ? Math.round(m / 60) + ' h temu' : Math.round(m / 1440) + ' dni temu'; };
-    const meta = inst ? 'Steam · zainstalowana' : [e.steam ? 'Steam' : e.kind === 'make' ? 'program' : e.kind === 'vn' ? 'visual novel' : 'gra', ago(e.last), e.minutes >= 1 ? Math.round(e.minutes / 6) / 10 + ' h' : '', e.id === libData.current ? 'uruchomiona' : ''].filter(Boolean).join(' · ');
+    const meta = inst ? 'Steam · zainstalowana' : e.live ? 'uruchomione teraz' : [e.steam ? 'Steam' : e.kind === 'make' || e.kind === 'app' ? 'program' : e.kind === 'vn' ? 'visual novel' : 'gra', ago(e.last), e.minutes >= 1 ? Math.round(e.minutes / 6) / 10 + ' h' : '', e.id === libData.current ? 'uruchomiona' : ''].filter(Boolean).join(' · ');
     return `<div class="lib ${isPicked(e) ? 'cur' : ''}" data-id="${esc(e.id)}"><div><b>${esc(e.name)}</b><small>${esc(meta)}</small></div>
-      <button class="${isPicked(e) ? '' : 'primary'}" data-pick="${esc(e.id)}">${isPicked(e) ? '✓ Na nakładce' : 'Wybierz'}</button><button data-run="${esc(e.id)}" title="Uruchom">▶</button>${inst ? '<span></span>' : `<button data-hide="${esc(e.id)}" title="Ukryj na liście">✕</button>`}
+      <button class="${isPicked(e) ? '' : 'primary'}" data-pick="${esc(e.id)}">${isPicked(e) ? '✓ Na nakładce' : 'Wybierz'}</button>${e.live ? '<span></span><span></span>' : `<button data-run="${esc(e.id)}" title="Uruchom">▶</button>`}${e.live ? '' : inst ? '<span></span>' : `<button data-hide="${esc(e.id)}" title="Ukryj na liście">✕</button>`}
       <select data-theme="${esc(e.id)}">${themeOpts(e.name)}</select></div>`;
   }
-  function renderLibrary() {
-    const f = ($('libFilter').value || '').trim().toLowerCase(), ok = e => !f || String(e.name).toLowerCase().includes(f);
-    const items = libData.items.filter(ok), inst = libData.installed.filter(ok);
+  function renderLibrary() { try { renderLibrary0(); } catch (e) { $('libList').innerHTML = `<p class="hint" style="margin:0;color:var(--warn)">Błąd listy: ${esc(e.message)}</p>`; } }
+  function renderLibrary0() {
+    const f = ($('libFilter').value || '').trim().toLowerCase(), ok = e => e && e.name && (!f || String(e.name).toLowerCase().includes(f));
+    // uruchomiona teraz gra zawsze na górze – także gdy wykrywacz jeszcze jej nie zapisał
+    const all = libData.items.slice();
+    if (libLive && !all.some(e => String(e.name).toLowerCase() === libLive.name.toLowerCase())) all.unshift(libLive);
+    const items = all.filter(ok), inst = libData.installed.filter(ok);
     $('libList').innerHTML = items.length ? items.slice(0, 40).map(e => libRow(e, false)).join('')
       : `<p class="hint" style="margin:0">${f ? 'Nic nie pasuje.' : 'Jeszcze pusto – wybierz grę z zainstalowanych poniżej albo uruchom grę lub program, a dopisze się sama.'}</p>`;
     $('libInstSum').textContent = `Zainstalowane ze Steama (${libData.installed.length})`;
@@ -1315,16 +1321,30 @@
     $('libInst').innerHTML = inst.slice(0, 80).map(e => libRow(e, true)).join('');
     if (f && inst.length && !items.length) $('libInstBox').open = true;
     pill('pickPill', s.mode === 'manual' && !!s.game, s.mode === 'manual' && s.game ? 'WYBRANA RĘCZNIE' : '', 'AUTOMATYCZNIE');
+    $('libAuto').setAttribute('aria-pressed', s.mode !== 'manual');
+    if (libErr) $('libList').insertAdjacentHTML('afterbegin', `<p class="hint" style="margin:0;color:var(--warn)">Wykrywacz: ${esc(libErr)}</p>`);
   }
   async function startLibrary() {
     if (!s.local || document.querySelector('.tab[data-tab="start"]').hidden) return;
-    try { const j = await (await fetch(hubUrl() + '/library', { cache: 'no-store' })).json(); libData = { items: j.items || [], installed: j.installed || [], current: j.current || '' }; }
-    catch { $('libList').innerHTML = '<p class="hint" style="margin:0">Wykrywacz nie działa – kliknij „Uruchom wykrywacz” wyżej albo uruchom go z menu Start.</p>'; return; }
+    try {
+      const r = await fetch(hubUrl() + '/library', { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status + (r.status === 404 ? ' – stara wersja wykrywacza, zamknij go i uruchom ponownie' : ''));
+      const j = await r.json();
+      libData = { items: arr(j.items), installed: arr(j.installed), current: j.current || '' }; libErr = j.error || '';
+    } catch (e) {
+      $('libList').innerHTML = `<p class="hint" style="margin:0">Nie mogę pobrać listy z wykrywacza (${esc(e.message)}). Jeśli działa – zamknij go i uruchom ponownie (Menu Start → Vincent-Media → Wykrywacz gier), bo po aktualizacji mógł zostać stary.</p>`; return;
+    }
+    try { const g = (await (await fetch(hubUrl() + '/game', { cache: 'no-store' })).json()).game; libLive = g && g.name ? { id: 'live', name: g.name, steam: g.steam || '', kind: g.kind || '', live: true } : null; } catch { libLive = null; }
     renderLibrary();
   }
-  const libFind = id => libData.items.find(e => e.id === id) || libData.installed.find(e => e.id === id);
+  const libFind = id => (id === 'live' ? libLive : null) || libData.items.find(e => e.id === id) || libData.installed.find(e => e.id === id);
   $('libFilter').addEventListener('input', renderLibrary);
-  $('libAuto').onclick = () => { s.mode = 'auto'; save(); renderLibrary(); };
+  $('libAuto').onclick = () => {
+    s.mode = 'auto'; save(); renderLibrary();
+    $('stGameSub').textContent = 'automatycznie: nakładka pokazuje to, co jest uruchomione';
+    $('libAuto').textContent = '✓ auto'; setTimeout(() => { $('libAuto').textContent = '↺ auto'; }, 1500);
+    startGame();
+  };
   const libClick = async e => {
     const r = e.target.closest('[data-run]'), h = e.target.closest('[data-hide]'), p = e.target.closest('[data-pick]');
     if (p) {

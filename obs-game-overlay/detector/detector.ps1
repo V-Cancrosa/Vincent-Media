@@ -442,6 +442,28 @@ function Update-Library($m, [string]$path) {
     $e.last = $now.ToString('o'); $script:LibDirty = $true
     Save-Library
 }
+$script:AppSeen = @{}; $script:AppTick = Get-Date; $script:LibErr = ''
+function Update-AppSeen([string]$path) {
+    $now = Get-Date; $dt = [Math]::Min(10.0, ($now - $script:AppTick).TotalSeconds); $script:AppTick = $now
+    if (-not $path -or $path -match '\\steamapps\\common\\') { return }    # gry ze Steama zapisuje Update-Library
+    $id = 'exe:' + $path.ToLowerInvariant()
+    if ($script:LibCurrent -eq $id) { return }                                # to jest właśnie wykryta gra
+    $e = $script:Library[$id]
+    if (-not $e) {
+        $script:AppSeen[$id] = [double]$script:AppSeen[$id] + $dt
+        if ($script:AppSeen[$id] -lt 20) { return }
+        $name = ''
+        try { $vi = [Diagnostics.FileVersionInfo]::GetVersionInfo($path); if ($vi.FileDescription) { $name = $vi.FileDescription } elseif ($vi.ProductName) { $name = $vi.ProductName } } catch {}
+        $name = ([string](Clean $name)).Trim()
+        if (-not $name) { $name = [IO.Path]::GetFileNameWithoutExtension($path) }
+        $e = [pscustomobject]@{ id = $id; name = $name; path = $path; exe = [IO.Path]::GetFileName($path).ToLowerInvariant(); steam = ''; kind = 'app'; first = $now.ToString('o'); last = ''; plays = 1; minutes = 0; hidden = $false }
+        $script:Library[$id] = $e
+        Log "Biblioteka: zapisano program $name" 'DarkCyan'
+    }
+    $e.minutes = [Math]::Round([double]$e.minutes + $dt / 60, 1)
+    $e.last = $now.ToString('o'); $script:LibDirty = $true
+    Save-Library
+}
 function Start-LibraryItem([string]$id) {
     $e = $script:Library[$id]
     if (-not $e -and $id -match '^steam:(\d+)$') { Start-Process ("steam://rungameid/" + $Matches[1]); Log "Uruchamiam: $id (Steam)" 'Cyan'; return '' }
@@ -483,6 +505,8 @@ function Update-State {
             foreach ($o in $old) { $script:Recent.Remove($o) }
             $script:Recent.Insert(0, [pscustomobject]@{ exe = $exe; title = $title })
             while ($script:Recent.Count -gt 6) { $script:Recent.RemoveAt($script:Recent.Count - 1) }
+            # każdy program, który był na wierzchu dłużej niż 20 s (Notatnik, Chrome, Opera…), trafia do «Co dziś?»
+            try { Update-AppSeen $fgPath } catch { if ($script:LibErr -ne $_.Exception.Message) { $script:LibErr = $_.Exception.Message; Log "Biblioteka: $($script:LibErr)" 'Yellow' } }
         }
     }
 
@@ -530,12 +554,12 @@ function Update-State {
             kind   = [string]$m.Kind
             window = ''
             path   = [string]$pick.Path
+            art    = $null
         }
-        if (-not $game.steam -and $game.path) { $game.steam = Get-SteamIdFromPath $game.path }
-        $game | Add-Member -NotePropertyName art -NotePropertyValue (Get-GameArt ([string]$game.steam))
+        try { if (-not $game.steam -and $game.path) { $game.steam = Get-SteamIdFromPath $game.path }; $game.art = Get-GameArt ([string]$game.steam) } catch {}
         $ws = Get-WindowSpec ([int]$pick.Pid)
         if ($ws) { $game.window = $ws.spec }
-        try { Update-Library $m ([string]$pick.Path) } catch {}
+        try { Update-Library $m ([string]$pick.Path) } catch { if ($script:LibErr -ne $_.Exception.Message) { $script:LibErr = $_.Exception.Message; Log "Biblioteka: nie udało się zapisać $($m.Name) – $($script:LibErr)" 'Yellow' } }
         if ($script:Current -ne $m.Name) {
             $from = $m.Via; if ($m.Exe) { $from += ", $($m.Exe)" }
             Log "Gra: $($m.Name)   ($from)" 'Cyan'
@@ -1586,12 +1610,14 @@ function Invoke-Request($ctx) {
                 Send-Json $ctx @{ ok = $true }
             }
             '/library' {
+              try {
                 $all = ([string]$q['all']) -eq '1'
                 $list = @($script:Library.Values | Where-Object { $all -or -not $_.hidden } | Sort-Object { [string]$_.last } -Descending)
                 # zainstalowane gry Steam, których jeszcze nie uruchamiałeś (do wyboru z listy)
                 $inst = @()
                 try { $inst = @(Get-SteamInstalled | Where-Object { -not $script:Library.ContainsKey($_.id) } | Sort-Object name | ForEach-Object { [pscustomobject]@{ id = $_.id; name = $_.name; steam = $_.steam; kind = ''; installed = $true } }) } catch {}
-                Send-Json $ctx ([pscustomobject]@{ items = $list; installed = $inst; current = $script:LibCurrent })
+                Send-Json $ctx ([pscustomobject]@{ items = $list; installed = $inst; current = $script:LibCurrent; error = $script:LibErr })
+              } catch { Send-Json $ctx ([pscustomobject]@{ items = @(); installed = @(); current = ''; error = $_.Exception.Message }) }
             }
             '/censor/config' {
                 $script:Censor.on = ([string]$q['on']) -eq '1'
