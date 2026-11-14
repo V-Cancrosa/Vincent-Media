@@ -169,7 +169,7 @@
   #t.off .pixel .q { transform: none; animation: px-out 140ms steps(2) forwards; animation-delay: var(--d); }
   @keyframes px-in { to { transform: scale(1.02); } }
   @keyframes px-out { to { transform: scale(0); } }
-  .k-pixel #txt { font-family: 'Press Start 2P', monospace; } .k-pixel #txt .lab { font-size: 54px; } .k-pixel #txt .line { font-size: 20px; }
+  .k-pixel #txt { font-family: 'Tiny5', monospace; } .k-pixel #txt .lab { font-size: 96px; } .k-pixel #txt .line { font-size: 34px; }
 
   /* ---------- ograniczone animacje: zwykłe przenikanie ---------- */
   .fade .f { inset: 0; background: var(--dark); opacity: 0; }
@@ -186,11 +186,11 @@
 
   // rodzaj przejścia: gra > postać > styl bazowy
   const BY_GAME = { cp: 'glitch', val: 'glitch', cs: 'flash', me: 'holo', wf: 'holo', cnc: 'holo', lol: 'holo', dd: 'ink', tal: 'ink', elden: 'ink',
-    hk: 'thread', pal: 'iris', fn: 'iris', dl: 'shutter', ra: 'shutter', gen: 'shutter', mc: 'pixel', gta: 'wipe' };
+    hk: 'thread', pal: 'iris', fn: 'iris', dl: 'shutter', ra: 'shutter', gen: 'shutter', mc: 'pixel', gta: 'wipe', vn: 'iris', mk: 'blueprint' };
   const BY_PERSONA = { vince: 'blueprint', chip: 'iris', ragnar: 'eq', toro: 'shoji', myr: 'glitch', zarin: 'shutter' };
   const BY_BASE = { neon: 'wipe', glass: 'wipe', minimal: 'wipe', retro: 'pixel', esport: 'wipe' };
   const FONT = { vince: "'Archivo', sans-serif", chip: "'Caveat', cursive", ragnar: "'Anton', sans-serif", toro: "'Cormorant Garamond', serif",
-    myr: "'JetBrains Mono', monospace", zarin: "'Saira Stencil One', sans-serif", neon: "'Orbitron', sans-serif", retro: "'Press Start 2P', monospace",
+    myr: "'JetBrains Mono', monospace", zarin: "'Saira Stencil One', sans-serif", neon: "'Orbitron', sans-serif", retro: "'Tiny5', monospace",
     esport: "'Teko', sans-serif", glass: "'Inter', sans-serif", minimal: "'Inter', sans-serif" };
   const SCENE_LABEL = { prep: 'Przygotowania', soon: 'Stream za chwilę', start: 'Zaczynamy', late: 'Mały poślizg', brb: 'Przerwa', brbLate: 'Przerwa', talk: 'Pogadajmy', end: 'Dzięki za dziś', game: 'Teraz gram' };
   const PORTRAIT = { vince: 'themes/fursona/vince.webp', chip: 'themes/fursona/chip.webp', ragnar: 'themes/fursona/ragnar.webp', toro: 'themes/fursona/toro.webp' };

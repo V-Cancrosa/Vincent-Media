@@ -15,6 +15,7 @@
 <script src="themes/library.js"></script>
 <link rel="stylesheet" href="themes/fusion.css">
 <script src="themes/fusion.js"></script>
+<script src="themes/fit.js"></script>
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
 <link rel="stylesheet" href="themes/base.css">
@@ -196,7 +197,7 @@
       localRecent = Array.isArray(j.recent) ? j.recent : j.recent ? [j.recent] : [];
       const g = j.game;
       const next = g && g.name ? {
-        name: String(g.name), sub: '', start: +g.start || 0, images: normImages(g.images),
+        name: String(g.name), sub: '', start: +g.start || 0, images: normImages(g.images), kind: String(g.kind || ''),
         source: 'local', exe: g.exe || '', via: g.via || '', steam: g.steam || ''
       } : null;
       if (JSON.stringify(next) !== JSON.stringify(localGame)) { localGame = next; render(); }
@@ -264,7 +265,9 @@
   // styl + gra: postać / motyw bazowy łączy się z motywem gry (themes/fusion.js)
   let fxFor = null;
   function applyStyle(g) {
-    const th = GT.resolve ? GT.resolve(settings, g && g.name) : { cls: settings.theme || 'neon', def: null, game: null };
+    const th = GT.resolve ? GT.resolve(settings, g && g.name, null, g && g.kind) : { cls: settings.theme || 'neon', def: null, game: null };
+    const gameDef = th.game || (th.def && th.def.group !== 'fursona' ? th.def : null);
+    const making = (g && g.kind === 'make') || (gameDef && gameDef.kind === 'make');
     const def = th.def;
     const reduced = settings.motion === 'reduced';
     document.body.className = `theme-${th.cls} pos-${settings.position}` + (GT.bodyClasses ? GT.bodyClasses(th) : '') +
@@ -292,7 +295,17 @@
     // motyw postaci ma własny napis, dopóki w panelu zostaje domyślny „Teraz gram”
     const lab = th.persona || th.game;   // napis postaci także wtedy, gdy bazą jest gra
     labelText.textContent = lab && lab.label && settings.label === DEFAULTS.label ? lab.label : settings.label;
+    // Blender, Krita itp.: nie „gram”, tylko „tworzę” (także gdy postać ma własny napis z „gram”)
+    if (making && settings.label === DEFAULTS.label && /gram|teraz gram/i.test(labelText.textContent)) labelText.textContent = gameDef && gameDef.label ? gameDef.label : 'Teraz tworzę';
   }
+
+  // długa nazwa gry: mniejsza czcionka, a w ostateczności dwie linijki (bez ucinania „…”)
+  function fitText() {
+    if (!window.VMFit) return;
+    requestAnimationFrame(() => { VMFit.text(nameEl, { min: 0.55, lines: 2, container: wrap }); VMFit.text(subEl, { min: 0.7, lines: 2, container: wrap }); });
+  }
+  if (document.fonts) document.fonts.ready.then(fitText);
+  setInterval(fitText, 3000);   // zmiana motywu = inna czcionka i szerokość
 
   function fill(g) {
     nameEl.textContent = g.name;
@@ -301,6 +314,7 @@
     card.classList.toggle('long', g.name.length > 22);
     card.classList.toggle('xlong', g.name.length > 34);
     card.dataset.start = g.start || 0;
+    fitText();
     mono.textContent = monogram(g.name);
     const imgs = g.images || [];
     const sig = imgs.join('|');

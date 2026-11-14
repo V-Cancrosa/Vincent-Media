@@ -197,6 +197,9 @@ function Find-Game([string]$path, [string]$cmd) {
                 break
             }
         }
+        if (-not $result -and $MakeApps.ContainsKey($base)) {
+            $result = [pscustomobject]@{ Exe = $base; Id = ''; Name = $MakeApps[$base]; Icon = ''; Steam = ''; Args = ''; Image = ''; Via = 'app'; Kind = 'make' }
+        }
         if (-not $result) {
             # najpierw najdłuższe (najbardziej konkretne) ścieżki, np. garrysmod/hl2.exe przed hl2.exe
             $keys = @($v | Sort-Object Length -Descending) + @('>' + $base)
@@ -210,6 +213,10 @@ function Find-Game([string]$path, [string]$cmd) {
                 if ($result) { break }
             }
         }
+    }
+    if (-not $result -and -not $ignored -and $path) {
+        $rp = $null; try { $rp = Get-RenPyName $path } catch {}
+        if ($rp) { $result = [pscustomobject]@{ Exe = $base; Id = ''; Name = $rp; Icon = ''; Steam = ''; Args = ''; Image = ''; Via = 'renpy'; Kind = 'vn' } }
     }
     $script:MatchCache[$key] = $result
     return $result
@@ -285,9 +292,36 @@ function Get-Images($m) {
 }
 
 # gry, które startują launcherem, a potem uruchamiają osobny program dla każdej części (Steam wciąż zgłasza launcher)
-$GameParts = @{
-    'masseffect.exe' = 'Mass Effect 1'; 'masseffect1.exe' = 'Mass Effect 1'; 'masseffect2.exe' = 'Mass Effect 2'; 'masseffect3.exe' = 'Mass Effect 3'
-    'masseffectandromeda.exe' = 'Mass Effect: Andromeda'
+# Re – nazwa pliku procesu, Name – nazwa części, Family – do jakiej wykrytej gry (launchera) pasuje
+$GameParts = @(
+    @{ Re = '^masseffect1?\.exe$'; Name = 'Mass Effect 1'; Family = 'mass effect' }
+    @{ Re = '^masseffect2\.exe$'; Name = 'Mass Effect 2'; Family = 'mass effect' }
+    @{ Re = '^masseffect3\.exe$'; Name = 'Mass Effect 3'; Family = 'mass effect' }
+    @{ Re = '^masseffectandromeda\.exe$'; Name = 'Mass Effect: Andromeda'; Family = 'mass effect' }
+    @{ Re = '^gamemd\.exe$'; Name = "Command & Conquer: Red Alert 2 – Yuri's Revenge"; Family = 'red alert|command|c&c' }
+    @{ Re = '^ra3ep1.*\.game$'; Name = 'Command & Conquer: Red Alert 3 – Uprising'; Family = 'red alert|command|c&c' }
+    @{ Re = '^ra3_.*\.game$'; Name = 'Command & Conquer: Red Alert 3'; Family = 'red alert|command|c&c' }
+    @{ Re = '^cnc3ep1.*\.(dat|exe)$'; Name = "Command & Conquer 3: Kane's Wrath"; Family = 'command|c&c|tiberium' }
+    @{ Re = '^cnc3game\.dat$'; Name = 'Command & Conquer 3: Tiberium Wars'; Family = 'command|c&c|tiberium' }
+)
+# programy do tworzenia (nie gry): karta mówi „Teraz tworzę”, a flagowanie botów nie traktuje tego jak grania
+$MakeApps = @{
+    'blender.exe' = 'Blender'; 'blender-launcher.exe' = 'Blender'; 'zbrush.exe' = 'ZBrush'; 'substance painter.exe' = 'Substance 3D Painter'
+    'adobe substance 3d painter.exe' = 'Substance 3D Painter'; 'houdini.exe' = 'Houdini'; 'houdinifx.exe' = 'Houdini'; 'maya.exe' = 'Maya'
+    '3dsmax.exe' = '3ds Max'; 'cinema 4d.exe' = 'Cinema 4D'; 'krita.exe' = 'Krita'; 'aseprite.exe' = 'Aseprite'; 'clipstudiopaint.exe' = 'Clip Studio Paint'
+    'photoshop.exe' = 'Photoshop'; 'procreate.exe' = 'Procreate'; 'unity.exe' = 'Unity'; 'unrealeditor.exe' = 'Unreal Editor'; 'godot.exe' = 'Godot'
+}
+# gra na silniku Ren'Py (visual novel): nazwa z folderu gry, np. „Soulcreek-0.10-pc” → „Soulcreek”
+function Get-RenPyName([string]$path) {
+    $dir = Split-Path $path
+    $root = $null
+    if ($path -match '\\lib\\(py\d-)?windows-(x86_64|i686)\\[^\\]+$') { $root = Split-Path (Split-Path $dir) }
+    elseif ((Test-Path (Join-Path $dir 'renpy')) -and (Test-Path (Join-Path $dir 'game'))) { $root = $dir }
+    if (-not $root) { return $null }
+    $leaf = Split-Path $root -Leaf
+    $n = ($leaf -replace '[-_ ]v?\d+([._]\d+)*.*$', '') -replace '[-_]+', ' '
+    if (-not $n.Trim()) { $n = $leaf }
+    return $n.Trim()
 }
 function Update-State {
     Import-Custom
@@ -301,9 +335,11 @@ function Update-State {
         if (-not $path) { continue }
         if ($p.ProcessId -eq $fgPid) { $fgPath = $path }
         $pexe = [IO.Path]::GetFileName($path).ToLowerInvariant()
-        if ($GameParts.ContainsKey($pexe)) {
-            $pn = $GameParts[$pexe]; if ($path -match 'legendary' -and $pn -notmatch 'Andromeda') { $pn += ' (Legendary Edition)' }
-            $part = [pscustomobject]@{ Name = $pn; Exe = $pexe; Start = $p.CreationDate }
+        foreach ($gp in $GameParts) {
+            if ($pexe -notmatch $gp.Re) { continue }
+            $pn = $gp.Name; if ($path -match 'legendary' -and $pn -match '^Mass Effect \d') { $pn += ' (Legendary Edition)' }
+            $part = [pscustomobject]@{ Name = $pn; Exe = $pexe; Start = $p.CreationDate; Family = $gp.Family }
+            break
         }
         $m = Find-Game $path $p.CommandLine
         if ($m) { [void]$found.Add([pscustomobject]@{ M = $m; Pid = $p.ProcessId; Start = $p.CreationDate }) }
@@ -339,7 +375,7 @@ function Update-State {
 
     # launcher → konkretna część (np. Mass Effect Legendary Edition → Mass Effect 2 (Legendary Edition))
     if ($part) {
-        if ($pick -and $pick.M.Name -match 'mass effect') {
+        if ($pick -and $pick.M.Name -match $part.Family) {
             $m2 = $pick.M.PSObject.Copy(); $m2.Name = $part.Name; $m2.Exe = $part.Exe
             $pick = [pscustomobject]@{ M = $m2; Start = $part.Start }
         } elseif (-not $pick) {
@@ -360,6 +396,7 @@ function Update-State {
             steam  = $m.Steam
             start  = [long]([DateTimeOffset]$start).ToUnixTimeMilliseconds()
             images = (Get-Images $m)
+            kind   = [string]$m.Kind
         }
         if ($script:Current -ne $m.Name) {
             $from = $m.Via; if ($m.Exe) { $from += ", $($m.Exe)" }
@@ -601,7 +638,7 @@ function Get-ChatFlag($rec, [string]$text, $badges, [string]$userId, [double]$fa
         $score += 2; [void]$why.Add('ogólnikowe „fajny stream” na dzień dobry')
     }
     # pisze o graniu, a nikt nie gra (np. Blender, rozmowa)
-    $gaming = [bool]$script:State.game
+    $gaming = [bool]$script:State.game -and $script:State.game.kind -ne 'make'
     $cat = ([string]$script:Channel.category).ToLowerInvariant()
     if (-not $gaming -and $cat -and $NonGameCategories -contains $cat -and $t -match '\b(grasz|grac|gra\b|gierk|gameplay|game|play(ing)?|gg|level|boss)') {
         $score += 3; [void]$why.Add("pisze o graniu, a kategoria to „$($script:Channel.category)”")

@@ -27,8 +27,8 @@
 .cs-neon { background: rgba(8,6,20,.92); border: 2px solid var(--uc); box-shadow: 0 0 16px var(--uc), inset 0 0 12px color-mix(in srgb, var(--uc) 35%, transparent), 0 0 0 4px color-mix(in srgb, var(--accent) 30%, transparent); }
 .cs-neon .ctext { text-shadow: 0 0 8px color-mix(in srgb, var(--uc) 60%, transparent); }
 .cs-szklo { background: linear-gradient(135deg, rgba(255,255,255,.22), rgba(255,255,255,.07)); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.4); border-radius: 20px; box-shadow: 0 8px 26px rgba(0,0,0,.3), inset 0 -3px 0 var(--accent); }
-.cs-pixel { font-family: 'Press Start 2P', monospace; font-size: 12px; line-height: 1.7; background: #111; border: 4px solid #fff; border-radius: 0; box-shadow: 5px 5px 0 var(--accent); }
-.cs-pixel .cname { font-size: 11px; } .cs-pixel .cav { border-radius: 0; font-family: 'Press Start 2P', monospace; font-size: 14px; }
+.cs-pixel { font-family: 'Tiny5', monospace; font-size: 19px; line-height: 1.3; background: #111; border: 4px solid #fff; border-radius: 0; box-shadow: 5px 5px 0 var(--accent); }
+.cs-pixel .cname { font-size: 17px; } .cs-pixel .cav { border-radius: 0; font-family: 'Tiny5', monospace; font-size: 22px; }
 .cs-komiks { background: #fff; color: #111; border: 3px solid #111; border-radius: 22px; box-shadow: 4px 5px 0 #111, 0 0 0 6px color-mix(in srgb, var(--accent) 35%, transparent); font-family: 'Luckiest Guy', 'Bangers', sans-serif; font-weight: 400; letter-spacing: .02em; }
 .cs-komiks .cname { color: #111; -webkit-text-stroke: 0; text-decoration: underline 3px var(--uc); }
 .cs-komiks::after { content: ""; position: absolute; right: 26px; bottom: -14px; border: 8px solid transparent; border-top: 12px solid #111; }
@@ -67,7 +67,8 @@
 .ticker-lane { position: relative; flex: 1; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
 .chat-ticker .cmsg { position: absolute; left: 0; top: 0; bottom: 0; display: inline-flex; align-items: center; gap: 10px; padding: 0; max-width: none; white-space: nowrap;
   opacity: 1; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0; transition: none; will-change: transform; }
-.chat-ticker .cmsg::after { content: none !important; }
+.chat-ticker .cmsg::after, .chat-ticker .cmsg::before { content: none !important; }
+.chat-ticker .cmsg { border-image: none !important; outline: 0 !important; filter: none !important; backdrop-filter: none !important; }
 .chat-ticker .cav { display: none; }
 .chat-ticker .cbody { display: inline-flex; align-items: center; gap: 10px; }
 .chat-ticker .cname { font-size: 20px; }
@@ -77,9 +78,11 @@
 .chat-ticker .cemote { height: 1.5em; }
 .chat-ticker .cmsg-sys { border: 0; }
 /* styl widza zostaje w kolorze imienia i kroju pisma, bez dymka */
-.chat-ticker .cs-pixel { font-size: 13px; } .chat-ticker .cs-papier { font-size: 26px; } .chat-ticker .cs-komiks .cname { color: var(--uc); }
+.chat-ticker .cs-pixel { font-size: 21px; } .chat-ticker .cs-papier { font-size: 26px; } .chat-ticker .cs-komiks .cname { color: var(--uc); }
 .chat-ticker .cs-komiks, .chat-ticker .cs-papier, .chat-ticker .cs-terminal { color: #f4f4f8; }
 .chat-ticker .cs-terminal { color: #7dff9a; }
+.chat-ticker .cs-sakura, .chat-ticker .cs-lod, .chat-ticker .cs-papier, .chat-ticker .cs-komiks { color: #f4f4f8; }
+.chat-ticker .cs-sakura .cname { color: #ff8fbd; } .chat-ticker .cs-lod .cname { color: #8fdcff; }
 .reduced-motion .chat-ticker { transition: opacity .4s ease; transform: none; }
 
 /* --- alert jako część czatu (układ z grą w ramce, rozmowa) --- */

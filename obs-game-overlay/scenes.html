@@ -15,6 +15,7 @@
 <script src="themes/library.js"></script>
 <link rel="stylesheet" href="themes/fusion.css">
 <script src="themes/fusion.js"></script>
+<script src="themes/fit.js"></script>
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
 <script src="themes/obsws.js"></script>
@@ -62,6 +63,13 @@
   #hero.photo { right: 7vw; top: 50%; width: 22vw; transform: translateY(-55%) rotate(5deg); animation: hero-sway 7s ease-in-out infinite; }
   #hero.photo img { width: 100%; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
   @keyframes hero-sway { 50% { transform: translateY(-53%) rotate(2deg); } }
+  #hero.photo.wide { width: 34vw; right: 4vw; transform: translateY(-55%) rotate(-2deg); animation-name: hero-sway-w; }
+  @keyframes hero-sway-w { 50% { transform: translateY(-53%) rotate(-.5deg); } }
+  #hero.photo[data-credit] img { border: 10px solid #f4efe6; border-bottom-width: 44px; border-radius: 3px; }
+  #hero[data-credit]::after { content: attr(data-credit); position: absolute; left: 0; right: 0; bottom: 12px; text-align: center; font: 600 15px/1.2 'Caveat', 'Inter', cursive; font-size: 22px; color: #3a2a18; }
+  #hero.sheet[data-credit]::after { content: none; }
+  /* karta Vince'a ma miejsce na portret w ramce; gdy obok stoi duży art, portretu nie ma – miejsce też znika */
+  .no-emblem.theme-g-vince #card { padding-left: 24px; }
   #hero.sheet { right: 5vw; top: 50%; width: 30vw; transform: translateY(-55%) rotate(-2deg); padding: 10px; background: #0a0a0b; border: 1px solid #e3a43f; box-shadow: 0 30px 70px rgba(0,0,0,.6); }
   #hero.sheet img { width: 100%; }
   #hero.sheet::after { content: "Ref sheet · art: Ash"; position: absolute; left: 0; right: 0; bottom: -28px; text-align: center; font: 400 13px 'Space Mono', monospace; letter-spacing: .14em; color: #8a857c; }
@@ -204,6 +212,19 @@
     ragnar: { cls: 'full', img: 'themes/fursona/ragnar-full.webp' },
     toro: { cls: 'full', img: 'themes/fursona/toro-full.webp' }
   };
+  // arty do konkretnych ekranów (ze strony postaci, z podpisem autora)
+  const HERO_KIND = {
+    vince: {
+      brb: { cls: 'photo', img: 'themes/fursona/vince-nightpaw.webp', credit: 'The Night Paw · art: amanda_rice910' }, brbLate: { cls: 'photo', img: 'themes/fursona/vince-nightpaw.webp', credit: 'The Night Paw · art: amanda_rice910' },
+      prep: { cls: 'photo', img: 'themes/fursona/vince-philosopher.webp', credit: 'Philosopher · art: janet_arts2' }, talk: { cls: 'photo', img: 'themes/fursona/vince-philosopher.webp', credit: 'Philosopher · art: janet_arts2' }
+    },
+    ragnar: {
+      start: { cls: 'photo', img: 'themes/fursona/ragnar-kitchen.webp', credit: 'Poranek w kuchni · art: ivyfox_' }, soon: { cls: 'photo', img: 'themes/fursona/ragnar-kitchen.webp', credit: 'Poranek w kuchni · art: ivyfox_' }
+    },
+    chip: {
+      brb: { cls: 'photo wide', img: 'themes/fursona/chip-fusk.webp', credit: 'Fusk – postać Chipa do D&D · art: furlynx_' }, brbLate: { cls: 'photo wide', img: 'themes/fursona/chip-fusk.webp', credit: 'Fusk – postać Chipa do D&D · art: furlynx_' }
+    }
+  };
 
   // ---------------------------------------------------------------- jaki ekran teraz
   function kindNow() {
@@ -229,10 +250,10 @@
     themeId = heroDef ? heroDef.id : cls;
     voiceVI = GT.voiceInfo ? GT.voiceInfo(fusion) : null;
     const reduced = settings.motion === 'reduced';
-    const hero = settings.sceneHero && heroDef && kind !== 'end' ? (HERO[heroDef.id] || { cls: 'emblem' }) : null;
+    const hero = settings.sceneHero && heroDef && kind !== 'end' ? ((HERO_KIND[heroDef.id] || {})[kind] || HERO[heroDef.id] || { cls: 'emblem' }) : null;
     document.body.className = `theme-${cls} pos-mc k-${kind}` + (GT.bodyClasses ? GT.bodyClasses(fusion) : '') +
       (reduced ? ' reduced-motion' : '') + (hero ? ' has-hero' : '') + (window.__vmTalking ? ' talking' : '') + (window.__vmHype ? ' hype' : '');
-    const key = cls + '|' + (game ? game.id : '') + '|' + (fusion.persona ? fusion.persona.id : '') + fusion.mode + (fusion.variant || '') + '|' + (hero ? 1 : 0);
+    const key = cls + '|' + (game ? game.id : '') + '|' + (fusion.persona ? fusion.persona.id : '') + fusion.mode + (fusion.variant || '') + '|' + (hero ? hero.img || hero.cls : 0);
     if (themeFor !== key) {
       themeFor = key;
       $('emblem').innerHTML = def ? def.emblem || '' : '';
@@ -240,8 +261,10 @@
       const h = $('hero');
       h.className = hero ? 'on ' + hero.cls : '';
       h.innerHTML = !hero ? '' : hero.img ? `<img src="${hero.img}" alt="">` : (heroDef.emblem || '');
+      if (hero && hero.credit) h.dataset.credit = hero.credit; else delete h.dataset.credit;
       if (hero && hero.cls === 'full') $('backdrop').innerHTML = '';
       if (hero && hero.cls !== 'full') $('emblem').innerHTML = '';
+      document.body.classList.toggle('no-emblem', !$('emblem').innerHTML.trim());
     }
     if (GT.applyFusion) GT.applyFusion($('wrap'), fusion);
     const root = document.documentElement.style;
@@ -332,7 +355,8 @@
     let sub = settings.sceneSub;
     if (!sub && kind === 'soon' && settings.sceneAt) sub = 'Start ' + whenText(settings.sceneAt) + (game ? ' · ' + game : '');
     if (!sub && game && kind !== 'end') sub = (kind === 'brb' || kind === 'brbLate' ? 'Gramy dalej w ' : 'Dziś: ') + game;
-    $('sub').textContent = sub || '';
+    if ($('sub').textContent !== (sub || '')) $('sub').textContent = sub || '';
+    if (window.VMFit) VMFit.text($('sub'), { min: 0.7, lines: 2, container: $('wrap') });
     if (kind === 'prep') tickChecklist();
     $('socials').innerHTML = '';
     for (const s of String(settings.socials || '').split(/[,|\n]/).map(x => x.trim()).filter(Boolean)) {

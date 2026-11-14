@@ -21,8 +21,18 @@ Talisman (obie edycje) · Palworld · Mass Effect · Warframe · Deadlock · Dar
 
 **Mass Effect Legendary Edition** startuje launcherem, a potem uruchamia jedną z części jako osobny program. Wykrywacz to widzi i podaje część: *Mass Effect 1/2/3 (Legendary Edition)*. Każda ma własny wygląd i teksty – ME1 niebieski Sojusz i SR-1, ME2 pomarańczowy Cerber i misja samobójcza, ME3 czerwień Żniwiarzy i zasoby wojenne, Andromeda turkus pionierów. Sam launcher ma neutralny „wybór misji”.
 
+**Części innych gier** – wykrywacz albo nazwa gry podaje część, a motyw zmienia kolory, napis i teksty:
+- Red Alert: 1 / Remastered, 2, *Yuri's Revenge* (fiolet kontroli umysłów), 3, *Uprising*,
+- Tiberium: *Tiberian Dawn* / Remastered, *Tiberian Sun*, *Firestorm*, *C&C 3*, *Kane's Wrath* (czerwień Bractwa), *C&C 4*,
+- Generals / *Zero Hour*, Hollow Knight / *Silksong*, Darkest Dungeon / *Darkest Dungeon II* (dyliżans i droga ku Górze), Talisman 4. / 5. edycja.
+
+**Visual Novel** – motyw okna dialogowego z plakietką imienia. Włącza się sam dla SoulCreeka (ma własny wariant „Blackrunner”) i dla **każdej gry na silniku Ren'Py**: wykrywacz rozpoznaje silnik po plikach gry i bierze nazwę z folderu, np. „Soulcreek-0.10-pc” → „Soulcreek”.
+
+**Blender / 3D** – gdy działa Blender (albo ZBrush, Substance, Houdini, Maya, 3ds Max, Cinema 4D; a bez własnego motywu także Krita, Aseprite, Clip Studio, Photoshop, Unity, Unreal, Godot), karta mówi **„Teraz tworzę”** zamiast „Teraz gram”. Motyw ma obracającą się siatkę, a ekrany i alerty mówią po modelarsku („Render się liczy – zaraz wracam”). Flagowanie botów nie traktuje tego jak grania.
+
 **Darkest Dungeon** mówi głosem narratora: podniośle, mrocznie i z gorzkim humorem – w alertach, na ekranach przerw i w przejściach (teksty napisane od zera, w duchu gry).
 W plikach są też Elden Ring, Minecraft, Fortnite, League of Legends, VALORANT i GTA V – działają przy wykryciu gry, ale nie ma ich na liście w panelu (nie ma ich w bibliotece). Listę ukrytych zmienisz w `themes/library.js`.
+Długie nazwy gier i nicki nie są ucinane „…”: czcionka się zmniejsza, a w razie potrzeby tekst przechodzi do drugiej linijki.
 Mają animowane ozdobniki wystające nad panel i cząsteczki wokół niego. Cała grafika jest narysowana od zera (SVG i canvas), bez logotypów i grafik z gier – licencja CC0. Definicje są w `themes/games.js` i `themes/games.css`.
 
 **Motywy postaci:** Vince · Chip · Ragnar · Toro · Myr-35 · Zarin (w panelu w grupie *Postacie*, w adresie `theme=g-vince` itd.).

@@ -22,7 +22,9 @@
           <path d="M45 48 L56 64 L45 80 L34 64 Z" fill="#b3201a" stroke="#5a0f0a" stroke-width="2"/>
           <path d="M45 48 L50 60 L45 64 L40 60 Z" fill="#ff8a7a" opacity=".7" class="em-pulse"/>
         </g>`),
-      fx: { shape: 'dot', dir: 'float', count: 18, colors: ['#ffd77a', '#e2b84e', '#fff1c1'], size: [1, 2.4], speed: [4, 9], glow: true, twinkle: true }
+      fx: { shape: 'dot', dir: 'float', count: 18, colors: ['#ffd77a', '#e2b84e', '#fff1c1'], size: [1, 2.4], speed: [4, 9], glow: true, twinkle: true },
+      variant: n => (/5th|5\.|piąt/.test(n) ? 'tal5' : 'tal4'),
+      variants: { tal4: { label: 'TALISMAN · 4. EDYCJA' }, tal5: { label: 'TALISMAN · 5. EDYCJA', accent: ['#d9a441', '#2f5d8a'] } }
     },
     {
       id: 'pal', name: 'Palworld', match: ['palworld'],
@@ -118,7 +120,12 @@
         <path d="M24 46 H46 L42 58 H28 Z" fill="#3a2a22" stroke="#120c0a" stroke-width="2"/>
         <rect x="31" y="58" width="8" height="40" fill="#5a3a26" stroke="#120c0a" stroke-width="2"/>
         <path d="M18 98 H52 L48 106 H22 Z M30 106 H40 V116 H30 Z" fill="#2a2a2e" stroke="#0a0a0c" stroke-width="2"/>`),
-      fx: { shape: 'dot', dir: 'up', count: 26, colors: ['#ffb347', '#ff7a2f', '#ffe08a'], size: [1, 2.6], speed: [16, 34], glow: true, twinkle: true }
+      fx: { shape: 'dot', dir: 'up', count: 26, colors: ['#ffb347', '#ff7a2f', '#ffe08a'], size: [1, 2.6], speed: [16, 34], glow: true, twinkle: true },
+      variant: n => (/darkest dungeon\W*(ii|2)\b/.test(n) ? 'dd2' : 'dd1'),
+      variants: {
+        dd1: { label: 'HAMLET · LOCHY RODU' },
+        dd2: { label: 'DYLIŻANS RUSZA', accent: ['#e86a2d', '#9fb3c2'], fx: { colors: ['#ff9a4a', '#e86a2d', '#cfd8de'], dir: 'left', speed: [30, 60] } }
+      }
     },
     {
       id: 'hk', name: 'Hollow Knight', match: ['hollow knight', 'silksong'],
@@ -130,7 +137,12 @@
           <path d="M10 45 L96 42 L104 45 L96 48 Z" fill="#e8eef7" stroke="#1a2236" stroke-width="2" stroke-linejoin="round"/>
           <ellipse cx="18" cy="45" rx="6" ry="3" fill="none" stroke="#1a2236" stroke-width="2"/>
         </g>`, 'hk-needle'),
-      fx: { shape: 'dot', dir: 'float', count: 20, colors: ['#e8eef7', '#b9c8e6', '#ffffff'], size: [1, 2.4], speed: [3, 8], glow: true, twinkle: true }
+      fx: { shape: 'dot', dir: 'float', count: 20, colors: ['#e8eef7', '#b9c8e6', '#ffffff'], size: [1, 2.4], speed: [3, 8], glow: true, twinkle: true },
+      variant: n => (n.includes('silksong') ? 'silk' : 'hk1'),
+      variants: {
+        hk1: { label: 'KRÓLESTWO W GŁĘBI', accent: ['#e8eef7', '#6f9bff'], fx: { colors: ['#e8eef7', '#9cc2ff', '#ffffff'] } },
+        silk: { label: 'PIEŚŃ JEDWABIU', accent: ['#f3ece4', '#c72c3b'], fx: { colors: ['#f3ece4', '#ff8a8a', '#c72c3b'], dir: 'up', speed: [8, 18] } }
+      }
     },
     // ---------------------------------------------------------------- Command & Conquer
     {
@@ -143,7 +155,23 @@
         ${[0, 1, 2, 3].map(i => `<ellipse cx="45" cy="${40 + i * 14}" rx="${12 + i * 3}" ry="4" fill="#5a1410" stroke="#1a0606" stroke-width="2"/>`).join('')}
         <path d="M34 34 L28 108 H62 L56 34 Z" fill="#2a2a2e" stroke="#0a0a0c" stroke-width="2" opacity=".85"/>
         <path d="M20 108 H70 L74 116 H16 Z" fill="#e0241b" stroke="#1a0606" stroke-width="2"/>`),
-      fx: { shape: 'rect', dir: 'left', count: 20, colors: ['#bfe9ff', '#ffffff', '#e0241b'], size: [6, 14], speed: [40, 90], glow: true }
+      fx: { shape: 'rect', dir: 'left', count: 20, colors: ['#bfe9ff', '#ffffff', '#e0241b'], size: [6, 14], speed: [40, 90], glow: true },
+      // RA1 / Remastered, RA2 + Yuri's Revenge, RA3 + Uprising
+      variant(n) {
+        if (n.includes('yuri')) return 'yr';
+        if (/red alert\W*3|\bra3\b/.test(n)) return n.includes('uprising') ? 'up' : 'ra3';
+        if (/red alert\W*2|\bra2\b/.test(n)) return 'ra2';
+        if (n.includes('remaster')) return 'rem';
+        return 'ra1';
+      },
+      variants: {
+        ra1: { label: 'RAPORT Z FRONTU' },
+        rem: { label: 'REMASTER · RAPORT Z FRONTU' },
+        ra2: { label: 'ZIMNA WOJNA 2.0', accent: ['#d01c1c', '#3a7bd5'], fx: { colors: ['#bfe9ff', '#3a7bd5', '#d01c1c'] } },
+        yr: { label: 'KONTROLA UMYSŁÓW', accent: ['#a43cd8', '#59e05a'], fx: { colors: ['#c98cff', '#59e05a', '#a43cd8'], shape: 'dot', dir: 'float', speed: [6, 14], glow: true, twinkle: true } },
+        ra3: { label: 'TRZY STRONY · JEDNA WOJNA', accent: ['#ff2d2d', '#ffd23f'], fx: { colors: ['#ffd23f', '#ff2d2d', '#bfe9ff'] } },
+        up: { label: 'POWSTANIE', accent: ['#ff2d2d', '#4fb7ff'] }
+      }
     },
     {
       id: 'cnc', name: 'C&C: Tiberium', match: ['tiberian', 'tiberium', 'command & conquer', 'command and conquer'],
@@ -157,7 +185,25 @@
           <path d="M52 28 L60 10 L64 32 Z M28 44 L36 26 L38 46 Z" fill="#c9ffc9" opacity=".8"/>
         </g>
         <path d="M10 96 H100" stroke="#e8c547" stroke-width="3"/>`),
-      fx: { shape: 'tri', dir: 'up', count: 22, colors: ['#5be35b', '#a8ff8a', '#e8c547'], size: [3, 6], speed: [8, 20], glow: true, twinkle: true }
+      fx: { shape: 'tri', dir: 'up', count: 22, colors: ['#5be35b', '#a8ff8a', '#e8c547'], size: [3, 6], speed: [8, 20], glow: true, twinkle: true },
+      variant(n) {
+        if (/kane'?s wrath/.test(n)) return 'kw';
+        if (/tiberium wars|(c&c|conquer)\W*3\b/.test(n)) return 'tw';
+        if (n.includes('firestorm')) return 'fs';
+        if (n.includes('tiberian sun')) return 'ts';
+        if (/tiberian twilight|(c&c|conquer)\W*4\b/.test(n)) return 'c4';
+        if (n.includes('remaster')) return 'rem';
+        return 'td';
+      },
+      variants: {
+        td: { label: 'EVA // RAPORT' },
+        rem: { label: 'REMASTER · EVA // RAPORT' },
+        ts: { label: 'TIBERIAN SUN', accent: ['#3fd0c8', '#5be35b'], fx: { colors: ['#3fd0c8', '#a8fff4', '#5be35b'] } },
+        fs: { label: 'FIRESTORM', accent: ['#ff7a2f', '#3fd0c8'], fx: { colors: ['#ff7a2f', '#ffd08a', '#3fd0c8'] } },
+        tw: { label: 'WOJNY O TYBERIUM', accent: ['#7ed321', '#ffc400'] },
+        kw: { label: 'GNIEW KANE’A', accent: ['#ff3030', '#7ed321'], fx: { colors: ['#ff3030', '#ff8a8a', '#7ed321'] } },
+        c4: { label: 'ZMIERZCH TYBERIUM', accent: ['#9cff57', '#4fb7ff'] }
+      }
     },
     {
       id: 'gen', name: 'C&C: Generals', match: ['generals', 'zero hour'],
@@ -169,7 +215,41 @@
         <g class="em-spin"><path d="M55 55 L55 15 A40 40 0 0 1 90 35 Z" fill="#9fd06b" opacity=".45"/></g>
         <circle cx="70" cy="40" r="3" fill="#e0241b" class="em-pulse"/>
         ${[0, 1, 2].map(i => `<path transform="translate(${34 + i * 21} 4) scale(.5)" d="M10 0 L13 7 L20 7 L14 12 L16 20 L10 15 L4 20 L6 12 L0 7 L7 7 Z" fill="#d9b56b"/>`).join('')}`),
-      fx: { shape: 'dot', dir: 'left', count: 26, colors: ['#d9b56b', '#c8a878', '#9a8a6a'], size: [0.8, 2.2], speed: [30, 70] }
+      fx: { shape: 'dot', dir: 'left', count: 26, colors: ['#d9b56b', '#c8a878', '#9a8a6a'], size: [0.8, 2.2], speed: [30, 70] },
+      variant: n => (n.includes('zero hour') ? 'zh' : 'gen'),
+      variants: { gen: { label: 'SZTAB // NA ŻYWO' }, zh: { label: 'GODZINA ZERO', accent: ['#e0a43a', '#7d8b4a'] } }
+    },
+
+    // ---------------------------------------------------------------- Visual Novel (SoulCreek i inne gry na Ren'Py – wykrywacz rozpoznaje silnik)
+    {
+      id: 'vn', name: 'Visual Novel', match: ['soulcreek', 'visual novel'], label: 'CZYTAMY',
+      accent: ['#8fd3ff', '#f2a7c3'],
+      // okno dialogowe z plakietką imienia i mrugającą strzałką „dalej”
+      emblem: svg(120, 90, `
+        <rect x="6" y="30" width="108" height="52" rx="8" fill="#0d1220" fill-opacity=".92" stroke="#8fd3ff" stroke-width="2.5"/>
+        <rect x="14" y="18" width="48" height="20" rx="5" fill="#f2a7c3" stroke="#0d1220" stroke-width="2"/>
+        <path d="M22 28 H54" stroke="#0d1220" stroke-width="3" stroke-linecap="round"/>
+        <path d="M20 48 H96 M20 60 H80" stroke="#cfe9ff" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+        <path class="vn-next" d="M98 68 L106 68 L102 75 Z" fill="#8fd3ff"/>`),
+      fx: { shape: 'dot', dir: 'float', count: 16, colors: ['#8fd3ff', '#f2a7c3', '#ffffff'], size: [1, 2.2], speed: [3, 7], glow: true, twinkle: true },
+      variant: n => (n.includes('soulcreek') ? 'sc' : ''),
+      variants: { sc: { label: 'BLACKRUNNER // CZYTAMY', accent: ['#6fe0ff', '#ff6a3d'], fx: { colors: ['#6fe0ff', '#ff6a3d', '#cfe9ff'], dir: 'up', speed: [6, 14] } } }
+    },
+
+    // ---------------------------------------------------------------- Blender i modelowanie 3D (nie gra – „Teraz tworzę”)
+    {
+      id: 'mk', name: 'Blender / 3D', match: ['blender', 'zbrush', 'substance painter', 'substance 3d', 'houdini', 'maya', 'cinema 4d', '3ds max'], label: 'TERAZ TWORZĘ', kind: 'make',
+      accent: ['#f5792a', '#4f8fe6'],
+      // obracająca się siatka (icosfera) z zaznaczonymi wierzchołkami
+      emblem: svg(110, 110, `
+        <g class="mk-spin" fill="none" stroke="#9cc0f0" stroke-width="1.6" stroke-linejoin="round">
+          <path d="M55 10 L92 32 L92 78 L55 100 L18 78 L18 32 Z"/>
+          <path d="M55 10 L55 55 M92 32 L55 55 M18 32 L55 55 M55 100 L55 55 M92 78 L55 55 M18 78 L55 55" opacity=".7"/>
+          <path d="M18 32 L92 32 M18 78 L92 78" stroke-dasharray="3 4" opacity=".5"/>
+        </g>
+        ${[[55, 10], [92, 32], [92, 78], [55, 100], [18, 78], [18, 32]].map(([x, y]) => `<rect x="${x - 3.5}" y="${y - 3.5}" width="7" height="7" fill="#f5792a" stroke="#1a1a1a"/>`).join('')}
+        <circle cx="55" cy="55" r="6" fill="#4f8fe6" stroke="#fff" stroke-width="2" class="em-pulse"/>`),
+      fx: { shape: 'square', dir: 'float', count: 18, colors: ['#f5792a', '#4f8fe6', '#e6e6e6'], size: [2, 4], speed: [4, 9], glow: true }
     }
   ];
 

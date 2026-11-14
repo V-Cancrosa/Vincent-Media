@@ -265,3 +265,65 @@
 .theme-g-cnc { --scene-bg: #050f05; --scene-font: 'Chakra Petch', sans-serif; }
 .theme-g-gen { --scene-bg: #2a2416; --scene-font: 'Saira Stencil One', sans-serif; --scene-ink: #efe4c8; }
 .reduced-motion .ra-bolt, .reduced-motion .me3-eye { animation: none !important; }
+
+/* ============================================================ warianty: Red Alert / Tiberium / Generals / Hollow Knight / Darkest Dungeon */
+.gv-ra2 #card { border-left-color: #3a7bd5; } .gv-ra2 #name { text-shadow: 3px 3px 0 #d01c1c, -2px -2px 0 #3a7bd5; } .gv-ra2 #label, .gv-ra2 #mono { color: #6fa4ff; }
+.gv-yr #card { border-left-color: #a43cd8; background: linear-gradient(180deg, #2a1f33, #140d1a); }
+.gv-yr #name { text-shadow: 3px 3px 0 #a43cd8; color: #e9dcff; } .gv-yr #label, .gv-yr #mono { color: #59e05a; } .gv-yr #icon { border-color: #a43cd8; }
+.gv-ra3 #card, .gv-up #card { border-left-color: #ffd23f; } .gv-ra3 #name, .gv-up #name { text-shadow: 3px 3px 0 #ff2d2d, 0 0 14px rgba(255,210,63,.45); } .gv-ra3 #label, .gv-up #label { color: #ffd23f; }
+.gv-ts #card, .gv-fs #card { border-color: #3fd0c8; } .gv-ts #name, .gv-fs #name { text-shadow: 0 0 12px rgba(63,208,200,.7); } .gv-ts #label { color: #3fd0c8; } .gv-fs #label { color: #ff7a2f; }
+.gv-kw #card { border-color: #ff3030; box-shadow: inset 0 0 30px rgba(255,48,48,.18); } .gv-kw #name { text-shadow: 0 0 12px rgba(255,48,48,.75); } .gv-kw #label, .gv-kw #mono { color: #ff5a5a; }
+.gv-tw #label { color: #ffc400; }
+.gv-zh #card::before { background: repeating-linear-gradient(-45deg, #2a2412 0 8px, #e0a43a 8px 16px); } .gv-zh #label { color: #7a3a10; }
+.gv-silk #name { text-shadow: 0 0 14px rgba(199,44,59,.55); } .gv-silk #label { color: #ff8a8a; }
+.gv-hk1 #name { text-shadow: 0 0 14px rgba(111,155,255,.55); } .gv-hk1 #label { color: #9cc2ff; } .gv-hk1 .hk-thread { stroke: #6f9bff; }
+.gv-dd2 #card { box-shadow: inset 0 0 0 2px #e86a2d, 0 12px 30px rgba(0,0,0,.6); } .gv-dd2 #label { color: #ff9a4a; }
+.theme-g-ra.gv-yr { --scene-bg: #140d1a; } .theme-g-cnc.gv-kw { --scene-bg: #160606; } .theme-g-dd.gv-dd2 { --scene-bg: #120c08; }
+
+/* ============================================================ VISUAL NOVEL – okno dialogowe z plakietką imienia */
+.theme-g-vn #card {
+  font-family: 'Nunito', 'Inter', sans-serif; color: #eaf6ff;
+  padding: 26px 46px 18px 18px; gap: 18px; margin-top: 18px;
+  background: linear-gradient(180deg, rgba(13,18,32,.9), rgba(20,26,46,.92));
+  border: 2px solid rgba(143,211,255,.75); border-radius: 16px;
+  box-shadow: 0 0 0 4px rgba(13,18,32,.6), 0 12px 34px rgba(0,0,0,.5), inset 0 0 30px rgba(143,211,255,.12);
+}
+.theme-g-vn #label { /* plakietka imienia na krawędzi okna */
+  position: absolute; left: 22px; top: -18px; padding: 6px 16px; border-radius: 8px; background: var(--accent2, #f2a7c3); color: #0d1220;
+  font: 800 14px/1 'Nunito', sans-serif; letter-spacing: .14em; box-shadow: 0 4px 12px rgba(0,0,0,.35);
+}
+.theme-g-vn #label .dot { display: none; }
+.theme-g-vn #icon { border-radius: 12px; border: 2px solid #8fd3ff; background: #0d1220; }
+.theme-g-vn #mono { color: #8fd3ff; font-weight: 800; }
+.theme-g-vn #name { font-weight: 800; font-size: 38px; color: #ffffff; text-shadow: 0 2px 12px rgba(143,211,255,.45); }
+.theme-g-vn #meta { color: #b9d6ee; font-size: 17px; }
+.theme-g-vn #card::after { /* mrugające ▼ „dalej” */
+  content: "▼"; position: absolute; right: 16px; bottom: 10px; font-size: 14px; color: #8fd3ff; animation: vn-next 1.1s steps(2) infinite;
+}
+.theme-g-vn #emblem { width: 96px; height: 72px; right: -30px; top: -50px; }
+.vn-next { animation: vn-next 1.1s steps(2) infinite; }
+@keyframes vn-next { 50% { opacity: 0; } }
+.gv-sc #card { border-color: rgba(111,224,255,.8); background: linear-gradient(180deg, rgba(8,14,20,.94), rgba(16,22,30,.94)); }
+.gv-sc #label { background: #ff6a3d; color: #fff; }
+
+/* ============================================================ BLENDER / 3D – siatka, wierzchołki, pomarańcz i błękit */
+.theme-g-mk #card {
+  font-family: 'Inter', sans-serif; color: #e6e6e6;
+  padding: 14px 42px 14px 14px; gap: 16px;
+  background: #232323; border: 1px solid #3d3d3d; border-top: 3px solid #f5792a; border-radius: 6px;
+  background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 24px 24px; box-shadow: 0 12px 30px rgba(0,0,0,.5);
+}
+.theme-g-mk #icon { border-radius: 6px; border: 1px solid #4f8fe6; background: #1a1a1a; }
+.theme-g-mk #mono { color: #f5792a; font-weight: 800; }
+.theme-g-mk #name { font-weight: 800; font-size: 36px; color: #ffffff; }
+.theme-g-mk #label { font: 700 12px/1 'JetBrains Mono', monospace; letter-spacing: .24em; color: #f5792a; }
+.theme-g-mk #label .dot { background: #4f8fe6; box-shadow: 0 0 8px #4f8fe6; border-radius: 1px; }
+.theme-g-mk #meta { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #9aa8ba; }
+.theme-g-mk #timer { color: #4f8fe6; }
+.theme-g-mk #emblem { width: 92px; height: 92px; right: -30px; top: -58px; }
+.mk-spin { transform-origin: 55px 55px; animation: mk-spin 9s linear infinite; }
+@keyframes mk-spin { to { transform: rotate(360deg); } }
+.theme-g-vn { --scene-bg: #0a0f1c; --scene-font: 'Nunito', sans-serif; }
+.theme-g-mk { --scene-bg: #1d1d1d; --scene-font: 'Inter', sans-serif; }
+.reduced-motion .vn-next, .reduced-motion .mk-spin, .reduced-motion.theme-g-vn #card::after { animation: none !important; }

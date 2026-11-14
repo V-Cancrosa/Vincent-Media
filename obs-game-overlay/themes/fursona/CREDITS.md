@@ -7,8 +7,12 @@ Pliki `*.webp` w tym folderze to kadry z ilustracji postaci ze strony [V-Cancros
 |---|---|---|
 | `vince.webp`, `vince-sheet.webp` | Vince | Ash |
 | `toro.webp`, `toro-full.webp` | Toro | Ritsu (@ritsu_fur1) |
-| `chip.webp`, `chip-polaroid.webp` | Chip | do uzupełnienia |
+| `vince-nightpaw.webp` | Vince · The Night Paw | amanda_rice910 |
+| `vince-philosopher.webp` | Vince · Philosopher | janet_arts2 |
+| `chip.webp`, `chip-polaroid.webp` | Chip (projekt adoptowany) | Chilibi |
+| `chip-fusk.webp` | Fusk – postać Chipa do D&D | furlynx_ |
 | `ragnar.webp`, `ragnar-full.webp` | Ragnar | do uzupełnienia |
+| `ragnar-kitchen.webp` | Ragnar i Vince · poranek w kuchni | ivyfox_ (⚠︎ jej Instagram został przejęty – bez linku, nie obserwujcie go) |
 
 Myr-35 i Zarin nie mają jeszcze ilustracji – ich motywy używają symboli narysowanych od zera (wizjer, płyta z kadłuba „PATCH”), CC0.
 Protogeny to gatunek Zenith's Outer Reach, Avali to gatunek stworzony przez RyuujinZERO.

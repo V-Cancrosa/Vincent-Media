@@ -154,7 +154,7 @@
   const RECTS = { 'game-frame': { game: [40, 40, 1440, 810], avatar: [1510, 40, 370, 370] }, 'game-full': { avatar: [40, 740, 300, 300] }, talk: { avatar: [110, 150, 780, 780] } };
   const ART = { vince: 'themes/fursona/vince.webp', chip: 'themes/fursona/chip.webp', ragnar: 'themes/fursona/ragnar.webp', toro: 'themes/fursona/toro.webp' };
   // w dużym oknie (rozmowa) pełne sylwetki, jeśli są
-  const ART_BIG = { ...ART, ragnar: 'themes/fursona/ragnar-full.webp', toro: 'themes/fursona/toro-full.webp', chip: 'themes/fursona/chip-polaroid.webp' };
+  const ART_BIG = { ...ART, ragnar: 'themes/fursona/ragnar-full.webp', toro: 'themes/fursona/toro-full.webp', chip: 'themes/fursona/chip-polaroid.webp', vince: 'themes/fursona/vince-philosopher.webp' };
 
   const BGFX = GT ? Object.assign(Object.create(Object.getPrototypeOf(GT.FX)), GT.FX, { canvas: null, ctx: null, cfg: null, parts: [], raf: 0 }) : null;
   if (BGFX) BGFX.attach($('bgfx'));

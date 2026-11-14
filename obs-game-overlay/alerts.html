@@ -15,6 +15,7 @@
 <script src="themes/library.js"></script>
 <link rel="stylesheet" href="themes/fusion.css">
 <script src="themes/fusion.js"></script>
+<script src="themes/fit.js"></script>
 <script src="themes/voices.js"></script>
 <script src="themes/voices-games.js"></script>
 <script src="themes/alertinfo.js"></script>
@@ -64,7 +65,7 @@
   .reduced-motion.shake-1 #stage, .reduced-motion.shake-2 #stage { animation: none !important; }
 
   /* strefa podana przez ekran / układ na wizji (themes/zones.js): karta mieści się w wolnym miejscu */
-  .zoned #stage { inset: auto; left: var(--zx); top: var(--zy); width: var(--zw); height: var(--zh); padding: 0 !important; align-items: center; justify-content: center; }
+  .zoned #stage { inset: auto; left: var(--zx); top: var(--zy); width: var(--zw); height: var(--zh); padding: 0; align-items: center; justify-content: center; }
   .zoned #wrap { transform-origin: center; }
   #timebar { position: absolute; left: 0; right: 0; bottom: -10px; height: 3px; z-index: 3; background: color-mix(in srgb, var(--accent) 25%, transparent); overflow: hidden; border-radius: 2px; }
   #timebar i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; }
@@ -195,14 +196,27 @@
     if (m.on && m.zone) zones.set(m.src, { prio: m.prio || 1, zone: m.zone, since: m.since || 0, at: m.at || Date.now() });
     else zones.delete(m.src);
   }
-  // karta mieści się w strefie (albo w ekranie): skala nie większa niż ustawiona, z miejscem na gwiazdki i napis poziomu
+  // karta mieści się w strefie (albo w ekranie) razem z tym, co z niej wystaje: portret postaci, odznaka gry, gwiazdki, napis poziomu
+  function extents() {
+    const wrap = $('wrap'), wr = wrap.getBoundingClientRect(), ow = wrap.offsetWidth;
+    const k = ow ? wr.width / ow : 1;            // bieżąca skala karty (transform)
+    let t = 0, b = 0, l = 0, r = 0;
+    for (const el of wrap.querySelectorAll('#emblem > *, #backdrop > *, #gbadge, #pbadge, #tierStars, #tierName')) {
+      const er = el.getBoundingClientRect();
+      if (!er.width || !er.height || getComputedStyle(el).display === 'none') continue;
+      t = Math.max(t, (wr.top - er.top) / k); b = Math.max(b, (er.bottom - wr.bottom) / k);
+      l = Math.max(l, (wr.left - er.left) / k); r = Math.max(r, (er.right - wr.right) / k);
+    }
+    return { t, b, l, r };
+  }
   function fitScale(want, zone) {
     const wrap = $('wrap');
     const ow = wrap.offsetWidth, oh = wrap.offsetHeight;
-    if (!ow || !oh) return want;
-    const W = zone && zone.rect ? zone.rect[2] : innerWidth - 120, H = zone && zone.rect ? zone.rect[3] : innerHeight * 0.42;
-    const extraV = 96;   // gwiazdki nad kartą i napis pod nią
-    return Math.max(0.45, Math.min(want, (W * 0.94) / ow, (H - extraV) / oh));
+    if (!ow || !oh) return { scale: want, pad: null };
+    const e = extents();
+    const W = zone && zone.rect ? zone.rect[2] : innerWidth - 120, H = zone && zone.rect ? zone.rect[3] : innerHeight * 0.45;
+    const s = Math.max(0.4, Math.min(want, (W * 0.96) / (ow + e.l + e.r), (H * 0.98) / (oh + e.t + e.b)));
+    return { scale: s, pad: [e.t * s, e.r * s, e.b * s, e.l * s] };
   }
 
   // ---------------------------------------------------------------- dźwięk (syntezowany, bez plików)
@@ -314,7 +328,16 @@
     $('icon').innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[ev.type] || ICONS.follow}</svg>`;
     // rozmiar dopiero po wpisaniu treści: najpierw skala bazowa, potem dopasowanie do wolnego miejsca
     const want = (+settings.alertScale || 1.25) * R.scale;
-    document.documentElement.style.setProperty('--scale', fitScale(want, zoned ? zone : null));
+    // długi nick: szersza karta / mniejsza czcionka; potem skala karty do wolnego miejsca
+    // (powtórzone po chwili – czcionka motywu mogła się jeszcze nie wczytać)
+    const layoutAlert = () => {
+      if (window.VMFit) { VMFit.text($('name'), { min: 0.5, lines: 2, container: $('wrap') }); VMFit.text($('sub'), { min: 0.8, lines: 3, container: $('wrap') }); }
+      const fit = fitScale(want, zoned ? zone : null);
+      document.documentElement.style.setProperty('--scale', fit.scale);
+      // w strefie: to, co wystaje (portret nad kartą, gwiazdki), też mieści się w wolnym miejscu
+      $('stage').style.padding = zoned && fit.pad ? fit.pad.map(v => Math.round(v) + 'px').join(' ') : '';
+    };
+    layoutAlert(); setTimeout(layoutAlert, 80); setTimeout(layoutAlert, 400);
     const dur = inChat ? 2.5 : settings.alertFast ? 2.5 : Math.max(3, +settings.alertDuration || 6) + R.extra;
     document.documentElement.style.setProperty('--dur', dur + 's');
     const baseFx = !reduced ? (GT.fusionFx ? GT.fusionFx(fusion) : def && def.fx) : null;

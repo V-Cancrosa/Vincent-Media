@@ -1,5 +1,5 @@
 {
-  "version": "1.16.0",
-  "date": "2026-11-14",
-  "notes": "Ułożenie bez nakładania się: karta ekranów przerw mieści się obok postaci i pasa alertów, alerty dobierają miejsce do sceny (w układach z czatem są częścią czatu), avatar nad kartą w grze na pełnym ekranie, temat rozmowy dopasowany do miejsca"
+  "version": "1.17.0",
+  "date": "2026-11-15",
+  "notes": "Retro z polskimi znakami bez podskakiwania, długie nazwy się nie ucinają, części Red Alert / Tiberium / Generals / Hollow Knight / Darkest Dungeon / Talisman, motywy Visual Novel (Ren'Py) i Blender / 3D, nowe arty postaci na ekranach przerw"
 }

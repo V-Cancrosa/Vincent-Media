@@ -48,7 +48,7 @@
 
 /* ============================================================ MINECRAFT */
 .theme-g-mc #card {
-  font-family: 'Silkscreen', 'Press Start 2P', monospace; color: #fff;
+  font-family: 'Tiny5', monospace; color: #fff;
   padding: 18px 30px 16px 16px; gap: 18px;
   background: var(--tex, #79553a); background-size: 64px 64px; image-rendering: pixelated;
   border: 4px solid #1d1d1d; border-top: 12px solid #5d9b3a;
@@ -63,7 +63,7 @@
   width: 80px; height: 80px; background: #8b8b8b;
   border: 4px solid; border-color: #373737 #ffffff #ffffff #373737; image-rendering: pixelated;
 }
-.theme-g-mc #mono { font-family: 'Silkscreen', monospace; color: #3f3f3f; text-shadow: 2px 2px 0 #c6c6c6; font-size: 26px; }
+.theme-g-mc #mono { font-family: 'Tiny5', monospace; color: #3f3f3f; text-shadow: 2px 2px 0 #c6c6c6; font-size: 26px; }
 .theme-g-mc #name { font-size: 32px; font-weight: 400; text-shadow: 4px 4px 0 #3f3f3f; letter-spacing: .02em; }
 .theme-g-mc #card.long #name { font-size: 25px; }
 .theme-g-mc #card.xlong #name { font-size: 19px; }

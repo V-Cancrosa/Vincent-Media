@@ -45,9 +45,11 @@
     return { cls, def, game, persona: null, mode, mix: MIX[mode] };
   }
 
-  GT.resolve = function (settings, gameName, forcedCls) {
+  // gra bez własnego motywu, ale znanego rodzaju (wykrywacz: Ren'Py → visual novel, Blender i inne programy → tworzenie)
+  const KIND_THEME = { vn: 'vn', make: 'mk' };
+  GT.resolve = function (settings, gameName, forcedCls, kind) {
     const mode = modeOf(settings);
-    const game = gameName && mode !== 'off' ? GT.find(gameName) : null;
+    const game = gameName && mode !== 'off' ? (GT.find(gameName) || (kind && KIND_THEME[kind] ? GT.byId(KIND_THEME[kind]) : null)) : null;
     const fixed = forcedCls || settings.theme || 'neon';
     const own = String(fixed).startsWith('g-') ? GT.byId(String(fixed).slice(2)) : null;
     return build(String(fixed), game, mode, GT.variantOf(game || own, gameName));
